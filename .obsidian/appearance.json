@@ -1,0 +1,10 @@
+{
+  "theme": "obsidian",
+  "accentColor": "",
+  "enabledCssSnippets": [
+    "gym-log-enhanced",
+    "gym-log",
+    "custom-scripts"
+  ],
+  "cssTheme": "Minimal"
+}

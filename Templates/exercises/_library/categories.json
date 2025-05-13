@@ -1,0 +1,91 @@
+{
+  "muscleGroups": {
+    "Chest": {
+      "name": "Chest",
+      "primaryMuscles": ["Chest"]
+    },
+    "Lats": {
+      "name": "Lats",
+      "primaryMuscles": ["Lats"]
+    },
+    "Traps": {
+      "name": "Traps",
+      "primaryMuscles": ["Traps"]
+    },
+    "Rhomboids": {
+      "name": "Rhomboids",
+      "primaryMuscles": ["Rhomboids"]
+    },
+    "Quads": {
+      "name": "Quads",
+      "primaryMuscles": ["Quads"]
+    },
+    "Hamstrings": {
+      "name": "Hamstrings",
+      "primaryMuscles": ["Hamstrings"]
+    },
+    "Calves": {
+      "name": "Calves",
+      "primaryMuscles": ["Calves"]
+    },
+    "Front Deltoids": {
+      "name": "Front Deltoids",
+      "primaryMuscles": ["Front Deltoids"]
+    },
+    "Middle Deltoids": {
+      "name": "Middle Deltoids",
+      "primaryMuscles": ["Middle Deltoids"]
+    },
+    "Back Deltoids": {
+      "name": "Back Deltoids",
+      "primaryMuscles": ["Back Deltoids"]
+    },
+    "Rotator Cuff": {
+      "name": "Rotator Cuff",
+      "primaryMuscles": ["Rotator Cuff"]
+    },
+    "Biceps": {
+      "name": "Biceps",
+      "primaryMuscles": ["Biceps"]
+    },
+    "Triceps": {
+      "name": "Triceps",
+      "primaryMuscles": ["Triceps"]
+    },
+    "Forearms": {
+      "name": "Forearms",
+      "primaryMuscles": ["Forearms"]
+    },
+    "Core": {
+      "name": "Core",
+      "primaryMuscles": ["Core"]
+    },
+    "Lower Back": {
+      "name": "Lower Back",
+      "primaryMuscles": ["Lower Back"]
+    },
+    "Obliques": {
+      "name": "Obliques",
+      "primaryMuscles": ["Obliques"]
+    },
+    "Others": {
+      "name": "Others",
+      "primaryMuscles": ["Others"]
+    }
+  },
+  "equipment": [
+    "Barbell",
+    "Dumbbell",
+    "Kettlebell",
+    "Machine",
+    "Bodyweight",
+    "Resistance Bands",
+    "Cable Machine",
+    "Smith Machine"
+  ],
+  "difficulty": [
+    "Beginner",
+    "Intermediate",
+    "Advanced"
+  ]
+}

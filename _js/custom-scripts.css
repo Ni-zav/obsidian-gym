@@ -1,0 +1,13 @@
+/* Load shared utilities and core functionality first */
+@import url("shared/utils.js");
+@import url("shared/timer.js");
+@import url("shared/workout.js");
+
+/* Load feature-specific modules */
+@import url("shared/exercise-library.js");
+@import url("shared/exercise.js");
+@import url("shared/pr-tracker.js");
+@import url("shared/stats.js");
+
+/* Optional: Load any additional scripts */
+@import url("scripts/startTimer.js");

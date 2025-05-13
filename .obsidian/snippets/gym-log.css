@@ -1,0 +1,94 @@
+/* Exercise Library Styles */
+.exercise-selector {
+    padding: 1rem;
+}
+
+.exercise-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.exercise-filters select {
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+.exercise-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.exercise-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: var(--background-secondary);
+    border-radius: 4px;
+}
+
+.exercise-item button {
+    padding: 0.25rem 0.75rem;
+}
+
+/* Timer Styles */
+.timer-container {
+    padding: 1rem;
+    background: var(--background-secondary);
+    border-radius: 4px;
+    margin: 1rem 0;
+}
+
+.timer-display {
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 1rem;
+    font-family: monospace;
+}
+
+.timer-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.timer-buttons button {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+}
+
+.timer-buttons input {
+    padding: 0.5rem;
+    border-radius: 4px;
+    width: 120px;
+}
+
+/* PR Tracking Styles */
+.pr-indicator {
+    display: inline-block;
+    background: var(--text-accent);
+    color: var(--text-on-accent);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+/* Stats Styles */
+.stats-container {
+    padding: 1rem;
+    background: var(--background-secondary);
+    border-radius: 4px;
+    margin: 1rem 0;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}

@@ -1,0 +1,8 @@
+{
+  "javascript": [
+    "_js/shared/utils.js",
+    "_js/shared/timer.js",
+    "_js/shared/workout.js",
+    "_js/shared/exercise-library.js"
+  ]
+}

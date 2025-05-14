@@ -6,21 +6,83 @@ class WorkoutBuilder {
         this.app = app;
         this.quickAdd = quickAdd;
         this.categories = null;
+        this.workoutCategories = null;
         this.exercises = {};
         this.initialized = false;
-    }
-
-    async init() {
+    }    async init() {
         if (this.initialized) return;
         
         try {
             await this.loadCategories();
+            await this.loadWorkoutCategories();
             await this.loadExercises();
             this.initialized = true;
         } catch (error) {
             console.error("Failed to initialize WorkoutBuilder:", error);
             throw new Error("Failed to initialize workout builder: " + error.message);
         }
+    }
+
+    async loadWorkoutCategories() {
+        try {
+            const categoriesPath = "Templates/exercises/_library/workout_categories.json";
+            if (!await this.app.vault.adapter.exists(categoriesPath)) {
+                throw new Error("Workout categories file not found at: " + categoriesPath);
+            }
+
+            const categoriesContent = await this.app.vault.adapter.read(categoriesPath);
+            if (!categoriesContent) {
+                throw new Error("Workout categories file is empty");
+            }
+
+            try {
+                this.workoutCategories = JSON.parse(categoriesContent);
+                if (!this.workoutCategories || !this.workoutCategories.workoutTypes || !this.workoutCategories.places) {
+                    throw new Error("Invalid workout categories format");
+                }
+            } catch (e) {
+                throw new Error("Failed to parse workout categories JSON: " + e.message);
+            }
+        } catch (error) {
+            console.error("Error loading workout categories:", error);
+            throw error;
+        }
+    }
+
+    async selectWorkoutType() {
+        if (!this.initialized || !this.workoutCategories) {
+            throw new Error("WorkoutBuilder must be initialized before use");
+        }
+
+        const types = Object.entries(this.workoutCategories.workoutTypes).map(([key, type]) => ({
+            key,
+            name: type.name,
+            description: type.description
+        }));
+
+        return await this.quickAdd.suggester(
+            type => `${type.name} - ${type.description}`,
+            types,
+            "Select workout type"
+        );
+    }
+
+    async selectWorkoutPlace() {
+        if (!this.initialized || !this.workoutCategories) {
+            throw new Error("WorkoutBuilder must be initialized before use");
+        }
+
+        const places = Object.entries(this.workoutCategories.places).map(([key, place]) => ({
+            key,
+            name: place.name,
+            description: place.description
+        }));
+
+        return await this.quickAdd.suggester(
+            place => `${place.name} - ${place.description}`,
+            places,
+            "Select workout place"
+        );
     }
 
     async loadCategories() {
@@ -163,9 +225,7 @@ class WorkoutBuilder {
         }
 
         return setsNum;
-    }
-
-    generateWorkoutContent(name, exercises) {
+    }    generateWorkoutContent(name, exercises, workoutType, workoutPlace) {
         const exerciseIds = exercises
             .map(e => Array(e.sets).fill(e.id))
             .flat();
@@ -177,7 +237,8 @@ class WorkoutBuilder {
             `time: <% tp.date.now("HH:mm") %>`,
             `exercises: [${exerciseIds.join(", ")}]`,
             `workout_order: [${exerciseIds.join(", ")}]`,
-            "type: custom",
+            `workout_type: ${workoutType.name}`,
+            `workout_place: ${workoutPlace.name}`,
             "tags:",
             " - workout",
             "---",
@@ -334,11 +395,22 @@ module.exports = async function createWorkoutRoutine(params) {
         if (selectedExercises.length === 0) {
             console.log("No exercises were selected, workout not created");
             return;
+        }        // Select workout type and place
+        const workoutType = await builder.selectWorkoutType();
+        if (!workoutType) {
+            console.log("Workout type selection cancelled");
+            return;
+        }
+
+        const workoutPlace = await builder.selectWorkoutPlace();
+        if (!workoutPlace) {
+            console.log("Workout place selection cancelled");
+            return;
         }
 
         // Generate and save workout
-        const content = builder.generateWorkoutContent(workoutName, selectedExercises);
-        const file = await builder.saveWorkout(workoutName, content);        // Show success message
+        const content = builder.generateWorkoutContent(workoutName, selectedExercises, workoutType, workoutPlace);
+        const file = await builder.saveWorkout(workoutName, content);// Show success message
         const summary = selectedExercises.map(e => `${e.name} (${e.sets} sets)`).join('\n- ');
         new Notice(`Workout '${workoutName}' created successfully!\n\nExercises:\n- ${summary}`);
 

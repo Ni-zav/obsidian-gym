@@ -3,15 +3,15 @@ class workout {
         // Get utils and exercise-library from customJS if available
         this.utils = window.customJS?.utils || new utils();
         this.exerciseLibrary = window.customJS?.exerciseLibrary || new exerciseLibrary();
-    }
-
-    renderHeader(context) {
+    }    renderHeader(context) {
         if (!context?.dv) return;
         const current = context.dv.current();
         
-        // Get the workout title and ID
+        // Get the workout metadata
         const metadata = app.metadataCache.getFileCache(current.file);
         const workoutTitle = metadata?.frontmatter?.workout_title || '';
+        const workoutType = metadata?.frontmatter?.workout_type;
+        const workoutPlace = metadata?.frontmatter?.workout_place;
         
         // If we have a date, show it with relative formatting
         let headerText = workoutTitle;
@@ -25,7 +25,16 @@ class workout {
             else if (diff_days === -2) headerText += " (day before yesterday)";
         }
 
+        // Render the main header
         context.dv.header(1, headerText);
+        
+        // Add workout type and place info if available
+        if (workoutType || workoutPlace) {
+            const details = [];
+            if (workoutType) details.push(`Type: ${workoutType}`);
+            if (workoutPlace) details.push(`Location: ${workoutPlace}`);
+            context.dv.paragraph(details.join(' | '));
+        }
     }
 
     renderRemaining(context) {

@@ -1,0 +1,38 @@
+{
+  "workoutTypes": {
+    "weight": {
+      "name": "Weight Training",
+      "description": "Strength and muscle building focused workouts"
+    },
+    "cardio": {
+      "name": "Cardio",
+      "description": "Cardiovascular and endurance focused workouts"
+    },
+    "recovery": {
+      "name": "Recovery",
+      "description": "Light intensity workouts focused on recovery and mobility"
+    },
+    "other": {
+      "name": "Other",
+      "description": "Other workout types"
+    }
+  },
+  "places": {
+    "home": {
+      "name": "Home",
+      "description": "Workouts that can be done at home"
+    },
+    "gym": {
+      "name": "Gym",
+      "description": "Workouts requiring gym equipment"
+    },
+    "outdoor": {
+      "name": "Outdoor",
+      "description": "Workouts that can be done outdoors"
+    },
+    "custom": {
+      "name": "Custom",
+      "description": "Other workout locations"
+    }
+  }
+}

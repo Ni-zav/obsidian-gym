@@ -50,7 +50,10 @@ module.exports = async function startTodaysWorkout(params) {
         );
 
         if (!notesDisplay) {
-            throw new Error("No workout template selected");
+            console.log("User cancelled workout selection");
+            new Notice("Workout selection cancelled");
+            params.variables = { notePath: "" };
+            return;
         }
 
         // Expand template

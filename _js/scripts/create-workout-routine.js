@@ -114,81 +114,55 @@ class WorkoutBuilder {
             throw new Error("WorkoutBuilder must be initialized before use");
         }
 
-        try {
-            // Get groups that have exercises
-            const availableGroups = Object.entries(this.exercises)
-                .filter(([_, exercises]) => exercises.length > 0)
-                .map(([group, exercises]) => ({
-                    name: group,
-                    count: exercises.length
-                }));
+        // Get groups that have exercises
+        const availableGroups = Object.entries(this.exercises)
+            .filter(([_, exercises]) => exercises.length > 0)
+            .map(([group, exercises]) => ({
+                name: group,
+                count: exercises.length
+            }));
 
-            if (availableGroups.length === 0) {
-                throw new Error("No exercises found in any muscle group");
-            }
-
-            const selected = await this.quickAdd.suggester(
-                group => `${group.name} (${group.count} exercises)`,
-                availableGroups,
-                "Select muscle group"
-            );
-
-            if (!selected) {
-                throw new Error("No muscle group selected");
-            }
-
-            return selected;
-        } catch (error) {
-            console.error("Error selecting muscle group:", error);
-            throw error;
+        if (availableGroups.length === 0) {
+            throw new Error("No exercises found in any muscle group");
         }
+
+        return await this.quickAdd.suggester(
+            group => `${group.name} (${group.count} exercises)`,
+            availableGroups,
+            "Select muscle group"
+        );
     }
 
     async selectExercise(muscleGroup) {
         if (!muscleGroup || !muscleGroup.name) {
-            throw new Error("Invalid muscle group");
+            return null;
         }
 
-        try {
-            const exercises = this.exercises[muscleGroup.name];
-            if (!exercises || exercises.length === 0) {
-                throw new Error(`No exercises found for muscle group: ${muscleGroup.name}`);
-            }
-
-            const selected = await this.quickAdd.suggester(
-                exercise => `${exercise.name} (${exercise.equipment})`,
-                exercises,
-                "Select exercise"
-            );
-
-            if (!selected) {
-                throw new Error("No exercise selected");
-            }
-
-            return selected;
-        } catch (error) {
-            console.error("Error selecting exercise:", error);
-            throw error;
+        const exercises = this.exercises[muscleGroup.name];
+        if (!exercises || exercises.length === 0) {
+            throw new Error(`No exercises found for muscle group: ${muscleGroup.name}`);
         }
+
+        return await this.quickAdd.suggester(
+            exercise => `${exercise.name} (${exercise.equipment})`,
+            exercises,
+            "Select exercise"
+        );
     }
 
     async getSetsCount() {
-        try {
-            const sets = await this.quickAdd.inputPrompt("Number of sets", "3");
-            if (!sets) {
-                throw new Error("Sets count is required");
-            }
-
-            const setsNum = parseInt(sets);
-            if (isNaN(setsNum) || setsNum < 1) {
-                throw new Error("Please enter a valid number of sets (must be 1 or greater)");
-            }
-
-            return setsNum;
-        } catch (error) {
-            console.error("Error getting sets count:", error);
-            throw error;
+        const sets = await this.quickAdd.inputPrompt("Number of sets", "3");
+        if (!sets) {
+            return null;
         }
+
+        const setsNum = parseInt(sets);
+        if (isNaN(setsNum) || setsNum < 1) {
+            new Notice("Please enter a valid number of sets (must be 1 or greater)");
+            return null;
+        }
+
+        return setsNum;
     }
 
     generateWorkoutContent(name, exercises) {
@@ -302,7 +276,10 @@ module.exports = async function createWorkoutRoutine(params) {
 
         // Get workout name
         const workoutName = await quickAddApi.inputPrompt("Enter workout name (e.g., Push Day, Leg Day)");
-        if (!workoutName) return;
+        if (!workoutName) {
+            console.log("Workout creation cancelled - no name provided");
+            return;
+        }
 
         // Build workout
         const selectedExercises = [];
@@ -311,15 +288,24 @@ module.exports = async function createWorkoutRoutine(params) {
         while (addingExercises) {
             // Select muscle group
             const muscleGroup = await builder.selectMuscleGroup();
-            if (!muscleGroup) break;
+            if (!muscleGroup) {
+                console.log("Workout creation stopped - no muscle group selected");
+                break;
+            }
 
             // Select exercise
             const exercise = await builder.selectExercise(muscleGroup);
-            if (!exercise) break;
+            if (!exercise) {
+                console.log("Exercise selection cancelled");
+                break;
+            }
 
             // Get sets
             const sets = await builder.getSetsCount();
-            if (!sets) break;
+            if (!sets) {
+                console.log("Sets input cancelled");
+                break;
+            }
 
             // Add to selected exercises
             selectedExercises.push({
@@ -335,12 +321,16 @@ module.exports = async function createWorkoutRoutine(params) {
                 "What would you like to do?"
             );
             
-            if (!continueChoice) return;
+            if (!continueChoice) {
+                console.log("Continue choice cancelled");
+                break;
+            }
             addingExercises = continueChoice === "continue";
         }
 
+        // Only proceed if we have exercises to save
         if (selectedExercises.length === 0) {
-            new Notice("No exercises were selected. Workout not created.");
+            console.log("No exercises were selected, workout not created");
             return;
         }
 
@@ -361,7 +351,11 @@ module.exports = async function createWorkoutRoutine(params) {
         params.variables = { workoutPath: file.path };
 
     } catch (error) {
-        console.error("Error creating workout:", error);
-        new Notice(`Error: ${error.message}`);
+        if (error.message.includes('already exists')) {
+            new Notice(error.message);
+        } else {
+            console.error("Unexpected error:", error);
+            new Notice("An unexpected error occurred");
+        }
     }
 }

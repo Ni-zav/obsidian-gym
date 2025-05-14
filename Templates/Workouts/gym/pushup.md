@@ -1,8 +1,7 @@
 ---
-id: de5b81
-workout_title: test-5
-exercises: [464245]
-workout_order: [464245]
+workout_title: pushup
+exercises: [137296, 137296, 137296]
+workout_order: [137296, 137296, 137296]
 type: custom
 tags:
  - workout

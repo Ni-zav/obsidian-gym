@@ -1,24 +1,24 @@
 {
   "main": {
-    "id": "425e82abaead3523",
+    "id": "5324373015726ba8",
     "type": "split",
     "children": [
       {
-        "id": "2a4547e6b698232e",
+        "id": "4509724f8bf84da7",
         "type": "tabs",
         "children": [
           {
-            "id": "4f0088373c42ea18",
+            "id": "e7a7b303c61786dc",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "README.md",
+                "file": "Workout list.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "README"
+              "title": "Workout list"
             }
           }
         ]
@@ -176,48 +176,48 @@
       "canvas:Create new canvas": false,
       "daily-notes:Open today's daily note": false,
       "command-palette:Open command palette": false,
-      "templater-obsidian:Templater": false,
       "media-extended:Open media": false,
+      "templater-obsidian:Templater": false,
       "homepage:Open homepage": false
     }
   },
-  "active": "7b33950de697b8a5",
+  "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
-    "To-do.md",
+    "README.md",
+    "error-logs.md",
+    "Templates/Workouts/gym/pushup.md",
     "Workout list.md",
+    "Templates/exercises/Triceps/Triceps - push up.md",
+    "Templates/exercises/Triceps",
     "Workouts/2025-05-14 - test-5/test-5.md",
+    "Templates/exercises/Triceps/Triceps - Push up.md",
+    "Templates/Workouts/gym/test-5.md",
+    "Templates/Workouts/gym/walk.md",
+    "Templates/exercises/Lower Back/Lower Back - walk.md",
+    "Workouts/2025-05-14 - walk/walk.md",
     "Workouts/2025-05-14 - test-5/Log/2.md",
     "Workouts/2025-05-14 - test-5/Log/1.md",
     "Workouts/2025-05-14 - test-5/Log",
     "Workouts/2025-05-14 - test-5",
-    "Templates/Workouts/gym/test-5.md",
     "Templates/Workouts/gym/test-4.md",
-    "Templates/Workouts/gym/test-1.md",
     "Templates/Workouts/gym/test-3.md",
     "Templates/Workouts/gym/test-2.md",
+    "Templates/Workouts/gym/test-1.md",
     "Templates/Workouts/gym/push-up.md",
-    "Workouts/2025-05-14 - push-up/push-up.md",
-    "Templates/exercises/Triceps/Triceps - Push up.md",
-    "Workouts/2025-05-14 - push-up/Log/4.md",
-    "Workouts/2025-05-14 - push-up/Log/1.md",
-    "Workouts/2025-05-14 - push-up/Log/6.md",
-    "Workouts/2025-05-14 - push-up/Log/5.md",
-    "Workouts/2025-05-14 - push-up/Log/3.md",
-    "Workouts/2025-05-14 - push-up/Log/2.md",
-    "Templates/Start.md",
-    "Workouts/2025-05-14 - push-up/Log",
-    "Workouts/2025-05-14 - push-up",
-    "README.md",
-    "error-logs.md",
-    "Templates/exercises/Triceps",
-    "Templates/exercises/Front Deltoids/Front Deltoids - Overhead Dumbbells Raise.md",
-    "Templates/programs/_templates/program-template.md",
-    "Workouts/2025-05-13 - push/Log/7.md",
-    "Workouts/2025-05-13 - push/push 1.md",
-    "Workouts/2025-05-13 - push/Log",
-    "Workouts/2025-05-13 - push",
-    "Templates/exercises/Chest",
-    "Workouts/2025-05-13 - Push/Log",
-    "Workouts/2025-05-13 - Push"
+    "Workouts/2025-05-14 - walk/Log/1.md",
+    "Workouts/2025-05-14 - push-up--that-s-it-/Log/5.md",
+    "Workouts/2025-05-14 - push-up--that-s-it-/Log/4.md",
+    "Workouts/2025-05-14 - push-up--that-s-it-/Log/3.md",
+    "Workouts/2025-05-14 - push-up--that-s-it-/Log/2.md",
+    "Workouts/2025-05-14 - push-up--that-s-it-/Log/1.md",
+    "Workouts/2025-05-14 - push-up--that-s-it-/push-up--that-s-it-.md",
+    "Workouts/2025-05-14 - push-up--that-s-it-/Log",
+    "Workouts/2025-05-14 - push-up--that-s-it-",
+    "Templates/exercises/Triceps/Triceps - simple push up.md",
+    "Workouts/2025-05-14 - walk/Log",
+    "Workouts/2025-05-14 - walk",
+    "Templates/exercises/Lower Back",
+    "Workouts/2025-05-14 - pushup/Log",
+    "Workouts/2025-05-14 - pushup"
   ]
 }

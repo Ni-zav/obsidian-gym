@@ -160,7 +160,7 @@ The system is highly customizable through:
 - Data visualization options
 
 ## To-do
-- [ ] fix renderRemaining() function
+- [x] fix renderRemaining() function
 - [ ] change workout-type to something else (type of workout? push? upper body? cardio? recovery?)
 - [ ] add timed workout functionality (warm up, plank, jog, etc.)
 - [ ] Add some exercises templates

@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Templates/Workouts/gym/hammer-curling.md",
+                "file": "Workouts/2025-05-14 - hammer-curling/hammer-curling.md",
                 "mode": "source",
                 "source": false
               },
@@ -89,7 +89,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "285bd5590c21a41e",
@@ -105,7 +106,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Templates/Workouts/gym/hammer-curling.md",
+                "file": "Workouts/2025-05-14 - hammer-curling/hammer-curling.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -153,7 +154,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Templates/Workouts/gym/hammer-curling.md",
+                "file": "Workouts/2025-05-14 - hammer-curling/hammer-curling.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -184,7 +185,12 @@
   },
   "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
+    "Workouts/2025-05-14 - hammer-curling/Log/2.md",
+    "Workouts/2025-05-14 - hammer-curling/Log/1.md",
     "Workout list.md",
+    "Workouts/2025-05-14 - hammer-curling/hammer-curling.md",
+    "Workouts/2025-05-14 - hammer-curling/Log",
+    "Workouts/2025-05-14 - hammer-curling",
     "Templates/Workouts/gym/hammer-curling.md",
     "Templates/exercises/Biceps/Biceps - Hammer Curl.md",
     "Workouts/2025-05-14 - biceps/biceps.md",
@@ -210,15 +216,10 @@
     "Workouts/2025-05-14 - testing/testing 1.md",
     "Workouts/2025-05-14 - testing/Log/3.md",
     "Workouts/2025-05-14 - testing/Log/2.md",
-    "Workouts/2025-05-14 - testing/Log/1.md",
     "Workouts/2025-05-14 - testing/Log",
     "Workouts/2025-05-14 - testing",
-    "Workouts/2025-05-14 - pushup/pushup.md",
-    "Workouts/2025-05-14 - test/test.md",
     "Workouts/2025-05-14 - test/Log",
     "Workouts/2025-05-14 - test",
-    "Workouts/2025-05-14 - pushup/Log",
-    "Workouts/2025-05-14 - pushup",
-    "Templates/exercises/Core"
+    "Workouts/2025-05-14 - pushup/Log"
   ]
 }

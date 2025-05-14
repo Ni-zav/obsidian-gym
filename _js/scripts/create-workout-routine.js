@@ -338,18 +338,11 @@ module.exports = async function createWorkoutRoutine(params) {
 
         // Generate and save workout
         const content = builder.generateWorkoutContent(workoutName, selectedExercises);
-        const file = await builder.saveWorkout(workoutName, content);
-
-        // Show success message
+        const file = await builder.saveWorkout(workoutName, content);        // Show success message
         const summary = selectedExercises.map(e => `${e.name} (${e.sets} sets)`).join('\n- ');
         new Notice(`Workout '${workoutName}' created successfully!\n\nExercises:\n- ${summary}`);
 
-        // Open the new workout
-        if (file) {
-            await app.workspace.activeLeaf.openFile(file);
-        }
-
-        // Return the path
+        // Return the path without opening the file
         params.variables = { workoutPath: file.path };
 
     } catch (error) {

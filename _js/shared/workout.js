@@ -72,8 +72,8 @@ class workout {
 
         const tableData = remainingExercises.map(ex => [
             ex.info.name,
-            ex.info.muscleGroup || "-",
-            ex.info.equipment || "-",
+            ex.info.muscleGroup || "~",
+            ex.info.equipment || "~",
             `${ex.remainingCount} sets`
         ]);
 
@@ -100,9 +100,9 @@ class workout {
 
         const tableData = performed.map(e => [
             e.exercise,
-            e.weight ? `${e.weight} kg` : "-",
-            e.reps || "-",
-            e.effort || "-",
+            e.weight ? `${e.weight} kg` : "~",
+            e.reps || "~",
+            e.effort || "~",
             moment(e.date).format("HH:mm"),
             e.weight && e.reps ? `${e.weight * e.reps} kg×reps` : "-"
         ]);
@@ -145,10 +145,10 @@ class workout {
                 ["Exercise", "Sets", "Weight", "Reps", "Volume"],
                 exercises.map(e => [
                     e.name,
-                    e.sets || '-',
-                    e.weight || '-',
-                    e.reps || '-',
-                    this.utils.calculateVolume(e.weight, e.reps) || '-'
+                    e.sets || '~',
+                    e.weight || '~',
+                    e.reps || '~',
+                    this.utils.calculateVolume(e.weight, e.reps) || '~'
                 ])
             );
         }
@@ -365,18 +365,18 @@ class workout {
 
         if (!exercise) return {
             name: exerciseId,
-            muscleGroup: "-",
-            lastWeight: "-",
-            lastEffort: "-"
+            muscleGroup: "~",
+            lastWeight: "~",
+            lastEffort: "~"
         };
 
         const { file, cache } = exercise;
         return {
             name: cache.frontmatter?.exercise || file.basename,
-            muscleGroup: cache.frontmatter?.muscle_group || "-",
-            equipment: cache.frontmatter?.equipment || "-",
-            lastWeight: "-",
-            lastEffort: "-"
+            muscleGroup: cache.frontmatter?.muscle_group || "~",
+            equipment: cache.frontmatter?.equipment || "~",
+            lastWeight: "~",
+            lastEffort: "~"
         };
     }
 }

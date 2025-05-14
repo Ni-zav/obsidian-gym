@@ -12,7 +12,7 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - 📝 Workout templating
 - 🔄 Custom exercise support
 - ⚡ Quick exercise logging
-- 📅 Calendar heatmap for workout tracking (not yet, soon)
+- 📅 Calendar heatmap for workout tracking
 
 ## System Overview
 

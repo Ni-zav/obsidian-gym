@@ -1,5 +1,33 @@
 {
   "muscleGroups": {
+    "Abs": {
+      "name": "Abs",
+      "primaryMuscles": ["Abs"]
+    },
+    "Glutes": {
+      "name": "Glutes",
+      "primaryMuscles": ["Glutes"]
+    },
+    "Shoulders": {
+      "name": "Shoulders",
+      "primaryMuscles": ["Shoulders"]
+    },
+    "Back": {
+      "name": "Back",
+      "primaryMuscles": ["Back"]
+    },
+    "Upper Body": {
+      "name": "Upper Body",
+      "primaryMuscles": ["Upper Body"]
+    },
+    "Lower Body": {
+      "name": "Lower Body",
+      "primaryMuscles": ["Lower Body"]
+    },
+    "Arms": {
+      "name": "Arms",
+      "primaryMuscles": ["Arms"]
+    },
     "Chest": {
       "name": "Chest",
       "primaryMuscles": ["Chest"]
@@ -32,13 +60,13 @@
       "name": "Front Deltoids",
       "primaryMuscles": ["Front Deltoids"]
     },
-    "Middle Deltoids": {
-      "name": "Middle Deltoids",
-      "primaryMuscles": ["Middle Deltoids"]
+    "Lateral Deltoids": {
+      "name": "Lateral Deltoids",
+      "primaryMuscles": ["Lateral Deltoids"]
     },
-    "Back Deltoids": {
-      "name": "Back Deltoids",
-      "primaryMuscles": ["Back Deltoids"]
+    "Rear Deltoids": {
+      "name": "Rear Deltoids",
+      "primaryMuscles": ["Rear Deltoids"]
     },
     "Rotator Cuff": {
       "name": "Rotator Cuff",
@@ -71,11 +99,20 @@
     "Others": {
       "name": "Others",
       "primaryMuscles": ["Others"]
+    },
+    "Full Body": {
+      "name": "Full Body",
+      "primaryMuscles": ["Full Body"]
+    },
+    "Neck": {
+      "name": "Neck",
+      "primaryMuscles": ["Neck"]
     }
   },
   "equipment": [
     "Barbell",
     "Dumbbell",
+    "Pair of Dumbbells",
     "Kettlebell",
     "Machine",
     "Bodyweight",

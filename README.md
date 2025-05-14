@@ -167,6 +167,7 @@ The system is highly customizable through:
 - [ ] Add few more workout templates
 - [ ] Add some basic/general muscle groups
 - [ ] Add Workout Program Feature (but I don't know what is program yet) (might not be needed for simple and streamlined system)
+- [ ] if possible, add full body visualization of each exercises done and soreness/muscle area (simulate rest periods and recovery)
 
 
 ## License

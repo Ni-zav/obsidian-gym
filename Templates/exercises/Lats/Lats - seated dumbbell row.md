@@ -1,18 +1,17 @@
 ---
-id: 664283
+id: 914515
 date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
 time: <% tp.date.now("HH:mm") %>
 weight: <% await tp.system.prompt("Weight", "", true) %>
 effort: <% await tp.system.suggester(["1 (easy)", "2", "3", "4", "5 (failure)"], ["1", "2", "3", "4", "5"]) %>
-exercise: Core - plank
-muscle_group: Core
-equipment: Bodyweight
+exercise: Lats - seated dumbbell row
+muscle_group: Lats
+equipment: Dumbbell
 note: <% await tp.system.prompt("Note", "", true) %>
-reps: <% await tp.system.prompt("Reps", "60", true) %>
-video_url: nope
-instructions: plank
+reps: <% await tp.system.prompt("Reps", "8", true) %>
+instructions: 's-tier exercise.'
 tags:
-  - exercise
+ - exercise
 ---
 
 ```dataviewjs

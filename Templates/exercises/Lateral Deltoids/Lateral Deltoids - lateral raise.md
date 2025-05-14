@@ -1,16 +1,15 @@
 ---
-id: 605374
+id: 728817
 date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
 time: <% tp.date.now("HH:mm") %>
 weight: <% await tp.system.prompt("Weight", "", true) %>
 effort: <% await tp.system.suggester(["1 (easy)", "2", "3", "4", "5 (failure)"], ["1", "2", "3", "4", "5"]) %>
-exercise: Biceps - Hammer Curl
-muscle_group: Biceps
-equipment: Dumbbell
+exercise: Lateral Deltoids - lateral raise
+muscle_group: Lateral Deltoids
+equipment: Pair of Dumbbells
 note: <% await tp.system.prompt("Note", "", true) %>
-reps: <% await tp.system.prompt("Reps", "8", true) %>
-video_url: "nope"
-instructions: 'hammering away stresses'
+reps: <% await tp.system.prompt("Reps", "15", true) %>
+instructions: 's-tier.'
 tags:
  - exercise
 ---

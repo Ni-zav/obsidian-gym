@@ -159,10 +159,15 @@ The system is highly customizable through:
 - Workout organization
 - Data visualization options
 
-## Roadmap
+## To-do
 - [ ] fix renderRemaining() function
 - [ ] change workout-type to something else (type of workout? push? upper body? cardio? recovery?)
 - [ ] add timed workout functionality (warm up, plank, jog, etc.)
+- [ ] Add some exercises templates
+- [ ] Add few more workout templates
+- [ ] Add some basic/general muscle groups
+- [ ] Add Workout Program Feature (but I don't know what is program yet) (might not be needed for simple and streamlined system)
+
 
 ## License
 

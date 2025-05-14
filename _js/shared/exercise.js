@@ -1,4 +1,3 @@
-
 class exercise
 {
 	renderDescription(n)
@@ -77,138 +76,144 @@ class exercise
 		  return new Date(a['date']) - new Date(b['date']);
 		});
 
-		const datum = performedExercises.map(e=> moment(new Date(e['date'])).format('YYYY-MM-DD'));
+		const dates = performedExercises.map(e=> moment(new Date(e['date'])).format('YYYY-MM-DD'));
+		const weights = performedExercises.map(e=> e['weight'] || 0);
+		const efforts = performedExercises.map(e=> e['effort'] || 0);
+		const reps = performedExercises.map(e=> e['reps'] || 0);
+		
+		// Check if we have any valid weights
+		const hasWeights = weights.length > 0 && !weights.every(value => value == null);
 
-		const weights = performedExercises.map(e=> e['weight']);
-		const efforts = performedExercises.map(e=> e['effort']);
+		// Calculate volumes (weight × reps)
+		const volumes = weights.map((weight, i) => weight * reps[i]);
+		const maxVolume = Math.max(...volumes);
 
-		let weight_ds = {
-		      label: 'Weight',
-		      data: weights,
-		      borderColor: [ 'rgb(76, 0, 51)' ],
-		      //backgroundColor: Utils.transparentize(Utils.CHART_COLORS.red, 0.5),
-		      borderWidth: 3,
-		      yAxisID: 'y',
-		    };
+		// Generate random color for consistent styling
+		const color = { 
+			base: 'rgb(153, 102, 255)',
+			light: 'rgba(153, 102, 255, 0.6)'
+		};
 
 		const datasets = {
-		  labels: datum,
-		  datasets: [
-		    {
-		      label: 'Effort',
-		      data: efforts,
-		      borderColor: [ 'rgb(232, 15, 136)' ],
-		      //backgroundColor: Utils.transparentize(Utils.CHART_COLORS.blue, 0.5),
-		      borderWidth: 3,
-		      yAxisID: 'y1',
-		    }
-		  ]
+			labels: dates,
+			datasets: [
+				{
+					label: `${exercise} (Volume)`,
+					data: volumes,
+					fill: false,
+					borderColor: color.light,
+					backgroundColor: color.light,
+					borderWidth: 2,
+					borderDash: [5, 5],
+					tension: 0.3,
+					pointRadius: 4,
+					pointHitRadius: 10,
+					pointHoverRadius: 6,
+					yAxisID: 'y',
+					display: hasWeights
+				},
+				{
+					label: `${exercise} (Effort)`,
+					data: efforts,
+					fill: false,
+					borderColor: color.base,
+					backgroundColor: color.base,
+					borderWidth: 2,
+					tension: 0.3,
+					pointRadius: 4,
+					pointHitRadius: 10,
+					pointHoverRadius: 6,
+					yAxisID: 'y1'
+				}
+			]
 		};
 
-		console.log('4')
-
-		// Add weight dataset only if weights have been logged for this exercise
-		let hasWeights = weights.length > 0 && !weights.every(value => value == null);
-
-		if(hasWeights)
-			datasets.datasets.push(weight_ds);
-
-		// yScaleText plugin block
-		const yScaleText =
-		{
-			id: 'yScaleText',
-			afterDatasetsDraw(chart, args, options)
-			{
-				const { ctx, chartArea: {top}, scales: {x, y} } = chart;
-				ctx. save();
-				ctx.font = `${options.fontSize}px Arial`;
-				ctx.fillStyle = options.fontColor;
-				ct.fillText('Y Scale Title', 0, top - 15);
-				ctx.restore ();
-				console.log('hej')
-			}
-		};
-
-		console.log('3')
-
-		let scales =
-		{
-			y: {
-				title:
-				{
-					display: true,
-					text: 'Weight'
+		// Create chart configuration
+		const chartData = {
+			type: 'line',
+			data: datasets,
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				interaction: {
+					mode: 'nearest',
+					axis: 'x',
+					intersect: false
 				},
-				grace: 1,
-				type: 'linear',
-				display: true,
-				position: 'left',
-			},
-			y1:
-			{
-				title:
-				{
-					display: true,
-					text: 'Effort'
-				},
-				min: 0,
-				max: 6,
-				ticks:
-				{
-					// Include a dollar sign in the ticks
-					callback: function(value, index, ticks)
-					{
-						return value > 0 && value < 6 ? value : '';
+				scales: {
+					y: {
+						type: 'linear',
+						display: hasWeights,
+						position: 'left',
+						beginAtZero: true,
+						suggestedMax: maxVolume * 1.2, // Add 20% space at top
+						title: {
+							display: true,
+							text: 'Volume (kg×reps)'
+						},
+						grid: {
+							drawOnChartArea: true
+						}
+					},
+					y1: {
+						type: 'linear',
+						display: true,
+						position: 'right',
+						beginAtZero: true,
+						min: 0,
+						max: 5.5,
+						title: {
+							display: true,
+							text: 'Effort (1-5)'
+						},
+						ticks: {
+							stepSize: 1,
+							callback: function(value) {
+								if (value === 0) return '';
+								return value <= 5 ? value : '';
+							}
+						},
+						grid: {
+							drawOnChartArea: false
+						}
 					}
 				},
-				type: 'linear',
-				display: true,
-				position: 'right',
-				// grid line settings
-				grid:
-				{
-					drawOnChartArea: false, // only want the grid lines for one axis to show up
+				plugins: {
+					legend: {
+						position: 'top',
+						labels: {
+							usePointStyle: true,
+							padding: 15
+						}
+					},
+					tooltip: {
+						enabled: true,
+						mode: 'index',
+						intersect: false,
+						callbacks: {
+							label: function(context) {
+								const label = context.dataset.label || '';
+								const value = context.parsed.y;
+								if (label.includes('Volume')) {
+									return `${label}: ${value} (kg×reps)`;
+								}
+								return `${label}: ${value}`;
+							}
+						}
+					}
 				}
 			}
 		};
 
-		// Hide weight axis if no weights have been logged for this exercise
-		if(!hasWeights)
-			scales.y.display = false;
+		// Create a div for the chart with fixed height
+		const chartDiv = n.container.createEl('div');
+		chartDiv.style.height = '300px';
+		chartDiv.style.marginBottom = '20px';
+		chartDiv.style.marginTop = '20px';
 
-		console.log('2')
+		n.window.renderChart(chartData, chartDiv);
 
-		const chartData =
-		{
-			type: 'line',
-			data: datasets,
-			options: {
-			    responsive: true,
-			    interaction: {
-			      mode: 'index',
-			      intersect: false,
-			    },
-			    stacked: false,
-			    layout: {
-				    padding: -5
-				},
-				plugins:
-				{
-					yScaleText:
-					{
-						fontSize: 20,
-						fontColor: 'rgba (255, 26, 104, 1)',
-						title: 'test'
-					}
-				},
-				scales: scales
-		    }
-		}
-
-		console.log('1')
-
-		n.window.renderChart(chartData, n.container);
-
+		// Rest of the function (table rendering)
 		function findPrevExercise(n, exercise)
 		{
 			let exercises = n.dv.pages('#exercise').sort(ex=> ex['date'], 'desc');
@@ -225,7 +230,6 @@ class exercise
 		for(const e of performedExercises.slice(-5))
 		{
 			metadata = app.metadataCache.getFileCache(e.file);
-			console.log('time!');
 			let prev = findPrevExercise(n, e);
 			prevTimeStamp = moment(new Date(prev['date']));
 

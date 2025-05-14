@@ -2,7 +2,7 @@
   "promptDelete": false,
   "showUnsupportedFiles": true,
   "communityPluginSortOrder": "download",
-  "livePreview": false,
+  "livePreview": true,
   "mobileToolbarCommands": [
     "editor:insert-wikilink",
     "editor:insert-embed",
@@ -28,5 +28,6 @@
     "app:open-vault"
   ],
   "alwaysUpdateLinks": true,
-  "showLineNumber": true
+  "showLineNumber": true,
+  "defaultViewMode": "source"
 }

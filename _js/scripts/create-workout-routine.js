@@ -173,6 +173,8 @@ class WorkoutBuilder {
         return [
             "---",
             `workout_title: ${name}`,
+            `date: <% tp.date.now("YYYY-MM-DD") %>`,
+            `time: <% tp.date.now("HH:mm") %>`,
             `exercises: [${exerciseIds.join(", ")}]`,
             `workout_order: [${exerciseIds.join(", ")}]`,
             "type: custom",

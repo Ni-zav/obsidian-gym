@@ -1,6 +1,8 @@
 ---
-id: 5d0d30
-workout_title: pushup
+id: d36ada
+workout_title: testing
+date: 2025-05-14
+time: 14:39
 exercises: [137296, 137296, 137296]
 workout_order: [137296, 137296, 137296]
 type: custom

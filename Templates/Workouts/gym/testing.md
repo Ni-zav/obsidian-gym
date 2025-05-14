@@ -1,8 +1,9 @@
 ---
-id: af7973
-workout_title: test
-exercises: [137296, 137296, 137296, 664283, 664283]
-workout_order: [137296, 137296, 137296, 664283, 664283]
+workout_title: testing
+date: <% tp.date.now("YYYY-MM-DD") %>
+time: <% tp.date.now("HH:mm") %>
+exercises: [137296, 137296, 137296]
+workout_order: [137296, 137296, 137296]
 type: custom
 tags:
  - workout

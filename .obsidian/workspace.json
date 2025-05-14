@@ -13,30 +13,15 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Workout list.md",
+                "file": "Templates/Workouts/gym/hammer-curling.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Workout list"
-            }
-          },
-          {
-            "id": "cc17cf5bd1097449",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Workout list.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Workout list"
+              "title": "hammer-curling"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -120,7 +105,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Workout list.md",
+                "file": "Templates/Workouts/gym/hammer-curling.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -130,7 +115,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Workout list"
+              "title": "Backlinks for hammer-curling"
             }
           },
           {
@@ -168,13 +153,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Workout list.md",
+                "file": "Templates/Workouts/gym/hammer-curling.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Workout list"
+              "title": "Outline of hammer-curling"
             }
           }
         ],
@@ -182,7 +167,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -196,43 +182,43 @@
       "homepage:Open homepage": false
     }
   },
-  "active": "cc17cf5bd1097449",
+  "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
+    "Workout list.md",
+    "Templates/Workouts/gym/hammer-curling.md",
+    "Templates/exercises/Biceps/Biceps - Hammer Curl.md",
+    "Workouts/2025-05-14 - biceps/biceps.md",
+    "Workouts/2025-05-14 - biceps/Log/5.md",
+    "Workouts/2025-05-14 - biceps/Log/4.md",
+    "Workouts/2025-05-14 - biceps/Log/3.md",
+    "Templates/Workouts/gym/biceps.md",
+    "Workouts/2025-05-14 - biceps/Log/2.md",
+    "Templates/exercises/Core/Core - plank.md",
+    "Workouts/2025-05-14 - biceps/Log/1.md",
+    "Workouts/2025-05-14 - biceps/Log",
+    "Workouts/2025-05-14 - biceps",
+    "Templates/exercises/Biceps/Biceps - bicep curl.md",
+    "Templates/exercises/Biceps",
+    "Templates/Workouts/gym/testing.md",
+    "Workouts/2025-05-14 - testing/testing.md",
+    "Workouts/2025-05-14 - testing/Log/5.md",
+    "Workouts/2025-05-14 - testing/Log/4.md",
     "README.md",
     "error-logs.md",
-    "Workout list.md",
     "todo.md",
     "Templates/exercises/Triceps/Triceps - push up.md",
     "Workouts/2025-05-14 - testing/testing 1.md",
-    "Workouts/2025-05-14 - testing/testing.md",
     "Workouts/2025-05-14 - testing/Log/3.md",
     "Workouts/2025-05-14 - testing/Log/2.md",
     "Workouts/2025-05-14 - testing/Log/1.md",
     "Workouts/2025-05-14 - testing/Log",
     "Workouts/2025-05-14 - testing",
-    "Templates/Workouts/gym/testing.md",
     "Workouts/2025-05-14 - pushup/pushup.md",
     "Workouts/2025-05-14 - test/test.md",
-    "Workouts/2025-05-14 - test/Log/2.md",
-    "Workouts/2025-05-14 - test/Log/1.md",
     "Workouts/2025-05-14 - test/Log",
     "Workouts/2025-05-14 - test",
-    "Templates/exercises/Core/Core - plank.md",
-    "Workouts/2025-05-14 - pushup/Log/4.md",
-    "Workouts/2025-05-14 - pushup/Log/3.md",
-    "Workouts/2025-05-14 - pushup/Log/2.md",
-    "Workouts/2025-05-14 - pushup/Log/1.md",
     "Workouts/2025-05-14 - pushup/Log",
     "Workouts/2025-05-14 - pushup",
-    "Templates/Start.md",
-    "Templates/Workouts/gym/test.md",
-    "Templates/exercises/Core",
-    "Templates/Workouts/gym/pushup.md",
-    "Templates/exercises/Triceps",
-    "Workouts/2025-05-14 - test-5/test-5.md",
-    "Templates/exercises/Triceps/Triceps - Push up.md",
-    "Templates/Workouts/gym/test-5.md",
-    "Workouts/2025-05-14 - test-5/Log",
-    "Workouts/2025-05-14 - test-5"
+    "Templates/exercises/Core"
   ]
 }

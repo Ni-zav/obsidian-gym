@@ -1,7 +1,8 @@
 class workout {
     constructor() {
-        // Get utils from customJS if available, otherwise create new instance
+        // Get utils and exercise-library from customJS if available
         this.utils = window.customJS?.utils || new utils();
+        this.exerciseLibrary = window.customJS?.exerciseLibrary || new exerciseLibrary();
     }
 
     renderHeader(context) {
@@ -42,44 +43,74 @@ class workout {
             plannedCounts[id] = (plannedCounts[id] || 0) + 1;
         });
 
-        // Count performed exercises
+        // Get performed exercises and calculate volumes
         const performedCounts = {};
+        const exerciseVolumes = {};
+        
         context.dv.pages("#exercise")
             .where(e => e.workout_id === workoutId)
             .forEach(e => {
                 const id = app.metadataCache.getFileCache(e.file)?.frontmatter?.id;
                 if (id) {
                     performedCounts[id] = (performedCounts[id] || 0) + 1;
+                    // Calculate volume if we have both weight and reps
+                    if (e.weight && e.reps) {
+                        exerciseVolumes[id] = (exerciseVolumes[id] || 0) + (Number(e.weight) * Number(e.reps));
+                    }
                 }
             });
 
         // Create one entry per unique exercise that still has remaining sets
-        const remainingExercises = Object.entries(plannedCounts)
-            .map(([id, plannedCount]) => {
-                const performedCount = performedCounts[id] || 0;
-                const remainingCount = Math.max(0, plannedCount - performedCount);
-                if (remainingCount === 0) return null; // Skip if all sets are done
-                
-                const exerciseInfo = this.getExerciseInfo(id);
-                return {
-                    id,
-                    info: exerciseInfo,
-                    remainingCount,
-                    planned: plannedCount
-                };
-            })
-            .filter(ex => ex !== null); // Remove exercises with no remaining sets
+        const remainingExercises = [];
+        
+        // Get unique exercise IDs
+        const uniqueIds = [...new Set(exerciseIds)];
+        
+        for (const id of uniqueIds) {
+            const performedCount = performedCounts[id] || 0;
+            const plannedCount = plannedCounts[id] || 0;
+            const remainingCount = Math.max(0, plannedCount - performedCount);
+            
+            if (remainingCount === 0) continue; // Skip if all sets are done
+
+            // Find exercise template
+            const exerciseFile = app.vault.getMarkdownFiles()
+                .find(file => {
+                    const cache = app.metadataCache.getFileCache(file);
+                    return cache?.frontmatter?.id === id;
+                });
+
+            if (!exerciseFile) continue;
+
+            const cache = app.metadataCache.getFileCache(exerciseFile);
+            if (!cache?.frontmatter) continue;
+
+            const volume = exerciseVolumes[id] || 0;
+
+            remainingExercises.push({
+                name: cache.frontmatter.exercise || exerciseFile.basename,
+                muscleGroup: cache.frontmatter.muscle_group || "~",
+                equipment: cache.frontmatter.equipment || "~",
+                volume: volume > 0 ? `${volume} kg×reps` : "~",
+                remainingSets: `${remainingCount}/${plannedCount}`
+            });
+        }
+
+        if (remainingExercises.length === 0) {
+            context.container.createEl("p", { text: "No exercises remaining!" });
+            return;
+        }
 
         const tableData = remainingExercises.map(ex => [
-            // Wrap exercise name in [[]] if it's not "Workout start"
-            ex.info.name === "Workout start" ? ex.info.name : `[[${ex.info.name}]]`,
-            ex.info.muscleGroup || "~",
-            ex.info.equipment || "~",
-            `${ex.remainingCount} sets`
+            ex.name === "Workout start" ? ex.name : `[[${ex.name}]]`,
+            ex.muscleGroup,
+            ex.equipment,
+            ex.volume,
+            ex.remainingSets
         ]);
 
         context.dv.table(
-            ["Exercise", "💪🏻-group", "🏋🏼", "Sets"],
+            ["Exercise", "💪🏻-group", "🏋🏼", "Volume", "Sets"],
             tableData
         );
     }

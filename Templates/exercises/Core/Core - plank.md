@@ -9,7 +9,6 @@ muscle_group: Core
 equipment: Bodyweight
 note: <% await tp.system.prompt("Note", "", true) %>
 reps: <% await tp.system.prompt("Reps", "60", true) %>
-sets: 6
 video_url: nope
 instructions: plank
 tags:

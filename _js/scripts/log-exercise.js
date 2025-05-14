@@ -38,6 +38,7 @@ module.exports = async function listFiles(params) {
 
         const exerciseIds = metadata.frontmatter['exercises'] || [];
         const workout_id = metadata.frontmatter['id'];
+
         if (!workout_id) {
             throw new Error("No workout ID found in active file");
         }
@@ -84,7 +85,7 @@ module.exports = async function listFiles(params) {
                 console.log("Found Start template, adding to exercise list");
                 exercises.push(startTemplate);
             } else {
-                console.error("No Start template found in Templates/Start.md!");
+                console.log("No Start template found in Templates/Start.md");
             }
         } else {
             // Get all exercises for this workout that aren't completed
@@ -128,6 +129,12 @@ module.exports = async function listFiles(params) {
             }
         }
 
+        if (sortedExercises.length === 0) {
+            console.log("No exercises available to log");
+            params.variables = { notePath: "" };
+            return;
+        }
+
         // Display files to select
         let notesDisplay = await params.quickAddApi.suggester(
             (file) => {
@@ -146,6 +153,7 @@ module.exports = async function listFiles(params) {
         );
 
         if (!notesDisplay) {
+            console.log("Exercise selection cancelled");
             params.variables = { notePath: "" };
             return;
         }
@@ -170,6 +178,12 @@ module.exports = async function listFiles(params) {
                 },
                 allExercises
             );
+
+            if (!notesDisplay) {
+                console.log("Exercise selection cancelled from all exercises view");
+                params.variables = { notePath: "" };
+                return;
+            }
         }
 
         // Get or create new ID if needed
@@ -205,7 +219,9 @@ module.exports = async function listFiles(params) {
             );
 
             if (!newNote) {
-                throw new Error('Failed to create new note from template');
+                console.log("Note creation cancelled");
+                params.variables = { notePath: "" };
+                return;
             }
 
             // Add workout_id to frontmatter
@@ -216,15 +232,19 @@ module.exports = async function listFiles(params) {
             params.variables = { notePath: newNote.path };
 
         } catch (error) {
-            console.error("Error creating exercise log:", error);
+            console.log("Exercise log creation cancelled:", error.message);
             params.variables = { notePath: "" };
-            throw error;
+            return;
         }
 
     } catch (error) {
-        console.error("Error in listFiles function:", error);
+        if (error.message.includes("No workout ID found")) {
+            console.log("No workout ID found in active file");
+        } else {
+            console.error("Error in listFiles function:", error);
+        }
         params.variables = { notePath: "" };
-        throw error;
+        return;
     }
 }
 

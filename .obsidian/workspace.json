@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Workout list.md",
+                "file": "Workouts/2025-05-14 - pushup/pushup.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Workout list"
+              "title": "pushup"
             }
           }
         ]
@@ -183,15 +183,22 @@
   },
   "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
+    "Workouts/2025-05-14 - pushup/Log/4.md",
+    "Workouts/2025-05-14 - pushup/Log/3.md",
+    "Workout list.md",
+    "Templates/exercises/Triceps/Triceps - push up.md",
+    "Workouts/2025-05-14 - pushup/pushup.md",
+    "Workouts/2025-05-14 - pushup/Log/2.md",
+    "Workouts/2025-05-14 - pushup/Log/1.md",
+    "Workouts/2025-05-14 - pushup/Log",
+    "Workouts/2025-05-14 - pushup",
     "Templates/Start.md",
     "Templates/Workouts/gym/test.md",
-    "Workout list.md",
     "Templates/exercises/Core/Core - plank.md",
     "Templates/exercises/Core",
     "README.md",
     "error-logs.md",
     "Templates/Workouts/gym/pushup.md",
-    "Templates/exercises/Triceps/Triceps - push up.md",
     "Templates/exercises/Triceps",
     "Workouts/2025-05-14 - test-5/test-5.md",
     "Templates/exercises/Triceps/Triceps - Push up.md",
@@ -208,16 +215,9 @@
     "Templates/Workouts/gym/test-2.md",
     "Templates/Workouts/gym/test-1.md",
     "Templates/Workouts/gym/push-up.md",
-    "Workouts/2025-05-14 - walk/Log/1.md",
-    "Workouts/2025-05-14 - push-up--that-s-it-/Log/5.md",
-    "Workouts/2025-05-14 - push-up--that-s-it-/Log/4.md",
-    "Workouts/2025-05-14 - push-up--that-s-it-/Log/3.md",
-    "Workouts/2025-05-14 - push-up--that-s-it-/Log/2.md",
     "Workouts/2025-05-14 - push-up--that-s-it-/Log",
     "Workouts/2025-05-14 - push-up--that-s-it-",
     "Workouts/2025-05-14 - walk/Log",
-    "Workouts/2025-05-14 - walk",
-    "Templates/exercises/Lower Back",
-    "Workouts/2025-05-14 - pushup/Log"
+    "Workouts/2025-05-14 - walk"
   ]
 }

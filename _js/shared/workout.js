@@ -104,7 +104,7 @@ class workout {
             e.reps || "~",
             e.effort || "~",
             moment(e.date).format("HH:mm"),
-            e.weight && e.reps ? `${e.weight * e.reps} kg×reps` : "-"
+            e.weight && e.reps ? `${e.weight * e.reps} kg×reps` : "~"
         ]);
 
         context.dv.table(

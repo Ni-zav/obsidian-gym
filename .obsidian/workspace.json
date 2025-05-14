@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Templates/exercises/Triceps/Triceps - push up.md",
+                "file": "README.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Triceps - push up"
+              "title": "README"
             }
           }
         ],
@@ -120,7 +120,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Workout list.md",
+                "file": "README.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -130,7 +130,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Workout list"
+              "title": "Backlinks for README"
             }
           },
           {
@@ -168,21 +168,21 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Workouts/2025-05-13 - Workout 2-1 Abs-Back-Biceps-Triceps/Log/2.md",
+                "file": "README.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of 2"
+              "title": "Outline of README"
             }
           }
-        ]
+        ],
+        "currentTab": 3
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -198,25 +198,26 @@
   },
   "active": "cc17cf5bd1097449",
   "lastOpenFiles": [
+    "error-logs.md",
+    "Workout list.md",
+    "README.md",
+    "todo.md",
+    "Templates/exercises/Triceps/Triceps - push up.md",
     "Workouts/2025-05-14 - testing/testing 1.md",
     "Workouts/2025-05-14 - testing/testing.md",
     "Workouts/2025-05-14 - testing/Log/3.md",
     "Workouts/2025-05-14 - testing/Log/2.md",
-    "Workout list.md",
     "Workouts/2025-05-14 - testing/Log/1.md",
     "Workouts/2025-05-14 - testing/Log",
     "Workouts/2025-05-14 - testing",
     "Templates/Workouts/gym/testing.md",
     "Workouts/2025-05-14 - pushup/pushup.md",
     "Workouts/2025-05-14 - test/test.md",
-    "error-logs.md",
-    "todo.md",
     "Workouts/2025-05-14 - test/Log/2.md",
     "Workouts/2025-05-14 - test/Log/1.md",
     "Workouts/2025-05-14 - test/Log",
     "Workouts/2025-05-14 - test",
     "Templates/exercises/Core/Core - plank.md",
-    "Templates/exercises/Triceps/Triceps - push up.md",
     "Workouts/2025-05-14 - pushup/Log/4.md",
     "Workouts/2025-05-14 - pushup/Log/3.md",
     "Workouts/2025-05-14 - pushup/Log/2.md",
@@ -226,7 +227,6 @@
     "Templates/Start.md",
     "Templates/Workouts/gym/test.md",
     "Templates/exercises/Core",
-    "README.md",
     "Templates/Workouts/gym/pushup.md",
     "Templates/exercises/Triceps",
     "Workouts/2025-05-14 - test-5/test-5.md",

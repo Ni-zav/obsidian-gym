@@ -1,4 +1,4 @@
-
+Lastly, use that created routine(s) here for today's workout!
 ```meta-bind-button
 label: Start Today's Workout
 icon: ""
@@ -14,7 +14,7 @@ actions:
     command: quickadd:choice:c547bcae-f9e1-462e-be41-5c729807d8ac
 
 ```
----
+Secondly, create your routine here:
 ```meta-bind-button
 label: Create Workout Routine
 icon: ""
@@ -30,7 +30,7 @@ actions:
     command: quickadd:choice:1ce4bca4-4630-4c48-944d-19adf1c3f623
 
 ```
----
+If you haven't add any exercise, start here:
 ```meta-bind-button
 label: Add New Exercise
 style: primary
@@ -45,19 +45,23 @@ actions:
     command: quickadd:choice:aeaf28e2-ba08-4988-948d-79b10bde8deb
 
 ```
+---
+# Workout List
 
 ```dataviewjs
 
 let pages = dv.pages('"Workouts" and #workout').sort(p=> p.date, "desc");
 let workouts = []
 
+dv.header(3,"After creating today's workout, it will shows here in a few seconds.")
 dv.header(3, "Total number of workouts: " + pages.length.toString());
 
 dv.table(["Last workouts", "Date", "Workout type"], pages.slice(0,5)
 	.map(e=> [e.file.link, moment(e['date']).format('YYYY-MM-DD'), e['workout']]))
 
 ```
-
+---
+# Heatmap
 ```dataviewjs
 dv.span("** 😊 Workouts  😥**") /* optional ⏹️💤⚡⚠🧩↑↓⏳📔💾📁📝🔄📝🔀⌨️🕸️📅🔍✨ */
 const calendarData = {
@@ -105,5 +109,5 @@ for (let page of dv.pages('#workout'))
 
 renderHeatmapCalendar(this.container, calendarData)
 ```
-
+---
 

@@ -159,6 +159,11 @@ The system is highly customizable through:
 - Workout organization
 - Data visualization options
 
+## Roadmap
+- [ ] fix renderRemaining() function
+- [ ] change workout-type to something else (type of workout? push? upper body? cardio? recovery?)
+- [ ] add timed workout functionality (warm up, plank, jog, etc.)
+
 ## License
 
 This project is open source and available under the MIT License.

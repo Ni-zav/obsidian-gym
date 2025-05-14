@@ -161,11 +161,11 @@ The system is highly customizable through:
 
 ## To-do
 - [x] fix renderRemaining() function
-- [ ] change workout-type to something else (type of workout? push? upper body? cardio? recovery?)
+- [x] change workout-type to something else (type of workout? push? upper body? cardio? recovery?)
 - [ ] add timed workout functionality (warm up, plank, jog, etc.)
-- [ ] Add some exercises templates
-- [ ] Add few more workout templates
-- [ ] Add some basic/general muscle groups
+- [x] Add some exercises templates
+- [x] Add few more workout templates
+- [x] Add some basic/general muscle groups
 - [ ] Add Workout Program Feature (but I don't know what is program yet) (might not be needed for simple and streamlined system)
 - [ ] if possible, add full body visualization of each exercises done and soreness/muscle area (simulate rest periods and recovery)
 

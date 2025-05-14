@@ -3,15 +3,15 @@ id: 914515
 date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
 time: <% tp.date.now("HH:mm") %>
 weight: <% await tp.system.prompt("Weight", "", true) %>
+reps: <% await tp.system.prompt("Reps", "8", true) %>
 effort: <% await tp.system.suggester(["1 (easy)", "2", "3", "4", "5 (failure)"], ["1", "2", "3", "4", "5"]) %>
 exercise: Lats - seated dumbbell row
 muscle_group: Lats
 equipment: Dumbbell
 note: <% await tp.system.prompt("Note", "", true) %>
-reps: <% await tp.system.prompt("Reps", "8", true) %>
-instructions: 's-tier exercise.'
+instructions: s-tier exercise.
 tags:
- - exercise
+  - exercise
 ---
 
 ```dataviewjs

@@ -1,10 +1,12 @@
 ---
-workout_title: push-1
-date: <% tp.date.now("YYYY-MM-DD") %>
-time: <% tp.date.now("HH:mm") %>
-exercises: [830919, 830919, 830919, 728817, 728817, 728817, 808829, 808829, 808829, 379969, 379969, 379969, 379969]
-workout_order: [830919, 830919, 830919, 728817, 728817, 728817, 808829, 808829, 808829, 379969, 379969, 379969, 379969]
-type: custom
+id: 13498a
+workout_title: push-2
+date: 2025-05-14
+time: 21:50
+exercises: [276860, 276860, 276860, 802427, 802427, 802427, 802427, 802427]
+workout_order: [276860, 276860, 276860, 802427, 802427, 802427, 802427, 802427]
+workout_type: Weight Training
+workout_place: Home
 tags:
  - workout
 ---

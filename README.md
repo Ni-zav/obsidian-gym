@@ -168,7 +168,10 @@ The system is highly customizable through:
 - [x] Add some basic/general muscle groups
 - [ ] Add Workout Program Feature (but I don't know what is program yet) (might not be needed for simple and streamlined system)
 - [ ] if possible, add full body visualization of each exercises done and soreness/muscle area (simulate rest periods and recovery)
-
+- [ ] hide properties is default on notes inside workouts folder
+- [ ] change order of input fields to be more user-friendly
+- [ ] fix chart logic in workout routine
+- [ ] 
 
 ## License
 

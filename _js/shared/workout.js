@@ -71,7 +71,8 @@ class workout {
             .filter(ex => ex !== null); // Remove exercises with no remaining sets
 
         const tableData = remainingExercises.map(ex => [
-            ex.info.name,
+            // Wrap exercise name in [[]] if it's not "Workout start"
+            ex.info.name === "Workout start" ? ex.info.name : `[[${ex.info.name}]]`,
             ex.info.muscleGroup || "~",
             ex.info.equipment || "~",
             `${ex.remainingCount} sets`
@@ -96,10 +97,8 @@ class workout {
         if (performed.length === 0) {
             context.container.createEl("p", { text: "No exercises performed yet" });
             return;
-        }
-
-        const tableData = performed.map(e => [
-            e.exercise,
+        }        const tableData = performed.map(e => [
+            e.exercise === "Workout start" ? e.exercise : `[[${e.exercise}]]`,
             e.weight ? `${e.weight} kg` : "~",
             e.reps || "~",
             e.effort || "~",
@@ -334,10 +333,10 @@ class workout {
                                     return `${label}: ${value}`;
                                 }
                             }
+                            }
                         }
                     }
-                }
-            };
+                };
 
             // Create a div for the chart with a fixed height
             const chartDiv = context.container.createEl('div');

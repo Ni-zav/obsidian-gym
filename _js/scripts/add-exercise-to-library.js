@@ -54,7 +54,6 @@ module.exports = async function addExerciseToLibrary(params) {
             `muscle_group: ${muscleGroup}`,            `equipment: ${equipment}`,
             `note: <% await tp.system.prompt("Note", "", true) %>`,
             `reps: <% await tp.system.prompt("Reps", "${defaultReps}", true) %>`,
-            "sets: 6",
             videoUrl ? `video_url: "${videoUrl}"` : null,
             `instructions: '${description}'`,
             "tags:",

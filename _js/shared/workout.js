@@ -46,6 +46,19 @@ class workout {
         const exerciseIds = metadata.frontmatter.exercises || [];
         const workoutId = metadata.frontmatter.id;
 
+        // Debug: Log all #exercise pages for this workout
+        const allExercisePages = context.dv.pages("#exercise").where(e => e.workout_id === workoutId).array();
+        console.log('All #exercise pages for workoutId', workoutId, allExercisePages);
+        // Hide remaining exercises if workout has ended
+        const hasEndedArr = context.dv.pages("#exercise")
+            .where(e => e.workout_id === workoutId && e.exercise === 'Workout end').array();
+        console.log('Workout end entries found:', hasEndedArr);
+        const hasEnded = hasEndedArr.length > 0;
+        if (hasEnded) {
+            context.container.createEl("p", { text: "Workout ended. No exercises remaining!" });
+            return;
+        }
+
         // Count how many times each exercise ID appears in the planned workout
         const plannedCounts = {};
         exerciseIds.forEach(id => {
@@ -134,11 +147,15 @@ class workout {
             .where(e => e.workout_id === metadata.frontmatter.id)
             .sort(e => e.date);
 
+        // Debug: Log all performed exercises
+        console.log('Performed exercises for workout', metadata.frontmatter.id, performed.array ? performed.array() : performed);
+
         if (performed.length === 0) {
             context.container.createEl("p", { text: "No exercises performed yet" });
             return;
-        }        const tableData = performed.map(e => [
-            e.exercise === "Workout start" ? e.exercise : `[[${e.exercise}]]`,
+        }
+        const tableData = performed.map(e => [
+            (e.exercise === "Workout start" || e.exercise === "Workout end") ? e.exercise : `[[${e.exercise}]]`,
             e.weight ? `${e.weight} kg` : "~",
             e.reps || "~",
             e.effort || "~",
@@ -218,6 +235,9 @@ class workout {
             .where(e => e.workout_id === metadata.frontmatter.id)
             .sort(e => e.time || e.date);
 
+        // Debug: Log all performed exercises and workout end time
+        console.log('EffortChart performed:', performed.array ? performed.array() : performed);
+
         if (performed.length === 0) return;
 
         // Find workout start and end times
@@ -225,6 +245,7 @@ class workout {
         const endLog = performed.find(e => e.exercise === "Workout end");
         const workoutStartTime = startLog ? (startLog.time ? `${metadata.frontmatter.date}T${startLog.time}` : startLog.date) : null;
         const workoutEndTime = endLog ? (endLog.time ? `${metadata.frontmatter.date}T${endLog.time}` : endLog.date) : null;
+        console.log('workoutStartTime:', workoutStartTime, 'workoutEndTime:', workoutEndTime);
 
         // Group exercises by their name/type (excluding start/end)
         const exerciseGroups = {};
@@ -317,12 +338,15 @@ class workout {
                 type: 'line',
                 xMin: workoutEndTime,
                 xMax: workoutEndTime,
-                borderColor: 'black',
+                borderColor: 'red', // Make visible
                 borderWidth: 2,
                 label: {
                     content: 'Workout End',
                     enabled: true,
-                    position: 'end'
+                    position: 'end',
+                    color: 'red',
+                    backgroundColor: 'white',
+                    font: { weight: 'bold' }
                 }
             };
         }

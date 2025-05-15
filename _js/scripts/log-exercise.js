@@ -36,6 +36,12 @@ module.exports = async function listFiles(params) {
             throw new Error("No frontmatter found in active file");
         }
 
+        // Always define newId and update workout file if needed, before any use
+        const newId = metadata.frontmatter['id'] || generateGuid();
+        if (!metadata.frontmatter['id']) {
+            await update('id', newId, activeFile.path);
+        }
+
         const exerciseIds = metadata.frontmatter['exercises'] || [];
         const workout_id = metadata.frontmatter['id'];
 
@@ -188,9 +194,12 @@ module.exports = async function listFiles(params) {
                 params.variables = { notePath: "" };
                 return;
             }
-            // Add workout_id to frontmatter
+            // Add workout_id to frontmatter (ensure it is present, not duplicated, and after ---)
             let content = await app.vault.read(newNote);
-            content = content.replace(/---\n+/m, `---\nworkout_id: ${newId}\n`);
+            // Remove any existing workout_id line
+            content = content.replace(/^workout_id:.*\r?\n?/m, '');
+            // Insert workout_id after --- (handle both \n and \r\n)
+            content = content.replace(/---\r?\n/, `---\nworkout_id: ${newId}\n`);
             await app.vault.modify(newNote, content);
             params.variables = { notePath: newNote.path };
             return;
@@ -222,12 +231,6 @@ module.exports = async function listFiles(params) {
                 params.variables = { notePath: "" };
                 return;
             }
-        }
-
-        // Get or create new ID if needed
-        const newId = metadata.frontmatter['id'] || generateGuid();
-        if (!metadata.frontmatter['id']) {
-            await update('id', newId, activeFile.path);
         }
 
         try {

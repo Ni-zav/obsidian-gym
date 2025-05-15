@@ -73,6 +73,7 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - [ ] fix chart logic in workout routine
 - [ ] fix chart on exercise, x-axis should be time and date, not just date.
 - [ ] add demo video
+- [ ] add relation between equipment and place for better exercises selection
 
 ## License
 

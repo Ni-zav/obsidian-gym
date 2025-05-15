@@ -59,7 +59,7 @@ dv.header(3, "Total number of workouts: " + pages.length.toString());
 const span = document.createElement('span');
 
 dv.table(["Last workouts", "Date", "Type", "Place"], pages.slice(0,5)
-	.map(e=> [e.file.link, span.innerText = `[[${moment(e['date']).format('YYYY-MM-DD')}]]`, e['workout_type'] || "Not specified", e['workout_place'] || "Not specified"]))
+	.map(e=> [e.file.link, `[[${e.date.toFormat("yyyy-MM-dd")}]]`, e['workout_type'] || "Not specified", e['workout_place'] || "Not specified"]))
 
 ```
 ---

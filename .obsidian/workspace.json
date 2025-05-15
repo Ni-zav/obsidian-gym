@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "README.md",
+                "file": "Workout list.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "README"
+              "title": "Workout list"
             }
           }
         ]
@@ -184,7 +184,11 @@
   },
   "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
+    "Templates/Workouts/gym/upper-body-1.md",
+    "Workouts/2025-05-14 - push-2/push-2.md",
     "Workout list.md",
+    "README.md",
+    "error-logs.md",
     "Templates/exercises/Abs/Abs - leg raises.md",
     "Templates/exercises/Biceps/Biceps - dumbbells hammer curl.md",
     "Templates/exercises/Calves/Calves - single leg calf raises.md",
@@ -197,11 +201,9 @@
     "Templates/exercises/Shoulders/Shoulders - pike push up.md",
     "Templates/exercises/Triceps/Triceps - dips.md",
     "Templates/exercises/Triceps/Triceps - dumbbells skull crusher.md",
-    "Workouts/2025-05-14 - push-2/push-2.md",
     "Workouts/2025-05-14 - push-2/Log/8.md",
     "Templates/exercises/Upper Body/Upper Body - push up.md",
     "Workouts/2025-05-14 - push-2/Log/7.md",
-    "README.md",
     "Workouts/2025-05-14 - push-2/Log/6.md",
     "Workouts/2025-05-14 - push-2/Log/5.md",
     "Workouts/2025-05-14 - push-2/Log/4.md",
@@ -210,8 +212,6 @@
     "Workouts/2025-05-14 - push-2/Log/1.md",
     "Workouts/2025-05-14 - push-2/Log",
     "Workouts/2025-05-14 - push-2",
-    "Templates/Workouts/gym/pull-1.md",
-    "Templates/Workouts/gym/push-1.md",
     "Workouts/2025-05-14 - pull-1/Log",
     "Workouts/2025-05-14 - pull-1",
     "Workouts/2025-05-14 - upper-body-1/Log",

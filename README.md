@@ -14,78 +14,6 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - ⚡ Quick exercise logging
 - 📅 Calendar heatmap for workout tracking
 
-## System Overview
-
-### Core Components
-
-1. **Workout Management**
-   - Create custom workout routines
-   - Track sets, reps, weights, and effort
-   - Monitor workout completion
-   - Real-time progress visualization
-
-2. **Exercise Library**
-   - Organized by muscle groups
-   - Exercise details with instructions
-   - Support for video demonstrations
-   - Equipment tracking
-
-3. **Progress Tracking**
-   - Weight progression charts
-   - Effort tracking
-   - Volume calculations
-   - Historical performance view
-
-4. **Timer System**
-   - Rest timer with presets
-   - Workout duration tracking
-   - Visual and audio cues
-
-### File Structure
-
-```
-📁 _js/              # Core JavaScript functionality
-├── 📁 scripts/      # Command scripts
-└── 📁 shared/       # Shared utilities and classes
-
-📁 Templates/        # Template files
-├── 📁 exercises/    # Exercise templates
-└── 📁 Workouts/    # Workout templates
-
-📁 Workouts/        # Active workout files
-└── 📁 [DATE]/      # Date-organized workouts
-    └── 📁 Log/     # Individual exercise logs
-```
-
-## Required Plugins
-
-1. [Dataview](https://github.com/blacksmithgu/obsidian-dataview) - Data querying and visualization
-2. [Meta Bind](https://github.com/mProjectsCode/obsidian-meta-bind-plugin) - Enhanced UI controls
-3. [Templater](https://github.com/SilentVoid13/Templater) - Advanced templating
-4. [QuickAdd](https://github.com/chhoumann/quickadd) - Quick actions and macros
-5. [CustomJS](https://github.com/saml-dev/obsidian-custom-js) - Custom JavaScript support
-6. [Obsidian Charts](https://github.com/phibr0/obsidian-charts) - Data visualization
-7. [Heatmap Calendar](https://github.com/Richardsl/heatmap-calendar-obsidian) - Workout calendar view
-
-## Setup Instructions
-
-1. **Install Required Plugins**
-   - Install all plugins listed above through Obsidian's Community Plugins
-
-2. **Configure CustomJS**
-   - Enable CustomJS plugin
-   - Point to the '_js/shared' folder in settings
-
-3. **Configure QuickAdd**
-   Add the following macros:
-   - Start Workout
-   - Log Exercise
-   - Create Workout Routine
-   - Add Exercise to Library
-
-4. **Configure Templater**
-   - Set template folder to 'Templates'
-   - Enable folder templates
 
 ## Usage Guide
 
@@ -121,43 +49,15 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
    - Instructions
    - Optional video URL
 
-## Features In Detail
+## Plugins
 
-### Exercise Tracking
-- Weight progression
-- Effort tracking (1-5 scale)
-- Set/rep counting
-- Rest timing
-- Notes and form cues
-
-### Data Visualization
-- Effort charts
-- Volume tracking
-- Weight progression
-- Calendar heatmap
-
-### Templates
-- Workout templates
-- Exercise templates
-- Custom exercise support
-- Flexible organization
-
-## Mobile Support
-
-The vault is fully compatible with Obsidian Mobile, featuring:
-- Touch-friendly controls
-- Responsive layouts
-- Quick-access buttons
-- Mobile-optimized views
-
-## Customization
-
-The system is highly customizable through:
-- JavaScript customization
-- Template modification
-- Custom exercise types
-- Workout organization
-- Data visualization options
+1. [Dataview](https://github.com/blacksmithgu/obsidian-dataview) - Data querying and visualization
+2. [Meta Bind](https://github.com/mProjectsCode/obsidian-meta-bind-plugin) - Enhanced UI controls
+3. [Templater](https://github.com/SilentVoid13/Templater) - Advanced templating
+4. [QuickAdd](https://github.com/chhoumann/quickadd) - Quick actions and macros
+5. [CustomJS](https://github.com/saml-dev/obsidian-custom-js) - Custom JavaScript support
+6. [Obsidian Charts](https://github.com/phibr0/obsidian-charts) - Data visualization
+7. [Heatmap Calendar](https://github.com/Richardsl/heatmap-calendar-obsidian) - Workout calendar view
 
 ## To-do
 - [x] fix renderRemaining() function
@@ -172,6 +72,7 @@ The system is highly customizable through:
 - [x] change order of input fields to be more user-friendly
 - [ ] fix chart logic in workout routine
 - [ ] fix chart on exercise, x-axis should be time and date, not just date.
+- [ ] add demo video
 
 ## License
 
@@ -181,8 +82,3 @@ This project is open source and available under the MIT License.
 
 - Original [obsidian-gym-log](https://github.com/martinjo/obsidian-gym-log) by martinjo
 - Obsidian Community for various plugins
-- Contributors and testers
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit pull requests or create issues for bugs and feature requests.

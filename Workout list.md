@@ -1,7 +1,6 @@
-Lastly, use that created routine(s) here for today's workout!
+If you haven't add any exercise, start here to add some exercises:
 ```meta-bind-button
-label: Start Today's Workout
-icon: ""
+label: Add New Exercise
 style: primary
 class: ""
 cssStyle: ""
@@ -11,7 +10,7 @@ id: ""
 hidden: false
 actions:
   - type: command
-    command: quickadd:choice:c547bcae-f9e1-462e-be41-5c729807d8ac
+    command: quickadd:choice:aeaf28e2-ba08-4988-948d-79b10bde8deb
 
 ```
 Secondly, create your routine here:
@@ -30,9 +29,12 @@ actions:
     command: quickadd:choice:1ce4bca4-4630-4c48-944d-19adf1c3f623
 
 ```
-If you haven't add any exercise, start here:
+---
+
+Lastly, start that created routine(s) here for today's workout! (and always use this to start your workout)
 ```meta-bind-button
-label: Add New Exercise
+label: Start Today's Workout
+icon: ""
 style: primary
 class: ""
 cssStyle: ""
@@ -42,7 +44,7 @@ id: ""
 hidden: false
 actions:
   - type: command
-    command: quickadd:choice:aeaf28e2-ba08-4988-948d-79b10bde8deb
+    command: quickadd:choice:c547bcae-f9e1-462e-be41-5c729807d8ac
 
 ```
 ---
@@ -53,8 +55,7 @@ actions:
 let pages = dv.pages('"Workouts" and #workout').sort(p=> p.date, "desc");
 let workouts = []
 
-dv.header(3,"After creating today's workout, it will shows here in a few seconds.")
-dv.header(3, "Total number of workouts: " + pages.length.toString());
+dv.paragraph("After creating today's workout, it will shows here in a few seconds.\nTotal number of workouts: " + pages.length.toString());
 
 const span = document.createElement('span');
 

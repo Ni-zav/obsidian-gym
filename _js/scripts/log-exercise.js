@@ -127,6 +127,8 @@ module.exports = async function listFiles(params) {
             if (Object.keys(exerciseCounts).some(id => !isExerciseCompleted(id))) {
                 sortedExercises.push({ basename: 'Show all exercises' });
             }
+            // Add 'End Workout' option if workout has started
+            sortedExercises.push({ basename: 'End Workout' });
         }
 
         if (sortedExercises.length === 0) {
@@ -140,7 +142,7 @@ module.exports = async function listFiles(params) {
             (file) => {
                 if (!file?.basename) return 'Unknown';
                 if (file.basename === 'Show all exercises') return file.basename;
-                
+                if (file.basename === 'End Workout') return file.basename;
                 const id = cache.getFileCache(file)?.frontmatter?.id;
                 if (id) {
                     const performed = performedCounts[id] || 0;
@@ -155,6 +157,42 @@ module.exports = async function listFiles(params) {
         if (!notesDisplay) {
             console.log("Exercise selection cancelled");
             params.variables = { notePath: "" };
+            return;
+        }
+
+        // Handle End Workout selection
+        if (notesDisplay.basename === 'End Workout') {
+            // Log End.md in Log folder
+            const endTemplate = app.vault.getAbstractFileByPath('Templates/End.md');
+            if (!endTemplate) {
+                throw new Error('Templates/End.md not found');
+            }
+            const parentFolder = app.vault.getAbstractFileByPath(activeFile.path).parent;
+            if (!parentFolder) {
+                throw new Error('Could not find parent folder of active file');
+            }
+            let targetFolder = app.vault.getAbstractFileByPath(parentFolder.path + "/Log");
+            if (!targetFolder) {
+                await app.vault.createFolder(parentFolder.path + "/Log");
+                targetFolder = app.vault.getAbstractFileByPath(parentFolder.path + "/Log");
+            }
+            const fileName = ((targetFolder.children?.length || 0) + 1).toString();
+            const newNote = await templater.create_new_note_from_template(
+                endTemplate,
+                targetFolder,
+                fileName,
+                false
+            );
+            if (!newNote) {
+                console.log("End note creation cancelled");
+                params.variables = { notePath: "" };
+                return;
+            }
+            // Add workout_id to frontmatter
+            let content = await app.vault.read(newNote);
+            content = content.replace(/---\n+/m, `---\nworkout_id: ${newId}\n`);
+            await app.vault.modify(newNote, content);
+            params.variables = { notePath: newNote.path };
             return;
         }
 

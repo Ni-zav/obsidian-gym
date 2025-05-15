@@ -29,5 +29,6 @@
   ],
   "alwaysUpdateLinks": true,
   "showLineNumber": true,
-  "defaultViewMode": "source"
+  "defaultViewMode": "source",
+  "readableLineLength": false
 }

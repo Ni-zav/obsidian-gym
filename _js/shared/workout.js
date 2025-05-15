@@ -213,57 +213,62 @@ class workout {
         const metadata = app.metadataCache.getFileCache(current.file);
         if (!metadata?.frontmatter?.id) return;
 
+        // Get all performed exercises for this workout
         const performed = context.dv.pages("#exercise")
             .where(e => e.workout_id === metadata.frontmatter.id)
-            .sort(e => e.date);
+            .sort(e => e.time || e.date);
 
         if (performed.length === 0) return;
 
-        // Group exercises by their name/type
+        // Find workout start and end times
+        const startLog = performed.find(e => e.exercise === "Workout start");
+        const endLog = performed.find(e => e.exercise === "Workout end");
+        const workoutStartTime = startLog ? (startLog.time ? `${metadata.frontmatter.date}T${startLog.time}` : startLog.date) : null;
+        const workoutEndTime = endLog ? (endLog.time ? `${metadata.frontmatter.date}T${endLog.time}` : endLog.date) : null;
+
+        // Group exercises by their name/type (excluding start/end)
         const exerciseGroups = {};
         performed.forEach(p => {
-            if (p.date && (p.effort || (p.weight && p.reps))) {
+            if ((p.time || p.date) && (p.effort || (p.weight && p.reps)) && p.exercise !== "Workout start" && p.exercise !== "Workout end") {
                 if (!exerciseGroups[p.exercise]) {
                     exerciseGroups[p.exercise] = {
-                        dates: [],
+                        times: [],
                         efforts: [],
                         volumes: [],
                         weights: [],
                         reps: []
                     };
                 }
-                exerciseGroups[p.exercise].dates.push(moment(new Date(p.date)).format('HH:mm'));
+                // Use ISO string for x-axis
+                const label = p.time ? `${metadata.frontmatter.date}T${p.time}` : p.date;
+                exerciseGroups[p.exercise].times.push(label);
                 exerciseGroups[p.exercise].efforts.push(Number(p.effort) || 0);
                 exerciseGroups[p.exercise].weights.push(Number(p.weight) || 0);
                 exerciseGroups[p.exercise].reps.push(Number(p.reps) || 0);
-                // Calculate volume (weight × reps)
                 const volume = (Number(p.weight) || 0) * (Number(p.reps) || 0);
                 exerciseGroups[p.exercise].volumes.push(volume);
             }
         });
 
-        // Generate colors for each exercise
+        // Generate colors for each exercise (unchanged)
         const colors = {
             'Triceps - Push up': { base: 'rgb(153, 102, 255)', light: 'rgba(153, 102, 255, 0.6)' }
         };
 
-        // Create datasets for each exercise
+        // Create datasets for each exercise (unchanged)
         const datasets = [];
         let maxVolume = 0;
-
         Object.entries(exerciseGroups).forEach(([exercise, data]) => {
             const color = colors[exercise] || { 
                 base: `hsl(${Math.random() * 360}, 70%, 50%)`,
                 light: `hsla(${Math.random() * 360}, 70%, 50%, 0.6)`
             };
-
-            // Add volume dataset
+            // Volume dataset
             const volumes = data.volumes;
             maxVolume = Math.max(maxVolume, ...volumes);
-
             datasets.push({
                 label: `${exercise} (Volume)`,
-                data: volumes,
+                data: data.times.map((t, i) => ({ x: t, y: volumes[i] })),
                 fill: false,
                 borderColor: color.light,
                 backgroundColor: color.light,
@@ -275,11 +280,10 @@ class workout {
                 pointHoverRadius: 6,
                 yAxisID: 'y'
             });
-
-            // Add effort dataset
+            // Effort dataset
             datasets.push({
                 label: `${exercise} (Effort)`,
-                data: data.efforts,
+                data: data.times.map((t, i) => ({ x: t, y: data.efforts[i] })),
                 fill: false,
                 borderColor: color.base,
                 backgroundColor: color.base,
@@ -292,17 +296,46 @@ class workout {
             });
         });
 
+        // Chart.js annotation for workout start/end
+        const annotations = {};
+        if (workoutStartTime) {
+            annotations.workoutStart = {
+                type: 'line',
+                xMin: workoutStartTime,
+                xMax: workoutStartTime,
+                borderColor: 'red',
+                borderWidth: 2,
+                label: {
+                    content: 'Workout Start',
+                    enabled: true,
+                    position: 'start'
+                }
+            };
+        }
+        if (workoutEndTime) {
+            annotations.workoutEnd = {
+                type: 'line',
+                xMin: workoutEndTime,
+                xMax: workoutEndTime,
+                borderColor: 'black',
+                borderWidth: 2,
+                label: {
+                    content: 'Workout End',
+                    enabled: true,
+                    position: 'end'
+                }
+            };
+        }
+
         try {
-            // Check if exerciseGroups exists and has values
             if (!exerciseGroups || Object.values(exerciseGroups).length === 0) {
                 console.warn('No exercise groups found to render chart');
                 return;
             }
-
             const chartData = {
                 type: 'line',
                 data: {
-                    labels: Object.values(exerciseGroups)[0].dates,
+                    labels: [], // not used with time scale
                     datasets: datasets
                 },
                 options: {
@@ -314,6 +347,19 @@ class workout {
                         intersect: false
                     },
                     scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'minute',
+                                displayFormats: {
+                                    minute: 'HH:mm:ss'
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        },
                         y: {
                             type: 'linear',
                             display: true,
@@ -359,6 +405,9 @@ class workout {
                                 padding: 15
                             }
                         },
+                        annotation: {
+                            annotations: annotations
+                        },
                         tooltip: {
                             enabled: true,
                             mode: 'index',
@@ -377,7 +426,6 @@ class workout {
                         }
                     }
                 };
-
             // Create a div for the chart with a fixed height
             const chartDiv = context.container.createEl('div');
             chartDiv.style.height = '300px';

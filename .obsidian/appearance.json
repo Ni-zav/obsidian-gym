@@ -1,6 +1,6 @@
 {
-  "theme": "obsidian",
-  "accentColor": "",
+  "theme": "moonstone",
+  "accentColor": "#976bff",
   "enabledCssSnippets": [
     "gym-log-enhanced",
     "gym-log",

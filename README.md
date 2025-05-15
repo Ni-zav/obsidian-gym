@@ -70,8 +70,8 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - [ ] if possible, add full body visualization of each exercises done and soreness/muscle area (simulate rest periods and recovery)
 - [ ] hide properties is default on notes inside workouts folder
 - [x] change order of input fields to be more user-friendly
-- [ ] fix chart logic in workout routine
-- [ ] fix chart on exercise, x-axis should be time and date, not just date.
+- [x] fix chart logic in workout routine
+- [x] fix chart on exercise, x-axis should be time and date, not just date.
 - [ ] add demo video
 - [ ] add relation between equipment and place for better exercises selection
 

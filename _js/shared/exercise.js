@@ -76,7 +76,7 @@ class exercise
 		  return new Date(a['date']) - new Date(b['date']);
 		});
 
-		const dates = performedExercises.map(e=> moment(new Date(e['date'])).format('YYYY-MM-DD'));
+		const dates = performedExercises.map(e=> moment(new Date(e['date'])).format('YY`MM`DD-HH:mm'));
 		const weights = performedExercises.map(e=> e['weight'] || 0);
 		const efforts = performedExercises.map(e=> e['effort'] || 0);
 		const reps = performedExercises.map(e=> e['reps'] || 0);

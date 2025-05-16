@@ -66,15 +66,21 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - [x] Add some exercises templates
 - [x] Add few more workout templates
 - [x] Add some basic/general muscle groups
-- [ ] Add Workout Program Feature (but I don't know what is program yet) (might not be needed for simple and streamlined system)
-- [ ] if possible, add full body visualization of each exercises done and soreness/muscle area (simulate rest periods and recovery)
-- [ ] hide properties is default on notes inside workouts folder
+- [ ] ~~Add Workout Program Feature (but I don't know what is program yet) (might not be needed for simple and streamlined system)~~
 - [x] change order of input fields to be more user-friendly
 - [x] fix chart logic in workout routine
 - [x] fix chart on exercise, x-axis should be time and date, not just date.
-- [ ] add demo video
-- [ ] add relation between equipment and place for better exercises selection
+- [ ] ~~add relation between equipment and place for better exercises selection~~
 - [ ] add muscle-group or exercises dashboard
+- [ ] add demo video
+- [ ] if possible, add full body visualization of each exercises done and soreness/muscle area (simulate rest periods and recovery)
+- [ ] hide properties is default on notes inside workouts folder
+
+Now it is fully usable, might not need relation equipment and place (adding new relational data is time-consuming so.. no). Will do hide properties, musclegroup/exercises dashboard, demo video, and if possible add full body visualization.
+
+Workout program not needed as is just meant for simple logging/tracking system.
+
+> *complexity is the enemy of execution. - Tony Robbins*
 
 ## License
 

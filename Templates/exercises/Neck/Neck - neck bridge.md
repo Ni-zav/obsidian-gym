@@ -1,17 +1,17 @@
 ---
-id: 286289
+id: 649346
 date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
 time: <% tp.date.now("HH:mm:ss") %>
 weight: <% await tp.system.prompt("Weight", "", true) %>
-reps: <% await tp.system.prompt("Reps", "15", true) %>
+reps: <% await tp.system.prompt("Reps", "20", true) %>
 effort: <% await tp.system.suggester(["1 (easy)", "2", "3", "4", "5 (failure)"], ["1", "2", "3", "4", "5"]) %>
-exercise: Abs - leg raises
-muscle_group: Abs
+exercise: Neck - neck bridge
+muscle_group: Neck
 equipment: Bodyweight
 note: <% await tp.system.prompt("Note", "", true) %>
-instructions: raise the leg while in sleeping position
+instructions: 'do isometric. avoid using your top part of your head.'
 tags:
-  - exercise
+ - exercise
 ---
 
 ```dataviewjs

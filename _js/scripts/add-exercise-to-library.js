@@ -11,6 +11,10 @@ module.exports = async function addExerciseToLibrary(params) {
         const exerciseName = await inputPrompt("Exercise Name");
         if (!exerciseName) return;
 
+        // Ask if this is a timed exercise
+        const isTimed = await suggester(["No", "Yes"], [false, true], "Is this a timed exercise?");
+        if (isTimed === undefined) return;
+
         // Select muscle group
         const muscleGroups = Object.keys(categories.muscleGroups);
         const muscleGroup = await suggester(muscleGroups, muscleGroups);
@@ -27,9 +31,18 @@ module.exports = async function addExerciseToLibrary(params) {
         // Get video URL (optional)
         const videoUrl = await inputPrompt("Video URL (optional)");
 
-        // Get default reps
-        const defaultReps = await inputPrompt("Default Reps", "6");
-        if (!defaultReps) return;
+        // Get default reps or duration
+        let defaultReps = null;
+        let defaultDuration = null;
+        let defaultWeight = null;
+        defaultWeight = await inputPrompt("Default Weight (kg, optional)", "");
+        if (isTimed) {
+            defaultDuration = await inputPrompt("Default Duration (seconds)", "30");
+            if (!defaultDuration) return;
+        } else {
+            defaultReps = await inputPrompt("Default Reps", "6");
+            if (!defaultReps) return;
+        }
 
         // Setup target path
         const targetPath = `Templates/exercises/${muscleGroup}`;
@@ -44,12 +57,16 @@ module.exports = async function addExerciseToLibrary(params) {
         const filePath = `${targetPath}/${fileName}`;
         
         // Generate exercise content
-        const content = [            "---",
+        const content = [
+            "---",
             `id: ${Math.floor(Math.random() * 900000) + 100000}`,
             `date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>`,
             `time: <% tp.date.now("HH:mm:ss") %>`,
-            `weight: <% await tp.system.prompt("Weight", "", true) %>`,
-            `reps: <% await tp.system.prompt("Reps", "${defaultReps}", true) %>`,
+            isTimed ? `timed: true` : `timed: false`,
+            isTimed
+                ? `duration: <% await tp.system.prompt("Duration (seconds)", "${defaultDuration}", true) %>`
+                : `reps: <% await tp.system.prompt("Reps", "${defaultReps}", true) %>`,
+            `weight: <% await tp.system.prompt("Weight", "${defaultWeight || ''}", true) %>`,
             `effort: <% await tp.system.suggester(["1 (easy)", "2", "3", "4", "5 (failure)"], ["1", "2", "3", "4", "5"]) %>`,
             `exercise: ${muscleGroup} - ${exerciseName}`,
             `muscle_group: ${muscleGroup}`,

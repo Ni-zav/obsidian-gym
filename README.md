@@ -62,7 +62,7 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 ## To-do
 - [x] fix renderRemaining() function
 - [x] change workout-type to something else (type of workout? push? upper body? cardio? recovery?)
-- [ ] add timed workout functionality (warm up, plank, jog, etc.)
+- [x] add timed workout functionality (warm up, plank, jog, etc.)
 - [x] Add some exercises templates
 - [x] Add few more workout templates
 - [x] Add some basic/general muscle groups
@@ -74,6 +74,7 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - [x] fix chart on exercise, x-axis should be time and date, not just date.
 - [ ] add demo video
 - [ ] add relation between equipment and place for better exercises selection
+- [ ] add muscle-group or exercises dashboard
 
 ## License
 

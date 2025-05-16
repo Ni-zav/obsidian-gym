@@ -1,17 +1,18 @@
 ---
-id: 286289
+id: 463477
 date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
 time: <% tp.date.now("HH:mm:ss") %>
+timed: true
+duration: <% await tp.system.prompt("Duration (seconds)", "30", true) %>
 weight: <% await tp.system.prompt("Weight", "", true) %>
-reps: <% await tp.system.prompt("Reps", "15", true) %>
 effort: <% await tp.system.suggester(["1 (easy)", "2", "3", "4", "5 (failure)"], ["1", "2", "3", "4", "5"]) %>
-exercise: Abs - leg raises
+exercise: Abs - timed-2
 muscle_group: Abs
-equipment: Bodyweight
+equipment: Barbell
 note: <% await tp.system.prompt("Note", "", true) %>
-instructions: raise the leg while in sleeping position
+instructions: 'yes'
 tags:
-  - exercise
+ - exercise
 ---
 
 ```dataviewjs

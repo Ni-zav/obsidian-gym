@@ -1,52 +1,13 @@
 ---
-id: c62ded
-workout_title: full body
-date: 2025-05-15
-time: 16:25
-exercises:
-  - 286289
-  - 286289
-  - 802427
-  - 802427
-  - 802427
-  - 802427
-  - 193260
-  - 193260
-  - 193260
-  - 193260
-  - 830919
-  - 830919
-  - 830919
-  - 830919
-  - 830919
-  - 808829
-  - 808829
-  - 808829
-  - 808829
-workout_order:
-  - 286289
-  - 286289
-  - 802427
-  - 802427
-  - 802427
-  - 802427
-  - 193260
-  - 193260
-  - 193260
-  - 193260
-  - 830919
-  - 830919
-  - 830919
-  - 830919
-  - 830919
-  - 808829
-  - 808829
-  - 808829
-  - 808829
+workout_title: test-with-timed-2
+date: <% tp.date.now("YYYY-MM-DD") %>
+time: <% tp.date.now("HH:mm") %>
+exercises: [423031, 423031, 423031, 345396, 345396, 345396]
+workout_order: [423031, 423031, 423031, 345396, 345396, 345396]
 workout_type: Weight Training
 workout_place: Home
 tags:
-  - workout
+ - workout
 ---
 
 ```dataviewjs
@@ -107,6 +68,6 @@ workout.renderRemaining(note);
 ```dataviewjs
 const {workout} = customJS;
 const note = {dv: dv, container: this.container, window: window};
-workout.renderEffortChart(note);
 workout.renderPerformed(note);
+workout.renderEffortChart(note);
 ```

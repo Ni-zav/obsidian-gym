@@ -2,7 +2,7 @@
   "version": 4,
   "homepages": {
     "Main Homepage": {
-      "value": "Workout list",
+      "value": "Gym Log Dashboard",
       "kind": "File",
       "openOnStartup": true,
       "openMode": "Replace all open notes",
@@ -10,12 +10,12 @@
       "view": "Default view",
       "revertView": true,
       "openWhenEmpty": true,
-      "refreshDataview": false,
+      "refreshDataview": true,
       "autoCreate": false,
       "autoScroll": false,
       "pin": false,
       "commands": [],
-      "alwaysApply": false,
+      "alwaysApply": true,
       "hideReleaseNotes": false
     }
   },

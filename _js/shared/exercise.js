@@ -71,24 +71,21 @@ class exercise
 		}
 
 		performedExercises.sort(function(a,b){
-		  // Turn your strings into dates, and then subtract them
-		  // to get a value that is either negative, positive, or zero.
 		  return new Date(a['date']) - new Date(b['date']);
 		});
 
 		const dates = performedExercises.map(e=> moment(new Date(e['date'])).format('YY`MM`DD-HH:mm'));
-		const weights = performedExercises.map(e=> e['weight'] || 0);
+		const weights = performedExercises.map(e=> e['weight'] || 1); // default to 1 for timed
 		const efforts = performedExercises.map(e=> e['effort'] || 0);
-		const reps = performedExercises.map(e=> e['reps'] || 0);
-		
-		// Check if we have any valid weights
-		const hasWeights = weights.length > 0 && !weights.every(value => value == null);
-
-		// Calculate volumes (weight × reps)
-		const volumes = weights.map((weight, i) => weight * reps[i]);
+		const isTimed = metadata.frontmatter['timed'] === true || metadata.frontmatter['timed'] === 'true';
+		let repsOrDur = performedExercises.map(e => {
+			if (isTimed) return Number(e['duration']) || 0;
+			return Number(e['reps']) || 0;
+		});
+		// Volume: for timed, duration * weight; for normal, reps * weight
+		const volumes = performedExercises.map((e, i) => weights[i] * repsOrDur[i]);
 		const maxVolume = Math.max(...volumes);
 
-		// Generate random color for consistent styling
 		const color = { 
 			base: 'rgb(153, 102, 255)',
 			light: 'rgba(153, 102, 255, 0.6)'
@@ -98,19 +95,19 @@ class exercise
 			labels: dates,
 			datasets: [
 				{
-					label: `${exercise} (Volume)`,
+					label: isTimed ? `${exercise} (Duration×Weight)` : `${exercise} (Volume)`,
 					data: volumes,
 					fill: false,
 					borderColor: color.light,
 					backgroundColor: color.light,
 					borderWidth: 2,
-					borderDash: [5, 5],
+					borderDash: isTimed ? [] : [5, 5],
 					tension: 0.3,
-					pointRadius: 4,
+					pointRadius: isTimed ? 0 : 4,
 					pointHitRadius: 10,
 					pointHoverRadius: 6,
 					yAxisID: 'y',
-					display: hasWeights
+					display: true
 				},
 				{
 					label: `${exercise} (Effort)`,
@@ -128,7 +125,6 @@ class exercise
 			]
 		};
 
-		// Create chart configuration
 		const chartData = {
 			type: 'line',
 			data: datasets,
@@ -143,13 +139,13 @@ class exercise
 				scales: {
 					y: {
 						type: 'linear',
-						display: hasWeights,
+						display: true,
 						position: 'left',
 						beginAtZero: true,
-						suggestedMax: maxVolume * 1.2, // Add 20% space at top
+						suggestedMax: maxVolume * 1.2,
 						title: {
 							display: true,
-							text: 'Volume (kg×reps)'
+							text: isTimed ? 'Duration×Weight (sec×kg)' : 'Volume (kg×reps)'
 						},
 						grid: {
 							drawOnChartArea: true
@@ -194,8 +190,8 @@ class exercise
 							label: function(context) {
 								const label = context.dataset.label || '';
 								const value = context.parsed.y;
-								if (label.includes('Volume')) {
-									return `${label}: ${value} (kg×reps)`;
+								if (label.includes('Volume') || label.includes('Duration×Weight')) {
+									return `${label}: ${value} ${isTimed ? '(sec×kg)' : '(kg×reps)'}`;
 								}
 								return `${label}: ${value}`;
 							}
@@ -205,7 +201,6 @@ class exercise
 			}
 		};
 
-		// Create a div for the chart with fixed height
 		const chartDiv = n.container.createEl('div');
 		chartDiv.style.height = '300px';
 		chartDiv.style.marginBottom = '20px';
@@ -213,57 +208,26 @@ class exercise
 
 		n.window.renderChart(chartData, chartDiv);
 
-		// Rest of the function (table rendering)
-		function findPrevExercise(n, exercise)
-		{
-			let exercises = n.dv.pages('#exercise').sort(ex=> ex['date'], 'desc');
-			for(let e of exercises)
-			{
-				if(new Date(e['date']) < new Date(exercise['date']))
-					return e;
-			}
-		}
-
-		let i=0;
-		let prevTimeStamp;
+		// Table rendering
 		let lastExercises = [];
 		for(const e of performedExercises.slice(-5))
 		{
-			metadata = app.metadataCache.getFileCache(e.file);
-			let prev = findPrevExercise(n, e);
-			prevTimeStamp = moment(new Date(prev['date']));
-
-			var timeStamp = moment(new Date(e['date']));
-			var diff_sec = timeStamp.diff(prevTimeStamp, "seconds");
-			var diff_min = Math.floor(diff_sec / 60).toString();
-			var diff_sec_remain = (diff_sec % 60).toString();
-			var timeDiff = diff_min + 'm ' + diff_sec_remain + "s";
-
-			let exercise = [];
-			// File link (date as text)
-			exercise.push('[[' + e.file.path + '|' + moment(new Date(e['date'])).format('YYYY-MM-DD') + ']]');
-			// Duration
-			exercise.push(timeDiff);
-			// Weight
-			if(hasWeights)
-				exercise.push(e["weight"] + ' kg');
-			// Effort
-			exercise.push(e['effort']);
-			// Note
-			exercise.push(e['note']);
-			lastExercises.push(exercise);
-
-			prevTimeStamp = timeStamp;
-			i++;
+			let row = [];
+			row.push('[[' + e.file.path + '|' + moment(new Date(e['date'])).format('YYYY-MM-DD') + ']]');
+			if (isTimed) {
+				row.push(e['duration'] ? e['duration'] + ' sec' : '~');
+				row.push(e['weight'] ? e['weight'] + ' kg' : '~');
+				row.push(e['effort'] || '~');
+				row.push(e['note'] || '');
+			} else {
+				row.push(e['reps'] || '~');
+				row.push(e['weight'] ? e['weight'] + ' kg' : '~');
+				row.push(e['effort'] || '~');
+				row.push(e['note'] || '');
+			}
+			lastExercises.push(row);
 		}
-		let columns = [];
-		columns.push("Exercise");
-		columns.push("⏱");
-		if(hasWeights)
-			columns.push("🏋🏼",);
-		columns.push("😥");
-		columns.push("🗒");
-
+		let columns = ["Exercise", isTimed ? "⏱ (sec)" : "Reps", "🏋🏼", "😥", "🗒"];
 		n.dv.table(columns, lastExercises);
 	}
 

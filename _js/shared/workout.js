@@ -109,12 +109,17 @@ class workout {
 
             const volume = exerciseVolumes[id] || 0;
 
+            // Get exercise info (timed or not)
+            const exInfo = this.getExerciseInfo(id);
+            const isTimed = exInfo && (exInfo.timed === true || exInfo.timed === 'true');
+
             remainingExercises.push({
-                name: cache.frontmatter.exercise || exerciseFile.basename,
-                muscleGroup: cache.frontmatter.muscle_group || "~",
-                equipment: cache.frontmatter.equipment || "~",
-                volume: volume > 0 ? `${volume} kg×reps` : "~",
-                remainingSets: `${remainingCount}/${plannedCount}`
+                name: exInfo ? exInfo.name : id,
+                muscleGroup: exInfo ? exInfo.muscleGroup : '',
+                equipment: exInfo ? exInfo.equipment : '',
+                repsOrDuration: isTimed ? (exInfo.duration ? `${exInfo.duration} sec` : "~") : (exInfo.reps || "~"),
+                weight: exInfo && exInfo.weight ? `${exInfo.weight} kg` : "~",
+                remainingSets: plannedCounts[id] - (performedCounts[id] || 0)
             });
         }
 
@@ -127,12 +132,13 @@ class workout {
             ex.name === "Workout start" ? ex.name : `[[${ex.name}]]`,
             ex.muscleGroup,
             ex.equipment,
-            ex.volume,
+            ex.repsOrDuration,
+            ex.weight,
             ex.remainingSets
         ]);
 
         context.dv.table(
-            ["Exercise", "💪🏻-group", "🏋🏼", "Volume", "Sets"],
+            ["Exercise", "💪🏻-group", "🏋🏼", "Reps/Sec", "Weight", "Sets"],
             tableData
         );
     }
@@ -154,17 +160,27 @@ class workout {
             context.container.createEl("p", { text: "No exercises performed yet" });
             return;
         }
-        const tableData = performed.map(e => [
-            (e.exercise === "Workout start" || e.exercise === "Workout end") ? e.exercise : `[[${e.exercise}]]`,
-            e.weight ? `${e.weight} kg` : "~",
-            e.reps || "~",
-            e.effort || "~",
-            moment(e.date).format("HH:mm"),
-            e.weight && e.reps ? `${e.weight * e.reps} kg×reps` : "~"
-        ]);
+        // Table: for timed exercises, show duration and volume is duration*weight
+        const tableData = performed.map(e => {
+            const isTimed = e.timed === true || e.timed === 'true';
+            const duration = isTimed ? (Number(e.duration) || 0) : null;
+            const reps = !isTimed ? (e.reps || "~") : null;
+            const weight = e.weight ? `${e.weight} kg` : "~";
+            const volume = isTimed
+                ? (e.weight && duration ? `${e.weight * duration} sec×kg` : "~")
+                : (e.weight && e.reps ? `${e.weight * e.reps} kg×reps` : "~");
+            return [
+                (e.exercise === "Workout start" || e.exercise === "Workout end") ? e.exercise : `[[${e.exercise}]]`,
+                weight,
+                isTimed ? (duration ? duration + ' sec' : '~') : reps,
+                e.effort || "~",
+                moment(e.date).format("HH:mm"),
+                volume
+            ];
+        });
 
         context.dv.table(
-            ["Exercise", "Weight", "Reps", "Effort", "Time", "Volume"],
+            ["Exercise", "Weight", "Reps/Sec", "Effort", "Time", "Volume"],
             tableData
         );
     }
@@ -250,23 +266,25 @@ class workout {
         // Group exercises by their name/type (excluding start/end)
         const exerciseGroups = {};
         performed.forEach(p => {
-            if ((p.time || p.date) && (p.effort || (p.weight && p.reps)) && p.exercise !== "Workout start" && p.exercise !== "Workout end") {
+            if ((p.time || p.date) && (p.effort || (p.weight && (p.reps || p.duration))) && p.exercise !== "Workout start" && p.exercise !== "Workout end") {
                 if (!exerciseGroups[p.exercise]) {
                     exerciseGroups[p.exercise] = {
                         times: [],
                         efforts: [],
                         volumes: [],
                         weights: [],
-                        reps: []
+                        repsOrDur: []
                     };
                 }
                 // Use ISO string for x-axis
                 const label = p.time ? `${metadata.frontmatter.date}T${p.time}` : p.date;
                 exerciseGroups[p.exercise].times.push(label);
                 exerciseGroups[p.exercise].efforts.push(Number(p.effort) || 0);
-                exerciseGroups[p.exercise].weights.push(Number(p.weight) || 0);
-                exerciseGroups[p.exercise].reps.push(Number(p.reps) || 0);
-                const volume = (Number(p.weight) || 0) * (Number(p.reps) || 0);
+                exerciseGroups[p.exercise].weights.push(Number(p.weight) || 1);
+                const isTimed = p.timed === true || p.timed === 'true';
+                const repsOrDur = isTimed ? (Number(p.duration) || 0) : (Number(p.reps) || 0);
+                exerciseGroups[p.exercise].repsOrDur.push(repsOrDur);
+                const volume = (Number(p.weight) || 1) * repsOrDur;
                 exerciseGroups[p.exercise].volumes.push(volume);
             }
         });
@@ -276,10 +294,11 @@ class workout {
             'Triceps - Push up': { base: 'rgb(153, 102, 255)', light: 'rgba(153, 102, 255, 0.6)' }
         };
 
-        // Create datasets for each exercise (unchanged)
+        // Create datasets for each exercise
         const datasets = [];
         let maxVolume = 0;
         Object.entries(exerciseGroups).forEach(([exercise, data]) => {
+            const isTimed = performed.find(p => p.exercise === exercise && (p.timed === true || p.timed === 'true'));
             const color = colors[exercise] || { 
                 base: `hsl(${Math.random() * 360}, 70%, 50%)`,
                 light: `hsla(${Math.random() * 360}, 70%, 50%, 0.6)`
@@ -288,22 +307,22 @@ class workout {
             const volumes = data.volumes;
             maxVolume = Math.max(maxVolume, ...volumes);
             datasets.push({
-                label: `${exercise} (Volume)`,
+                label: isTimed ? `${exercise} (Duration×Weight)` : `${exercise} (Volume)`,
                 data: data.times.map((t, i) => ({ x: t, y: volumes[i] })),
                 fill: false,
                 borderColor: color.light,
                 backgroundColor: color.light,
                 borderWidth: 2,
-                borderDash: [5, 5],
+                borderDash: isTimed ? [] : [5, 5],
                 tension: 0.3,
-                pointRadius: 4,
+                pointRadius: isTimed ? 0 : 4,
                 pointHitRadius: 10,
                 pointHoverRadius: 6,
                 yAxisID: 'y'
             });
             // Effort dataset
             datasets.push({
-                label: `${exercise} (Effort)`,
+                label: `${exercise} (Effort)` ,
                 data: data.times.map((t, i) => ({ x: t, y: data.efforts[i] })),
                 fill: false,
                 borderColor: color.base,
@@ -338,7 +357,7 @@ class workout {
                 type: 'line',
                 xMin: workoutEndTime,
                 xMax: workoutEndTime,
-                borderColor: 'red', // Make visible
+                borderColor: 'red',
                 borderWidth: 2,
                 label: {
                     content: 'Workout End',
@@ -392,7 +411,7 @@ class workout {
                             suggestedMax: maxVolume * 1.2, // Add 20% space at the top
                             title: {
                                 display: true,
-                                text: 'Volume (kg×reps)'
+                                text: 'Volume (kg×reps) / Duration×Weight (sec×kg)'
                             },
                             grid: {
                                 drawOnChartArea: true
@@ -440,8 +459,8 @@ class workout {
                                 label: function(context) {
                                     const label = context.dataset.label || '';
                                     const value = context.parsed.y;
-                                    if (label.includes('Volume')) {
-                                        return `${label}: ${value} (kg×reps)`;
+                                    if (label.includes('Volume') || label.includes('Duration×Weight')) {
+                                        return `${label}: ${value} (kg×reps/sec×kg)`;
                                     }
                                     return `${label}: ${value}`;
                                 }
@@ -461,6 +480,37 @@ class workout {
             console.error('Error rendering chart:', error);
             context.container.createEl('p', { text: 'Error rendering chart' });
         }
+    }
+
+    async renderTimerOrStopwatch(context) {
+        if (!context?.container) return;
+        // Selector UI
+        const selectorDiv = context.container.createEl("div", { cls: "timer-selector" });
+        selectorDiv.style.marginBottom = "10px";
+        const select = selectorDiv.createEl("select");
+        select.style.marginRight = "10px";
+        select.innerHTML = `<option value="timer">Timer</option><option value="stopwatch">Stopwatch</option>`;
+        // Timer and stopwatch containers
+        const timerDiv = context.container.createEl("div", { cls: "timer-ui" });
+        const stopwatchDiv = context.container.createEl("div", { cls: "stopwatch-ui" });
+        stopwatchDiv.style.display = "none";
+        // Render timer and stopwatch controls
+        if (window.customJS?.timer) {
+            await window.customJS.timer.renderTimerControls({ ...context, container: timerDiv });
+        }
+        if (window.customJS?.stopwatch) {
+            await window.customJS.stopwatch.renderStopwatchControls({ ...context, container: stopwatchDiv });
+        }
+        // Switch UI on selector change
+        select.addEventListener("change", (e) => {
+            if (select.value === "timer") {
+                timerDiv.style.display = "";
+                stopwatchDiv.style.display = "none";
+            } else {
+                timerDiv.style.display = "none";
+                stopwatchDiv.style.display = "";
+            }
+        });
     }
 
     getExerciseInfo(exerciseId) {

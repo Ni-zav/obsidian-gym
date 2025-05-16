@@ -12,7 +12,7 @@ module.exports = async function addExerciseToLibrary(params) {
         if (!exerciseName) return;
 
         // Ask if this is a timed exercise
-        const isTimed = await suggester(["No", "Yes"], [false, true], "Is this a timed exercise?");
+        const isTimed = await suggester(["Not a timed exercise", "Yes it is a timed exercise"], [false, true], "Is this a timed exercise?");
         if (isTimed === undefined) return;
 
         // Select muscle group

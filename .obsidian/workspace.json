@@ -4,21 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "345ca100f3ca83f7",
+        "id": "4509724f8bf84da7",
         "type": "tabs",
         "children": [
           {
-            "id": "38393667fbbcf637",
+            "id": "e7a7b303c61786dc",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "README.md",
+                "file": "Gym Log Dashboard.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "README"
+              "title": "Gym Log Dashboard"
             }
           }
         ]
@@ -35,12 +35,25 @@
         "type": "tabs",
         "children": [
           {
+            "id": "7b33950de697b8a5",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
             "id": "0a47b43e5f0e19b8",
             "type": "leaf",
             "state": {
               "type": "search",
               "state": {
-                "query": "row",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -62,19 +75,6 @@
             }
           },
           {
-            "id": "7b33950de697b8a5",
-            "type": "leaf",
-            "state": {
-              "type": "file-explorer",
-              "state": {
-                "sortOrder": "alphabetical",
-                "autoReveal": false
-              },
-              "icon": "lucide-folder-closed",
-              "title": "Files"
-            }
-          },
-          {
             "id": "d4d1b11d367b2302",
             "type": "leaf",
             "state": {
@@ -84,12 +84,11 @@
               "title": "Bookmarks"
             }
           }
-        ],
-        "currentTab": 2
+        ]
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 416.5041847229004
   },
   "right": {
     "id": "285bd5590c21a41e",
@@ -181,10 +180,22 @@
       "homepage:Open homepage": false
     }
   },
-  "active": "38393667fbbcf637",
+  "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
+    "Templates/Workouts/gym/asd.md",
     "Gym Log Dashboard.md",
+    "Templates/Workouts/gym/timed-2.md",
+    "Templates/exercises/Core/Core - plank.md",
+    "Templates/exercises/Core",
+    "Templates/exercises/Abs/Abs - bb.md",
+    "Workouts/2025-05-16 - full-body/full-body.md",
+    "Workouts/2025-05-16 - full-body/Log",
+    "Workouts/2025-05-16 - full-body",
+    "Workouts",
     "Workouts/2025-05-16 - timed-2/timed-2.md",
+    "Templates/exercises/Full Body/Full Body - jogging.md",
+    "Templates/exercises/Full Body",
+    "README.md",
     "Workouts/2025-05-16 - timed-2/Log/4.md",
     "Workouts/2025-05-16 - timed-2/Log/2.md",
     "Templates/exercises/Abs/Abs - timed-2.md",
@@ -192,8 +203,6 @@
     "Workouts/2025-05-16 - timed-2/Log/1.md",
     "Workouts/2025-05-16 - timed-2/Log",
     "Workouts/2025-05-16 - timed-2",
-    "Templates/Workouts/gym/timed-2.md",
-    "README.md",
     "Templates/exercises/Abs/Abs - timed abs.md",
     "Workouts/2025-05-16 - test-with-timed-2/test-with-timed-2.md",
     "Workouts/2025-05-16 - test-with-timed-2/Log/3.md",
@@ -208,16 +217,6 @@
     "Workouts/2025-05-16 - test-with-timed/Log/5.md",
     "Workouts/2025-05-16 - test-with-timed/Log/4.md",
     "Workouts/2025-05-16 - test-with-timed/Log/1.md",
-    "Workouts/2025-05-16 - test-with-timed/Log/3.md",
-    "Workouts/2025-05-15 - full-body/full-body.md",
-    "Workouts/2025-05-16 - test-with-timed/Log",
-    "Workouts/2025-05-16 - test-with-timed",
-    "Templates/Workouts/gym/test-with-timed.md",
-    "Templates/exercises/Abs/Abs - leg raises.md",
-    "Templates/exercises/Abs/Abs - bb.md",
-    "_js/shared/stopwatch.js",
-    "Templates/exercises/Forearms",
-    "Templates/exercises/Rotator Cuff",
-    "Templates/exercises/Rear Deltoids"
+    "Workouts/2025-05-16 - test-with-timed/Log"
   ]
 }

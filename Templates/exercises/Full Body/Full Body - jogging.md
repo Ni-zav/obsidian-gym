@@ -1,15 +1,17 @@
 ---
-id: 654821
+id: 151534
 date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
 time: <% tp.date.now("HH:mm:ss") %>
 timed: true
-duration: <% await tp.system.prompt("Duration (seconds)", "30", true) %>
+duration: <% await tp.system.prompt("Duration (seconds)", "3600", true) %>
+weight: <% await tp.system.prompt("Weight", "", true) %>
 effort: <% await tp.system.suggester(["1 (easy)", "2", "3", "4", "5 (failure)"], ["1", "2", "3", "4", "5"]) %>
-exercise: Glutes - b
-muscle_group: Glutes
+exercise: Full Body - jogging
+muscle_group: Full Body
 equipment: Bodyweight
 note: <% await tp.system.prompt("Note", "", true) %>
-instructions: 'nm'
+video_url: "later on."
+instructions: 'jogging.'
 tags:
  - exercise
 ---

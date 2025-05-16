@@ -1,17 +1,17 @@
 ---
-id: 345396
+id: 584404
 date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
 time: <% tp.date.now("HH:mm:ss") %>
-timed: false
+timed: true
+duration: <% await tp.system.prompt("Duration (seconds)", "45", true) %>
 weight: <% await tp.system.prompt("Weight", "", true) %>
-reps: <% await tp.system.prompt("Reps", "5", true) %>
 effort: <% await tp.system.suggester(["1 (easy)", "2", "3", "4", "5 (failure)"], ["1", "2", "3", "4", "5"]) %>
-exercise: Abs - bb
-muscle_group: Abs
-equipment: Barbell
+exercise: Core - plank
+muscle_group: Core
+equipment: Bodyweight
 note: <% await tp.system.prompt("Note", "", true) %>
-video_url: "b"
-instructions: 'b'
+video_url: "later"
+instructions: 'plank, hold it.'
 tags:
  - exercise
 ---

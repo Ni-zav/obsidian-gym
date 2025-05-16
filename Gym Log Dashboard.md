@@ -1,4 +1,4 @@
-Exercises Dashboard | Workouts Dashboard | 
+| [[Exercise Dashboard]] | [[Workout Dashboard]] | 
 ***
 If you haven't add any exercise, start here to add some exercises:
 ```meta-bind-button

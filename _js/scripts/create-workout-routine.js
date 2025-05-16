@@ -212,6 +212,22 @@ class WorkoutBuilder {
         );
     }
 
+    async selectExerciseDirect() {
+        if (!this.initialized) {
+            throw new Error("WorkoutBuilder must be initialized before use");
+        }
+        // Flatten all exercises into a single array
+        const allExercises = Object.values(this.exercises).flat();
+        if (allExercises.length === 0) {
+            throw new Error("No exercises found");
+        }
+        return await this.quickAdd.suggester(
+            exercise => `${exercise.name} (${exercise.equipment})`,
+            allExercises,
+            "Select exercise"
+        );
+    }
+
     async getSetsCount() {
         const sets = await this.quickAdd.inputPrompt("Number of sets", "3");
         if (!sets) {
@@ -349,15 +365,8 @@ module.exports = async function createWorkoutRoutine(params) {
         let addingExercises = true;
 
         while (addingExercises) {
-            // Select muscle group
-            const muscleGroup = await builder.selectMuscleGroup();
-            if (!muscleGroup) {
-                console.log("Workout creation stopped - no muscle group selected");
-                break;
-            }
-
-            // Select exercise
-            const exercise = await builder.selectExercise(muscleGroup);
+            // Directly select exercise from all available
+            const exercise = await builder.selectExerciseDirect();
             if (!exercise) {
                 console.log("Exercise selection cancelled");
                 break;
@@ -395,7 +404,8 @@ module.exports = async function createWorkoutRoutine(params) {
         if (selectedExercises.length === 0) {
             console.log("No exercises were selected, workout not created");
             return;
-        }        // Select workout type and place
+        }
+        // Select workout type and place
         const workoutType = await builder.selectWorkoutType();
         if (!workoutType) {
             console.log("Workout type selection cancelled");

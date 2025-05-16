@@ -14,7 +14,7 @@
               "type": "markdown",
               "state": {
                 "file": "Gym Log Dashboard.md",
-                "mode": "source",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
@@ -182,8 +182,14 @@
   },
   "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
-    "Templates/Workouts/gym/asd.md",
+    "error-logs.md",
     "Gym Log Dashboard.md",
+    "Workouts/2025-05-16 - push-1/push-1.md",
+    "Workouts/2025-05-16 - push-1/Log",
+    "Workouts/2025-05-16 - push-1",
+    "Workouts",
+    "Templates/Workouts/gym/push-1.md",
+    "Templates/Workouts/gym/asd.md",
     "Templates/Workouts/gym/timed-2.md",
     "Templates/exercises/Core/Core - plank.md",
     "Templates/exercises/Core",
@@ -191,7 +197,6 @@
     "Workouts/2025-05-16 - full-body/full-body.md",
     "Workouts/2025-05-16 - full-body/Log",
     "Workouts/2025-05-16 - full-body",
-    "Workouts",
     "Workouts/2025-05-16 - timed-2/timed-2.md",
     "Templates/exercises/Full Body/Full Body - jogging.md",
     "Templates/exercises/Full Body",
@@ -209,14 +214,9 @@
     "Workouts/2025-05-16 - test-with-timed-2/Log/2.md",
     "Workouts/2025-05-16 - test-with-timed-2/Log/1.md",
     "Workouts/2025-05-16 - test-with-timed-2/Log",
-    "Workouts/2025-05-16 - test-with-timed-2",
     "Templates/Workouts/gym/test-with-timed-2.md",
     "Workouts/2025-05-16 - test-with-timed/Log/2.md",
     "Workouts/2025-05-16 - test-with-timed/test-with-timed.md",
-    "Templates/exercises/Abs/Abs - bbb.md",
-    "Workouts/2025-05-16 - test-with-timed/Log/5.md",
-    "Workouts/2025-05-16 - test-with-timed/Log/4.md",
-    "Workouts/2025-05-16 - test-with-timed/Log/1.md",
-    "Workouts/2025-05-16 - test-with-timed/Log"
+    "Templates/exercises/Abs/Abs - bbb.md"
   ]
 }

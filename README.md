@@ -75,6 +75,7 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - [ ] add demo video
 - [ ] if possible, add full body visualization of each exercises done and soreness/muscle area (simulate rest periods and recovery)
 - [ ] hide properties is default on notes inside workouts folder
+- [ ] fix timer and add stopwatch feature
 
 Now it is fully usable, might not need relation equipment and place (adding new relational data is time-consuming so.. no). Will do hide properties, musclegroup/exercises dashboard, demo video, and if possible add full body visualization.
 

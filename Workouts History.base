@@ -1,8 +1,8 @@
 formulas:
-  Untitled 2: link(file.folder.slice(9, 19))
-  Untitled: length(file.folder.children.filter(c => c.name == "Log").children) - 2
+  Daily Note Link: link(file.folder.slice(9, 19))
+  Sets: file.properties.Logs.length - 2
 properties:
-  formula.Untitled 2:
+  formula.Daily Note Link:
     displayName: Date
 views:
   - type: table
@@ -13,12 +13,12 @@ views:
         - file.inFolder("Workouts")
     order:
       - file.name
-      - formula.Untitled 2
+      - formula.Daily Note Link
       - time
+      - formula.Sets
       - workout_type
       - workout_place
-      - formula.Untitled
     sort:
-      - property: formula.Untitled 2
+      - property: formula.Daily Note Link
         direction: ASC
     columnSize: {}

@@ -201,6 +201,10 @@ module.exports = async function listFiles(params) {
             // Insert workout_id after --- (handle both \n and \r\n)
             content = content.replace(/---\r?\n/, `---\nworkout_id: ${newId}\n`);
             await app.vault.modify(newNote, content);
+            
+            // Update parent workout file with Logs property
+            await updateWorkoutLogs(activeFile, newNote);
+            
             params.variables = { notePath: newNote.path };
             return;
         }
@@ -270,6 +274,9 @@ module.exports = async function listFiles(params) {
             content = content.replace(/---\n+/m, `---\nworkout_id: ${newId}\n`);
             await app.vault.modify(newNote, content);
 
+            // Update parent workout file with Logs property
+            await updateWorkoutLogs(activeFile, newNote);
+
             params.variables = { notePath: newNote.path };
 
         } catch (error) {
@@ -315,6 +322,25 @@ async function update(property, value, filePath) {
     }
     
     await app.vault.modify(file, content);
+}
+
+async function updateWorkoutLogs(workoutFile, logFile) {
+    try {
+        await app.fileManager.processFrontMatter(workoutFile, (fm) => {
+            // Initialize Logs array if it doesn't exist
+            if (!fm['Logs']) {
+                fm['Logs'] = [];
+            }
+            // Create a link to the log file
+            const logLink = `[[${logFile.name}|${logFile.basename}]]`;
+            // Append the link if it's not already there
+            if (!fm['Logs'].includes(logLink)) {
+                fm['Logs'].push(logLink);
+            }
+        });
+    } catch (error) {
+        console.error("Error updating workout logs:", error);
+    }
 }
 
 function generateGuid() {

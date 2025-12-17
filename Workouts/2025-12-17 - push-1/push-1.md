@@ -48,11 +48,11 @@ workout_order:
 workout_type: Weight Training
 workout_place: Home
 Logs:
-  - "[[1.md|1]]"
-  - "[[2.md|2]]"
-  - "[[3.md|3]]"
-  - "[[4.md|4]]"
-  - "[[5.md|5]]"
+  - Workouts/2025-12-17 - push-1/Log/1.md
+  - Workouts/2025-12-17 - push-1/Log/2.md
+  - Workouts/2025-12-17 - push-1/Log/3.md
+  - Workouts/2025-12-17 - push-1/Log/4.md
+  - Workouts/2025-12-17 - push-1/Log/5.md
 tags:
   - workout
 ---

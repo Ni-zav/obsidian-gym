@@ -1,6 +1,7 @@
 formulas:
   Daily Note Link: link(file.folder.slice(9, 19))
   Sets: file.properties.Logs.length - 2
+  Total Volume: file.properties.Logs.map(file(value).properties.volume).reduce(acc + value, 0)
 properties:
   formula.Daily Note Link:
     displayName: Date
@@ -16,9 +17,14 @@ views:
       - formula.Daily Note Link
       - time
       - formula.Sets
+      - formula.Total Volume
       - workout_type
       - workout_place
     sort:
+      - property: formula.Exercises
+        direction: ASC
+      - property: workout_type
+        direction: ASC
       - property: formula.Daily Note Link
         direction: ASC
     columnSize: {}

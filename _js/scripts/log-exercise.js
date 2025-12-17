@@ -272,6 +272,16 @@ module.exports = async function listFiles(params) {
             // Add workout_id to frontmatter
             let content = await app.vault.read(newNote);
             content = content.replace(/---\n+/m, `---\nworkout_id: ${newId}\n`);
+            
+            // Calculate and add volume if weight and reps exist
+            const metadata = app.metadataCache.getFileCache(newNote);
+            const weight = metadata?.frontmatter?.weight;
+            const reps = metadata?.frontmatter?.reps;
+            if (weight && reps) {
+                const volume = weight * reps;
+                content = content.replace(/---\n/m, `---\nvolume: ${volume}\n`);
+            }
+            
             await app.vault.modify(newNote, content);
 
             // Update parent workout file with Logs property
@@ -331,11 +341,9 @@ async function updateWorkoutLogs(workoutFile, logFile) {
             if (!fm['Logs']) {
                 fm['Logs'] = [];
             }
-            // Create a link to the log file
-            const logLink = `[[${logFile.name}|${logFile.basename}]]`;
-            // Append the link if it's not already there
-            if (!fm['Logs'].includes(logLink)) {
-                fm['Logs'].push(logLink);
+            // Store the file path directly (Bases can work with file paths)
+            if (!fm['Logs'].includes(logFile.path)) {
+                fm['Logs'].push(logFile.path);
             }
         });
     } catch (error) {

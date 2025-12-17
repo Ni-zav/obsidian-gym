@@ -5,6 +5,8 @@ formulas:
 properties:
   formula.Daily Note Link:
     displayName: Date
+  file.properties.ExercisesSummary:
+    displayName: ExercisesSummary
 views:
   - type: table
     name: Table
@@ -14,12 +16,13 @@ views:
         - file.inFolder("Workouts")
     order:
       - file.name
-      - time
       - formula.Daily Note Link
-      - workout_place
-      - formula.Sets
-      - formula.Total Volume
+      - time
       - workout_type
+      - workout_place
+      - formula.Total Volume
+      - duration
+      - ExercisesSummary
     sort:
       - property: formula.Exercises
         direction: ASC
@@ -27,4 +30,7 @@ views:
         direction: ASC
       - property: formula.Daily Note Link
         direction: ASC
-    columnSize: {}
+    columnSize:
+      note.duration: 137
+    cardSize: 300
+    rowHeight: medium

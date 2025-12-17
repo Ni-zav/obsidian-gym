@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "bd4485f6c6da2eae",
+        "id": "1edd0aca3cb9cfb7",
         "type": "tabs",
         "children": [
           {
-            "id": "05a18d9cc6d7e11b",
+            "id": "e5a5afd8ce86de73",
             "type": "leaf",
             "pinned": true,
             "state": {
@@ -24,71 +24,7 @@
             }
           },
           {
-            "id": "afeefc4f223a4b58",
-            "type": "leaf",
-            "pinned": true,
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Gym Log Dashboard.md",
-                "mode": "source",
-                "source": false
-              },
-              "pinned": true,
-              "icon": "lucide-file",
-              "title": "Gym Log Dashboard"
-            }
-          },
-          {
-            "id": "bc004848d5ede85d",
-            "type": "leaf",
-            "pinned": true,
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Gym Log Dashboard.md",
-                "mode": "source",
-                "source": false
-              },
-              "pinned": true,
-              "icon": "lucide-file",
-              "title": "Gym Log Dashboard"
-            }
-          },
-          {
-            "id": "fb2cc414b40378cb",
-            "type": "leaf",
-            "pinned": true,
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Gym Log Dashboard.md",
-                "mode": "source",
-                "source": false
-              },
-              "pinned": true,
-              "icon": "lucide-file",
-              "title": "Gym Log Dashboard"
-            }
-          },
-          {
-            "id": "6b1feb9faeb33c0d",
-            "type": "leaf",
-            "pinned": true,
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Gym Log Dashboard.md",
-                "mode": "source",
-                "source": false
-              },
-              "pinned": true,
-              "icon": "lucide-file",
-              "title": "Gym Log Dashboard"
-            }
-          },
-          {
-            "id": "22fe2997acb1d0d7",
+            "id": "9c45d436a45328fa",
             "type": "leaf",
             "state": {
               "type": "bases",
@@ -101,7 +37,7 @@
             }
           }
         ],
-        "currentTab": 5
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -264,42 +200,42 @@
       "zenmode:Toggle Zen mode": false
     }
   },
-  "active": "22fe2997acb1d0d7",
+  "active": "9c45d436a45328fa",
   "lastOpenFiles": [
-    "Workouts List.base",
+    "Workouts/2025-12-18 - push-1/push-1.md",
+    "Workouts/2025-12-18 - push-1/Log/4.md",
     "Workouts History.base",
-    "Workouts/2025-12-17 - push-1/push-1.md",
+    "Workouts/2025-12-18 - push-1/Log/5.md",
+    "Workouts/2025-12-18 - push-1/Log/3.md",
+    "Workouts/2025-12-18 - push-1/Log/2.md",
+    "Workouts/2025-12-18 - push-1/Log/1.md",
+    "Gym Log Dashboard.md",
+    "Workouts/2025-12-18 - push-1/Log",
+    "Workouts/2025-12-18 - push-1",
+    "Add Workout or Exercise Here.md",
+    "Workouts List.base",
+    "Exercises List.base",
+    "Templates/exercises/Untitled.md",
+    "error-logs.md",
     "README.md",
+    "Workouts/2025-12-17 - push-1/push-1.md",
     "Workouts/2025-12-17 - push-1/Log/5.md",
     "Workouts/2025-12-17 - push-1/Log/4.md",
     "Workouts/2025-12-17 - push-1/Log/3.md",
     "Workouts/2025-12-17 - push-1/Log/2.md",
     "Workouts/2025-12-17 - push-1/Log/1.md",
-    "Gym Log Dashboard.md",
     "Workouts/2025-12-17 - push-1/Log",
     "Workouts/2025-12-17 - push-1",
     "Workouts Database.base",
-    "Add Workout or Exercise Here.md",
     "Workouts/2025-12-17 - push-1/Log/8.md",
-    "Exercises List.base",
-    "error-logs.md",
     "Exercise Dashboard.md",
     "Templates/Workouts/gym/push-1.md",
     "Templates/exercises/Chest/Chest - dumbells floor press.md",
     "Templates/exercises/Chest/Chest - decline push up.md",
     "Templates/exercises/Abs/Abs - leg raises.md",
-    "Templates/exercises/Untitled.md",
     "Templates/Custom.md",
     "Templates/Start.md",
-    "Templates/End.md",
-    "Templates/exercises/Core/Core - plank.md",
-    "Workouts/2025-12-17 - push-1/Log/7.md",
-    "Workouts/2025-12-17 - push-1/Log/6.md",
-    "Templates/exercises/Chest/Chest - chest fly.md",
-    "First Media Note.md",
     "Workouts/2025-05-16 - push-1/Log",
-    "Workouts/2025-05-16 - push-1",
-    "Workouts",
-    "Templates/exercises/Core"
+    "Workouts/2025-05-16 - push-1"
   ]
 }

@@ -1,6 +1,7 @@
 This is home for the Gym Log (You can use the [Homepage](https://github.com/mirnovov/obsidian-homepage) plugin to pin this page and keep it always open on startup)
 ***
-| [[Add Workout or Exercise Here]] | [[Exercises List.base|Exercises List]] | [[Workouts List.base|Workouts List]] |
+| [[Add Workout or Exercise Here]] | [[Exercises List.base|Exercises List]] | [[Workouts List.base|Workouts List]] | 
+
 Start that created routine(s) here for today's workout! (always use this to start your workout)
 ```meta-bind-button
 label: Start Today's Workout
@@ -19,8 +20,7 @@ actions:
 ```
 ---
 
-View: (might move it to the bases for much better view)
-
+## [[Workouts History.base|Workouts History]]
 ```dataviewjs
 
 let pages = dv.pages('"Workouts" and #workout').sort(p=> p.date, "desc");
@@ -34,7 +34,10 @@ dv.table(["Last workouts", "Date", "Type", "Place"], pages.slice(0,5)
 	.map(e=> [e.file.link, `[[${e.date.toFormat("yyyy-MM-dd")}]]`, e['workout_type'] || "Not specified", e['workout_place'] || "Not specified"]))
 
 ```
----
+
+
+
+## Heatmap
 # Heatmap
 ```dataviewjs
 dv.span("** 😊 Workouts  😥**") /* optional ⏹️💤⚡⚠🧩↑↓⏳📔💾📁📝🔄📝🔀⌨️🕸️📅🔍✨ */
@@ -130,5 +133,4 @@ for (let page of dv.pages('#workout'))
 
 renderHeatmapCalendar(this.container, calendarData)
 ```
----
 

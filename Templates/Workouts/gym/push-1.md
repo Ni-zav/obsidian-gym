@@ -7,6 +7,8 @@ workout_order: [741600, 741600, 741600, 741600, 379969, 379969, 379969, 379969, 
 workout_type: Weight Training
 workout_place: Home
 Logs: []
+ExercisesSummary: 
+duration: 
 tags:
  - workout
 ---

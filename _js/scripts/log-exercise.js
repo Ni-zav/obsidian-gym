@@ -202,8 +202,11 @@ module.exports = async function listFiles(params) {
             content = content.replace(/---\r?\n/, `---\nworkout_id: ${newId}\n`);
             await app.vault.modify(newNote, content);
             
-            // Update parent workout file with Logs property
-            await updateWorkoutLogs(activeFile, newNote);
+            // Update parent workout file with Logs property (no exercise name for End)
+            await updateWorkoutLogs(activeFile, newNote, '');
+            
+            // Calculate and store workout duration
+            await calculateAndStoreDuration(activeFile, targetFolder);
             
             params.variables = { notePath: newNote.path };
             return;
@@ -271,21 +274,37 @@ module.exports = async function listFiles(params) {
 
             // Add workout_id to frontmatter
             let content = await app.vault.read(newNote);
+            
+            // Parse frontmatter to get exercise name, weight, and reps
+            const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+            let exerciseName = '';
+            let weight = 0;
+            let reps = 0;
+            
+            if (fmMatch) {
+                const fmContent = fmMatch[1];
+                const exerciseMatch = fmContent.match(/^exercise:\s*(.+)$/m);
+                const weightMatch = fmContent.match(/^weight:\s*(\d+(?:\.\d+)?)/m);
+                const repsMatch = fmContent.match(/^reps:\s*(\d+)/m);
+                
+                if (exerciseMatch) exerciseName = exerciseMatch[1].trim();
+                if (weightMatch) weight = parseFloat(weightMatch[1]);
+                if (repsMatch) reps = parseInt(repsMatch[1]);
+            }
+            
+            // Add workout_id to frontmatter
             content = content.replace(/---\n+/m, `---\nworkout_id: ${newId}\n`);
             
             // Calculate and add volume if weight and reps exist
-            const metadata = app.metadataCache.getFileCache(newNote);
-            const weight = metadata?.frontmatter?.weight;
-            const reps = metadata?.frontmatter?.reps;
             if (weight && reps) {
                 const volume = weight * reps;
-                content = content.replace(/---\n/m, `---\nvolume: ${volume}\n`);
+                content = content.replace(/^workout_id:/m, `volume: ${volume}\nworkout_id:`);
             }
             
             await app.vault.modify(newNote, content);
 
-            // Update parent workout file with Logs property
-            await updateWorkoutLogs(activeFile, newNote);
+            // Update parent workout file with Logs property and exercise counts
+            await updateWorkoutLogs(activeFile, newNote, exerciseName);
 
             params.variables = { notePath: newNote.path };
 
@@ -334,7 +353,7 @@ async function update(property, value, filePath) {
     await app.vault.modify(file, content);
 }
 
-async function updateWorkoutLogs(workoutFile, logFile) {
+async function updateWorkoutLogs(workoutFile, logFile, exerciseName = '') {
     try {
         await app.fileManager.processFrontMatter(workoutFile, (fm) => {
             // Initialize Logs array if it doesn't exist
@@ -345,9 +364,83 @@ async function updateWorkoutLogs(workoutFile, logFile) {
             if (!fm['Logs'].includes(logFile.path)) {
                 fm['Logs'].push(logFile.path);
             }
+            
+            // Update exercise counts only if exerciseName is provided and not a workout marker
+            if (exerciseName && !exerciseName.includes("Workout")) {
+                // Initialize ExerciseCounts if it doesn't exist
+                if (!fm['ExerciseCounts']) {
+                    fm['ExerciseCounts'] = {};
+                }
+                // Increment count for this exercise
+                fm['ExerciseCounts'][exerciseName] = (fm['ExerciseCounts'][exerciseName] || 0) + 1;
+                
+                // Create a formatted summary string for display
+                const summary = Object.entries(fm['ExerciseCounts'])
+                    .map(([name, count]) => `${name} x${count}`)
+                    .join(", ");
+                fm['ExercisesSummary'] = summary;
+            }
         });
     } catch (error) {
         console.error("Error updating workout logs:", error);
+    }
+}
+
+async function calculateAndStoreDuration(workoutFile, logFolder) {
+    try {
+        // Get all files in the Log folder
+        const logFiles = logFolder.children
+            .filter(f => f.extension === 'md')
+            .sort((a, b) => {
+                // Sort by file name (numeric)
+                return parseInt(a.basename) - parseInt(b.basename);
+            });
+        
+        if (logFiles.length < 2) {
+            return; // Need at least start and end
+        }
+        
+        // Get the first (start) and last (end) log files
+        const startFile = logFiles[0];
+        const endFile = logFiles[logFiles.length - 1];
+        
+        // Read the dates from both files
+        const startContent = await app.vault.read(startFile);
+        const endContent = await app.vault.read(endFile);
+        
+        const startMatch = startContent.match(/^date:\s*(.+)$/m);
+        const endMatch = endContent.match(/^date:\s*(.+)$/m);
+        
+        if (startMatch && endMatch) {
+            const startDate = new Date(startMatch[1]);
+            const endDate = new Date(endMatch[1]);
+            
+            // Calculate duration in milliseconds
+            const durationMs = endDate - startDate;
+            
+            // Convert to hours and minutes
+            const totalMinutes = Math.floor(durationMs / 60000);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            
+            // Format with proper pluralization
+            let durationStr = '';
+            if (hours > 0) {
+                const hourStr = hours === 1 ? 'Hour' : 'Hours';
+                const minuteStr = minutes === 1 ? 'Minute' : 'Minutes';
+                durationStr = `${hours} ${hourStr} ${minutes} ${minuteStr}`;
+            } else {
+                const minuteStr = minutes === 1 ? 'Minute' : 'Minutes';
+                durationStr = `${minutes} ${minuteStr}`;
+            }
+            
+            // Store duration in the workout file
+            await app.fileManager.processFrontMatter(workoutFile, (fm) => {
+                fm['duration'] = durationStr;
+            });
+        }
+    } catch (error) {
+        console.error("Error calculating duration:", error);
     }
 }
 

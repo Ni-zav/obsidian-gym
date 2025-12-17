@@ -169,20 +169,412 @@ class workout {
             const volume = isTimed
                 ? (e.weight && duration ? `${e.weight * duration} sec×kg` : "~")
                 : (e.weight && e.reps ? `${e.weight * e.reps} kg×reps` : "~");
+            
             return [
                 (e.exercise === "Workout start" || e.exercise === "Workout end") ? e.exercise : `[[${e.exercise}]]`,
                 weight,
                 isTimed ? (duration ? duration + ' sec' : '~') : reps,
                 e.effort || "~",
                 moment(e.date).format("HH:mm"),
-                volume
+                volume,
+                e.file.path // Store the file path for later reference
             ];
         });
 
         context.dv.table(
-            ["Exercise", "Weight", "Reps/Sec", "Effort", "Time", "Volume"],
+            ["Exercise", "Weight", "Reps/Sec", "Effort", "Time", "Volume", "File Path"],
             tableData
         );
+        
+        // Hide the File Path column and add buttons after the table
+        context.container.style.display = 'block';
+        
+        // Create buttons for each exercise
+        performed.array().forEach((e, index) => {
+            const isStartOrEnd = e.exercise === "Workout start" || e.exercise === "Workout end";
+            const buttonContainer = context.container.createEl('div', {
+                cls: 'workout-actions-row',
+                attr: { 'data-index': index }
+            });
+            
+            // Only show edit for regular exercises
+            if (!isStartOrEnd) {
+                const editBtn = buttonContainer.createEl('button', {
+                    text: 'Edit',
+                    cls: 'workout-edit-btn',
+                    attr: { 'data-file': e.file.path }
+                });
+                editBtn.onclick = async () => {
+                    await this.editLogFile(e.file.path, current.file);
+                };
+            }
+            
+            // Show delete for all (start/end will delete all logs)
+            const deleteBtn = buttonContainer.createEl('button', {
+                text: 'Delete',
+                cls: 'workout-delete-btn',
+                attr: { 'data-file': e.file.path }
+            });
+            deleteBtn.onclick = async () => {
+                await this.deleteLogFile(e.file.path, current.file);
+            };
+        });
+    }
+    
+    async editLogFile(logFilePath, workoutFile) {
+        try {
+            const file = app.vault.getAbstractFileByPath(logFilePath);
+            if (!file) return;
+            
+            // Read the current log file
+            const content = await app.vault.read(file);
+            
+            // Extract current values from frontmatter
+            const weightMatch = content.match(/^weight:\s*(\d+(?:\.\d+)?)/m);
+            const repsMatch = content.match(/^reps:\s*(\d+)/m);
+            const effortMatch = content.match(/^effort:\s*(\d+)/m);
+            
+            const currentWeight = weightMatch ? weightMatch[1] : '';
+            const currentReps = repsMatch ? repsMatch[1] : '';
+            const currentEffort = effortMatch ? effortMatch[1] : '';
+            
+            // Create a custom modal dialog using Obsidian's native styles
+            const modalBackdrop = document.createElement('div');
+            modalBackdrop.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+            
+            const modalBox = document.createElement('div');
+            modalBox.style.cssText = `
+                background-color: var(--background-secondary);
+                border: 1px solid var(--background-modifier-border);
+                border-radius: 8px;
+                padding: 16px;
+                max-width: 300px;
+                width: 100%;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            `;
+            
+            const title = document.createElement('h2');
+            title.textContent = 'Edit Exercise';
+            title.style.marginTop = '0';
+            title.style.marginBottom = '16px';
+            modalBox.appendChild(title);
+            
+            const form = document.createElement('form');
+            form.style.display = 'flex';
+            form.style.flexDirection = 'column';
+            form.style.gap = '12px';
+            
+            // Weight input
+            const weightLabel = document.createElement('label');
+            weightLabel.addClass('setting-item');
+            const weightLabelText = document.createElement('span');
+            weightLabelText.textContent = 'Weight (kg):';
+            weightLabelText.style.fontWeight = '600';
+            weightLabelText.style.display = 'block';
+            weightLabelText.style.marginBottom = '4px';
+            weightLabel.appendChild(weightLabelText);
+            const weightInput = document.createElement('input');
+            weightInput.type = 'number';
+            weightInput.value = currentWeight;
+            weightInput.step = '0.5';
+            weightInput.placeholder = 'Enter weight';
+            weightInput.addClass('setting-item-control');
+            weightLabel.appendChild(weightInput);
+            form.appendChild(weightLabel);
+            
+            // Reps input
+            const repsLabel = document.createElement('label');
+            repsLabel.addClass('setting-item');
+            const repsLabelText = document.createElement('span');
+            repsLabelText.textContent = 'Reps:';
+            repsLabelText.style.fontWeight = '600';
+            repsLabelText.style.display = 'block';
+            repsLabelText.style.marginBottom = '4px';
+            repsLabel.appendChild(repsLabelText);
+            const repsInput = document.createElement('input');
+            repsInput.type = 'number';
+            repsInput.value = currentReps;
+            repsInput.placeholder = 'Enter reps';
+            repsInput.addClass('setting-item-control');
+            repsLabel.appendChild(repsInput);
+            form.appendChild(repsLabel);
+            
+            // Effort input
+            const effortLabel = document.createElement('label');
+            effortLabel.addClass('setting-item');
+            const effortLabelText = document.createElement('span');
+            effortLabelText.textContent = 'Effort (1-10):';
+            effortLabelText.style.fontWeight = '600';
+            effortLabelText.style.display = 'block';
+            effortLabelText.style.marginBottom = '4px';
+            effortLabel.appendChild(effortLabelText);
+            const effortInput = document.createElement('input');
+            effortInput.type = 'number';
+            effortInput.value = currentEffort;
+            effortInput.min = '1';
+            effortInput.max = '10';
+            effortInput.placeholder = 'Enter effort';
+            effortInput.addClass('setting-item-control');
+            effortLabel.appendChild(effortInput);
+            form.appendChild(effortLabel);
+            
+            // Buttons
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = `
+                display: flex;
+                gap: 8px;
+                margin-top: 16px;
+                justify-content: flex-end;
+            `;
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Save';
+            saveBtn.type = 'button';
+            saveBtn.addClass('mod-cta');
+            saveBtn.addClass('button');
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.type = 'button';
+            cancelBtn.addClass('button');
+            
+            buttonContainer.appendChild(saveBtn);
+            buttonContainer.appendChild(cancelBtn);
+            form.appendChild(buttonContainer);
+            
+            modalBox.appendChild(form);
+            modalBackdrop.appendChild(modalBox);
+            
+            // Close modal when clicking outside
+            modalBackdrop.onclick = (e) => {
+                if (e.target === modalBackdrop) {
+                    document.body.removeChild(modalBackdrop);
+                }
+            };
+            
+            saveBtn.onclick = async (e) => {
+                e.preventDefault();
+                
+                // Update the log file with new values
+                const newWeight = weightInput.value || '';
+                const newReps = repsInput.value || '';
+                const newEffort = effortInput.value || '';
+                
+                let updatedContent = content;
+                
+                // Update or add weight
+                if (updatedContent.includes('weight:')) {
+                    updatedContent = updatedContent.replace(/^weight:\s*.+$/m, `weight: ${newWeight}`);
+                } else if (newWeight) {
+                    updatedContent = updatedContent.replace(/^reps:/m, `weight: ${newWeight}\nreps:`);
+                }
+                
+                // Update or add reps
+                if (updatedContent.includes('reps:')) {
+                    updatedContent = updatedContent.replace(/^reps:\s*.+$/m, `reps: ${newReps}`);
+                } else if (newReps) {
+                    updatedContent = updatedContent.replace(/^effort:/m, `reps: ${newReps}\neffort:`);
+                }
+                
+                // Update or add effort
+                if (updatedContent.includes('effort:')) {
+                    updatedContent = updatedContent.replace(/^effort:\s*.+$/m, `effort: ${newEffort}`);
+                }
+                
+                // Calculate volume
+                if (newWeight && newReps) {
+                    const volume = parseFloat(newWeight) * parseInt(newReps);
+                    if (updatedContent.includes('volume:')) {
+                        updatedContent = updatedContent.replace(/^volume:\s*.+$/m, `volume: ${volume}`);
+                    } else {
+                        updatedContent = updatedContent.replace(/^weight:/m, `volume: ${volume}\nweight:`);
+                    }
+                }
+                
+                await app.vault.modify(file, updatedContent);
+                
+                // Recalculate all metrics
+                await this.recalculateWorkoutMetrics(workoutFile);
+                
+                document.body.removeChild(modalBackdrop);
+                
+                // Reload the active view
+                const activeView = app.workspace.getActiveViewOfType(MarkdownView);
+                if (activeView) {
+                    activeView.previewMode.rerender(true);
+                }
+            };
+            
+            cancelBtn.onclick = (e) => {
+                e.preventDefault();
+                document.body.removeChild(modalBackdrop);
+            };
+            
+            document.body.appendChild(modalBackdrop);
+            
+            // Focus on weight input
+            weightInput.focus();
+            
+        } catch (error) {
+            console.error('Error editing log file:', error);
+            new Notice('Error editing exercise: ' + error.message);
+        }
+    }
+    
+    async deleteLogFile(logFilePath, workoutFile) {
+        try {
+            const file = app.vault.getAbstractFileByPath(logFilePath);
+            if (!file) return;
+            
+            // Read the file to check if it's a start log
+            const content = await app.vault.read(file);
+            const isStartLog = content.includes('Workout start');
+            
+            if (isStartLog) {
+                // If deleting start, ask for confirmation and delete all logs
+                if (!confirm('Delete workout start? This will delete ALL exercise logs for this workout.')) {
+                    return;
+                }
+                
+                // Delete all files in the Log folder
+                const logFolder = file.parent;
+                const allFiles = logFolder.children.filter(f => f.extension === 'md');
+                
+                for (const logFile of allFiles) {
+                    await app.vault.delete(logFile);
+                }
+                
+                // Reset workout metrics
+                await app.fileManager.processFrontMatter(workoutFile, (fm) => {
+                    fm['Logs'] = [];
+                    fm['ExerciseCounts'] = {};
+                    fm['ExercisesSummary'] = '';
+                    fm['duration'] = '';
+                });
+                
+                new Notice('Workout cleared - all logs deleted');
+            } else {
+                // Normal delete for regular exercises
+                if (!confirm('Delete this exercise log?')) {
+                    return;
+                }
+                
+                await app.vault.delete(file);
+                
+                // Recalculate metrics
+                await this.recalculateWorkoutMetrics(workoutFile);
+                
+                new Notice('Exercise log deleted and metrics recalculated');
+            }
+            
+        } catch (error) {
+            console.error('Error deleting log file:', error);
+            new Notice('Error deleting exercise');
+        }
+    }
+    
+    async recalculateWorkoutMetrics(workoutFile) {
+        try {
+            const logFolderPath = workoutFile.parent.path + "/Log";
+            const logFolder = app.vault.getAbstractFileByPath(logFolderPath);
+            
+            if (!logFolder || !logFolder.children) {
+                return;
+            }
+            
+            // Get all log files sorted by name
+            const logFiles = logFolder.children
+                .filter(f => f.extension === 'md')
+                .sort((a, b) => parseInt(a.basename) - parseInt(b.basename));
+            
+            // Update Logs property in frontmatter
+            const logPaths = logFiles.map(f => f.path);
+            
+            // Recalculate exercise counts and volume
+            let exerciseCounts = {};
+            let totalVolume = 0;
+            
+            for (const logFile of logFiles) {
+                const content = await app.vault.read(logFile);
+                
+                // Extract exercise name
+                const exerciseMatch = content.match(/^exercise:\s*(.+)$/m);
+                const exerciseName = exerciseMatch ? exerciseMatch[1].trim() : '';
+                
+                // Extract weight and reps for volume calculation
+                const weightMatch = content.match(/^weight:\s*(\d+(?:\.\d+)?)/m);
+                const repsMatch = content.match(/^reps:\s*(\d+)/m);
+                const weight = weightMatch ? parseFloat(weightMatch[1]) : 0;
+                const reps = repsMatch ? parseInt(repsMatch[1]) : 0;
+                
+                // Update exercise counts
+                if (exerciseName && !exerciseName.includes('Workout')) {
+                    exerciseCounts[exerciseName] = (exerciseCounts[exerciseName] || 0) + 1;
+                }
+                
+                // Update total volume
+                if (weight && reps) {
+                    totalVolume += weight * reps;
+                }
+            }
+            
+            // Create exercise summary
+            const exercisesSummary = Object.entries(exerciseCounts)
+                .map(([name, count]) => `${name} x${count}`)
+                .join(", ");
+            
+            // Calculate duration if there are start and end files
+            let duration = '';
+            if (logFiles.length >= 2) {
+                const startContent = await app.vault.read(logFiles[0]);
+                const endContent = await app.vault.read(logFiles[logFiles.length - 1]);
+                
+                const startMatch = startContent.match(/^date:\s*(.+)$/m);
+                const endMatch = endContent.match(/^date:\s*(.+)$/m);
+                
+                if (startMatch && endMatch) {
+                    const startDate = new Date(startMatch[1]);
+                    const endDate = new Date(endMatch[1]);
+                    const durationMs = endDate - startDate;
+                    const totalMinutes = Math.floor(durationMs / 60000);
+                    const hours = Math.floor(totalMinutes / 60);
+                    const minutes = totalMinutes % 60;
+                    
+                    if (hours > 0) {
+                        const hourStr = hours === 1 ? 'Hour' : 'Hours';
+                        const minuteStr = minutes === 1 ? 'Minute' : 'Minutes';
+                        duration = `${hours} ${hourStr} ${minutes} ${minuteStr}`;
+                    } else {
+                        const minuteStr = minutes === 1 ? 'Minute' : 'Minutes';
+                        duration = `${minutes} ${minuteStr}`;
+                    }
+                }
+            }
+            
+            // Update the workout file with recalculated metrics
+            await app.fileManager.processFrontMatter(workoutFile, (fm) => {
+                fm['Logs'] = logPaths;
+                fm['ExerciseCounts'] = exerciseCounts;
+                fm['ExercisesSummary'] = exercisesSummary;
+                fm['duration'] = duration;
+            });
+            
+        } catch (error) {
+            console.error('Error recalculating workout metrics:', error);
+        }
     }
 
     async renderWorkoutSummary(context) {

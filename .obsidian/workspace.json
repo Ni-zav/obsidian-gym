@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "1edd0aca3cb9cfb7",
+        "id": "a04a122501002600",
         "type": "tabs",
         "children": [
           {
-            "id": "e5a5afd8ce86de73",
+            "id": "21de59ac2f0f6c9b",
             "type": "leaf",
             "pinned": true,
             "state": {
@@ -24,16 +24,17 @@
             }
           },
           {
-            "id": "9c45d436a45328fa",
+            "id": "bc261b45b0424189",
             "type": "leaf",
             "state": {
-              "type": "bases",
+              "type": "markdown",
               "state": {
-                "file": "Workouts History.base",
-                "viewName": "Table"
+                "file": "Workouts/2025-12-18 - push-1/push-1.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-table",
-              "title": "Workouts History"
+              "icon": "lucide-file",
+              "title": "push-1"
             }
           }
         ],
@@ -139,12 +140,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Workouts History.base",
+                "file": "Workouts/2025-12-18 - push-1/push-1.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Workouts History"
+              "title": "Outgoing links from push-1"
             }
           },
           {
@@ -200,32 +201,32 @@
       "zenmode:Toggle Zen mode": false
     }
   },
-  "active": "9c45d436a45328fa",
+  "active": "bc261b45b0424189",
   "lastOpenFiles": [
-    "Workouts/2025-12-18 - push-1/push-1.md",
-    "Workouts/2025-12-18 - push-1/Log/4.md",
-    "Workouts History.base",
-    "Workouts/2025-12-18 - push-1/Log/5.md",
-    "Workouts/2025-12-18 - push-1/Log/3.md",
     "Workouts/2025-12-18 - push-1/Log/2.md",
-    "Workouts/2025-12-18 - push-1/Log/1.md",
+    "Workouts/2025-12-18 - push-1/push-1.md",
     "Gym Log Dashboard.md",
+    "Workouts/2025-12-18 - push-1/Log/1.md",
+    "Workouts/2025-12-18 - push-1/Log/5.md",
+    "Workouts/2025-12-18 - push-1/Log/4.md",
+    "Workouts/2025-12-18 - push-1/Log/3.md",
     "Workouts/2025-12-18 - push-1/Log",
     "Workouts/2025-12-18 - push-1",
-    "Add Workout or Exercise Here.md",
     "Workouts List.base",
+    "Workouts History.base",
+    "Workouts/2025-12-17 - push-1/push-1.md",
+    "Workouts/2025-12-17 - push-1",
+    "Add Workout or Exercise Here.md",
     "Exercises List.base",
     "Templates/exercises/Untitled.md",
     "error-logs.md",
     "README.md",
-    "Workouts/2025-12-17 - push-1/push-1.md",
     "Workouts/2025-12-17 - push-1/Log/5.md",
     "Workouts/2025-12-17 - push-1/Log/4.md",
     "Workouts/2025-12-17 - push-1/Log/3.md",
     "Workouts/2025-12-17 - push-1/Log/2.md",
     "Workouts/2025-12-17 - push-1/Log/1.md",
     "Workouts/2025-12-17 - push-1/Log",
-    "Workouts/2025-12-17 - push-1",
     "Workouts Database.base",
     "Workouts/2025-12-17 - push-1/Log/8.md",
     "Exercise Dashboard.md",

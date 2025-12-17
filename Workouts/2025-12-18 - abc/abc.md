@@ -1,16 +1,42 @@
 ---
-workout_title: push-1
-date: <% tp.date.now("YYYY-MM-DD") %>
-time: <% tp.date.now("HH:mm") %>
-exercises: [741600, 741600, 741600, 741600, 379969, 379969, 379969, 379969, 728817, 728817, 728817, 728817, 728817, 808829, 808829, 808829, 535529, 535529, 535529, 535529]
-workout_order: [741600, 741600, 741600, 741600, 379969, 379969, 379969, 379969, 728817, 728817, 728817, 728817, 728817, 808829, 808829, 808829, 535529, 535529, 535529, 535529]
+id: 5c8864
+workout_title: abc
+date: 2025-12-18
+time: 01:58
+exercises:
+  - 286289
+  - 286289
+  - 286289
+  - 858572
+  - 858572
+  - 858572
+  - 527062
+  - 527062
+  - 527062
+workout_order:
+  - 286289
+  - 286289
+  - 286289
+  - 858572
+  - 858572
+  - 858572
+  - 527062
+  - 527062
+  - 527062
 workout_type: Weight Training
 workout_place: Home
-Logs: []
-ExercisesSummary: 
-duration: 
 tags:
- - workout
+  - workout
+Logs:
+  - Workouts/2025-12-18 - abc/Log/1.md
+  - Workouts/2025-12-18 - abc/Log/2.md
+  - Workouts/2025-12-18 - abc/Log/3.md
+  - Workouts/2025-12-18 - abc/Log/4.md
+ExerciseCounts:
+  Abs - leg raises: 2
+ExercisesSummary: Abs - leg raises x2
+Total Volume: 110
+duration: 7 Minutes
 ---
 
 ```dataviewjs
@@ -29,7 +55,7 @@ class: ""
 cssStyle: ""
 backgroundImage: ""
 tooltip: ""
-id: E99B38CC-ACF7-19DD-534D-91323EEADBEE
+id: ""
 hidden: false
 actions:
   - type: command

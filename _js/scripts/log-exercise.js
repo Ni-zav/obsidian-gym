@@ -422,8 +422,8 @@ async function calculateAndStoreDuration(workoutFile, logFolder) {
                 return parseInt(a.basename) - parseInt(b.basename);
             });
         
-        if (logFiles.length < 2) {
-            return; // Need at least start and end
+        if (logFiles.length === 0) {
+            return; // No logs at all
         }
         
         // Find the LATEST workout start and end
@@ -445,45 +445,62 @@ async function calculateAndStoreDuration(workoutFile, logFolder) {
             if (latestStartFile && latestEndFile) break;
         }
         
-        if (!latestStartFile || !latestEndFile) {
-            return; // No valid start/end pair
-        }
-        
-        // Read the dates from both files
-        const startContent = await app.vault.read(latestStartFile);
-        const endContent = await app.vault.read(latestEndFile);
-        
-        const startMatch = startContent.match(/^date:\s*(.+)$/m);
-        const endMatch = endContent.match(/^date:\s*(.+)$/m);
-        
-        if (startMatch && endMatch) {
-            const startDate = new Date(startMatch[1]);
-            const endDate = new Date(endMatch[1]);
-            
-            // Calculate duration in milliseconds
-            const durationMs = endDate - startDate;
-            
-            // Convert to hours and minutes
-            const totalMinutes = Math.floor(durationMs / 60000);
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = totalMinutes % 60;
-            
-            // Format with proper pluralization
-            let durationStr = '';
-            if (hours > 0) {
-                const hourStr = hours === 1 ? 'Hour' : 'Hours';
-                const minuteStr = minutes === 1 ? 'Minute' : 'Minutes';
-                durationStr = `${hours} ${hourStr} ${minutes} ${minuteStr}`;
-            } else {
-                const minuteStr = minutes === 1 ? 'Minute' : 'Minutes';
-                durationStr = `${minutes} ${minuteStr}`;
-            }
-            
-            // Store duration in the workout file
+        // SPECIAL CASE: If no workout start found, clear duration
+        if (!latestStartFile) {
             await app.fileManager.processFrontMatter(workoutFile, (fm) => {
-                fm['duration'] = durationStr;
+                fm['duration'] = '';
             });
+            return;
         }
+        
+        // Read the date from start file
+        const startContent = await app.vault.read(latestStartFile);
+        const startMatch = startContent.match(/^date:\s*(.+)$/m);
+        
+        if (!startMatch) {
+            return;
+        }
+        
+        const startDate = new Date(startMatch[1]);
+        
+        let durationStr = '';
+        
+        if (latestEndFile) {
+            // Both start and end exist - calculate full duration
+            const endContent = await app.vault.read(latestEndFile);
+            const endMatch = endContent.match(/^date:\s*(.+)$/m);
+            
+            if (endMatch) {
+                const endDate = new Date(endMatch[1]);
+                
+                // Calculate duration in milliseconds
+                const durationMs = endDate - startDate;
+                
+                // Convert to hours and minutes
+                const totalMinutes = Math.floor(durationMs / 60000);
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                
+                // Format with proper pluralization
+                if (hours > 0) {
+                    const hourStr = hours === 1 ? 'Hour' : 'Hours';
+                    const minuteStr = minutes === 1 ? 'Minute' : 'Minutes';
+                    durationStr = `${hours} ${hourStr} ${minutes} ${minuteStr}`;
+                } else {
+                    const minuteStr = minutes === 1 ? 'Minute' : 'Minutes';
+                    durationStr = `${minutes} ${minuteStr}`;
+                }
+            }
+        } else {
+            // Only start exists - show "Ongoing" status
+            durationStr = 'Ongoing';
+        }
+        
+        // Store duration in the workout file
+        await app.fileManager.processFrontMatter(workoutFile, (fm) => {
+            fm['duration'] = durationStr;
+        });
+        
     } catch (error) {
         console.error("Error calculating duration:", error);
     }

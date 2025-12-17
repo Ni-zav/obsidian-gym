@@ -1,15 +1,11 @@
 ---
-id: a236e9
-workout_title: push-1
-date: 2025-12-18
-time: 01:37
-exercises: [741600, 741600, 741600, 741600, 379969, 379969, 379969, 379969, 728817, 728817, 728817, 728817, 728817, 808829, 808829, 808829, 535529, 535529, 535529, 535529]
-workout_order: [741600, 741600, 741600, 741600, 379969, 379969, 379969, 379969, 728817, 728817, 728817, 728817, 728817, 808829, 808829, 808829, 535529, 535529, 535529, 535529]
+workout_title: abc
+date: <% tp.date.now("YYYY-MM-DD") %>
+time: <% tp.date.now("HH:mm") %>
+exercises: [286289, 286289, 286289, 858572, 858572, 858572, 527062, 527062, 527062]
+workout_order: [286289, 286289, 286289, 858572, 858572, 858572, 527062, 527062, 527062]
 workout_type: Weight Training
 workout_place: Home
-Logs: []
-ExercisesSummary: 
-duration: 
 tags:
  - workout
 ---
@@ -30,7 +26,7 @@ class: ""
 cssStyle: ""
 backgroundImage: ""
 tooltip: ""
-id: E99B38CC-ACF7-19DD-534D-91323EEADBEE
+id: ""
 hidden: false
 actions:
   - type: command

@@ -495,10 +495,7 @@ class workout {
                 document.body.removeChild(modalBackdrop);
                 
                 // Reload the active view
-                const activeView = app.workspace.getActiveViewOfType(MarkdownView);
-                if (activeView) {
-                    activeView.previewMode.rerender(true);
-                }
+                await this.reloadActiveView();
             };
             
             cancelBtn.onclick = (e) => {
@@ -521,6 +518,32 @@ class workout {
         try {
             const file = app.vault.getAbstractFileByPath(logFilePath);
             if (!file) return;
+            
+            // Validate and resolve workoutFile
+            let resolvedWorkoutFile = workoutFile;
+            
+            // If workoutFile doesn't have proper structure, try to find it from log path
+            if (!resolvedWorkoutFile || !resolvedWorkoutFile.parent) {
+                // Log file is at: Workouts/DATE - NAME/Log/N.md
+                // Workout file is at: Workouts/DATE - NAME/NAME.md
+                const logFolder = file.parent;
+                const workoutFolder = logFolder.parent;
+                
+                if (workoutFolder) {
+                    // Find the markdown file in the workout folder (not in Log subfolder)
+                    const workoutFiles = workoutFolder.children
+                        .filter(f => f.extension === 'md' && f.name !== 'Log');
+                    
+                    if (workoutFiles.length > 0) {
+                        resolvedWorkoutFile = workoutFiles[0];
+                    }
+                }
+            }
+            
+            if (!resolvedWorkoutFile) {
+                new Notice('Error: Could not identify workout file');
+                return;
+            }
             
             // Read the file to check if it's a start log
             const content = await app.vault.read(file);
@@ -562,7 +585,10 @@ class workout {
                 }
                 
                 // Recalculate metrics based on remaining logs
-                await this.recalculateWorkoutMetrics(workoutFile);
+                await this.recalculateWorkoutMetrics(resolvedWorkoutFile);
+                
+                // Reload the active view
+                await this.reloadActiveView();
                 
                 new Notice('Workout session deleted - metrics recalculated');
             } else {
@@ -574,7 +600,10 @@ class workout {
                 await app.vault.delete(file);
                 
                 // Recalculate metrics
-                await this.recalculateWorkoutMetrics(workoutFile);
+                await this.recalculateWorkoutMetrics(resolvedWorkoutFile);
+                
+                // Reload the active view
+                await this.reloadActiveView();
                 
                 new Notice('Exercise log deleted and metrics recalculated');
             }
@@ -585,8 +614,36 @@ class workout {
         }
     }
     
+    async reloadActiveView() {
+        try {
+            const activeView = app.workspace.getActiveFileView();
+            if (activeView && activeView.previewMode) {
+                activeView.previewMode.rerender(true);
+            }
+        } catch (e) {
+            // Silently fail if reload doesn't work
+            console.debug('Could not reload view:', e);
+        }
+    }
+    
     async recalculateWorkoutMetrics(workoutFile) {
         try {
+            // Validate workoutFile
+            if (!workoutFile) {
+                console.error('workoutFile is null or undefined');
+                return;
+            }
+            
+            if (!workoutFile.path) {
+                console.error('workoutFile.path is missing');
+                return;
+            }
+            
+            if (!workoutFile.parent) {
+                console.error('workoutFile.parent is missing');
+                return;
+            }
+            
             const logFolderPath = workoutFile.parent.path + "/Log";
             const logFolder = app.vault.getAbstractFileByPath(logFolderPath);
             
@@ -602,6 +659,40 @@ class workout {
             // Update Logs property in frontmatter
             const logPaths = logFiles.map(f => f.path);
             
+            // Find start and end files
+            let hasWorkoutStart = false;
+            let hasWorkoutEnd = false;
+            let startContent = null;
+            let endContent = null;
+            
+            for (const logFile of logFiles) {
+                const content = await app.vault.read(logFile);
+                const exerciseMatch = content.match(/^exercise:\s*(.+)$/m);
+                const exerciseName = exerciseMatch ? exerciseMatch[1].trim() : '';
+                
+                if (exerciseName === 'Workout start') {
+                    hasWorkoutStart = true;
+                    startContent = content;
+                }
+                if (exerciseName === 'Workout end') {
+                    hasWorkoutEnd = true;
+                    endContent = content;
+                }
+            }
+            
+            // SPECIAL CASE: If workout start is deleted, reset everything
+            if (!hasWorkoutStart) {
+                await app.fileManager.processFrontMatter(workoutFile, (fm) => {
+                    fm['Logs'] = [];
+                    fm['ExerciseCounts'] = {};
+                    fm['ExercisesSummary'] = '';
+                    fm['Total Volume'] = 0;
+                    fm['duration'] = '';
+                });
+                new Notice('Workout start deleted - all metrics reset');
+                return;
+            }
+            
             // Recalculate exercise counts and volume
             let exerciseCounts = {};
             let totalVolume = 0;
@@ -613,6 +704,11 @@ class workout {
                 const exerciseMatch = content.match(/^exercise:\s*(.+)$/m);
                 const exerciseName = exerciseMatch ? exerciseMatch[1].trim() : '';
                 
+                // Skip start and end markers
+                if (exerciseName.includes('Workout')) {
+                    continue;
+                }
+                
                 // Extract weight and reps for volume calculation
                 const weightMatch = content.match(/^weight:\s*(\d+(?:\.\d+)?)/m);
                 const repsMatch = content.match(/^reps:\s*(\d+)/m);
@@ -620,7 +716,7 @@ class workout {
                 const reps = repsMatch ? parseInt(repsMatch[1]) : 0;
                 
                 // Update exercise counts
-                if (exerciseName && !exerciseName.includes('Workout')) {
+                if (exerciseName) {
                     exerciseCounts[exerciseName] = (exerciseCounts[exerciseName] || 0) + 1;
                 }
                 
@@ -635,12 +731,11 @@ class workout {
                 .map(([name, count]) => `${name} x${count}`)
                 .join(", ");
             
-            // Calculate duration if there are start and end files
+            // Calculate duration intelligently
             let duration = '';
-            if (logFiles.length >= 2) {
-                const startContent = await app.vault.read(logFiles[0]);
-                const endContent = await app.vault.read(logFiles[logFiles.length - 1]);
-                
+            
+            if (hasWorkoutStart && hasWorkoutEnd) {
+                // Both start and end exist - calculate full duration
                 const startMatch = startContent.match(/^date:\s*(.+)$/m);
                 const endMatch = endContent.match(/^date:\s*(.+)$/m);
                 
@@ -661,6 +756,9 @@ class workout {
                         duration = `${minutes} ${minuteStr}`;
                     }
                 }
+            } else if (hasWorkoutStart && !hasWorkoutEnd) {
+                // Only start exists - show "Ongoing" status
+                duration = 'Ongoing';
             }
             
             // Update the workout file with recalculated metrics
@@ -668,6 +766,7 @@ class workout {
                 fm['Logs'] = logPaths;
                 fm['ExerciseCounts'] = exerciseCounts;
                 fm['ExercisesSummary'] = exercisesSummary;
+                fm['Total Volume'] = totalVolume;
                 fm['duration'] = duration;
             });
             

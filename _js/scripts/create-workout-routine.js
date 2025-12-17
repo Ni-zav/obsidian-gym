@@ -123,15 +123,22 @@ class WorkoutBuilder {
                 this.exercises[groupName] = [];
             });
 
-            // Load only exercise files from Templates/exercises
-            const exerciseFiles = this.app.vault.getMarkdownFiles()
-                .filter(file => {
-                    // Only include files from Templates/exercises folder
-                    if (!file.path.startsWith('Templates/exercises/')) return false;
-                    
-                    const cache = this.app.metadataCache.getFileCache(file);
-                    return cache?.frontmatter?.tags?.includes('exercise');
-                });
+            // Use metadata cache's tag index for faster lookup
+            // This is more efficient than scanning all files
+            const exerciseFiles = [];
+            
+            // Get the metadata cache and look for files with 'exercise' tag
+            const allFiles = this.app.vault.getMarkdownFiles();
+            
+            for (const file of allFiles) {
+                // Only include files from Templates/exercises folder
+                if (!file.path.startsWith('Templates/exercises/')) continue;
+                
+                const cache = this.app.metadataCache.getFileCache(file);
+                if (cache?.frontmatter?.tags?.includes('exercise')) {
+                    exerciseFiles.push(file);
+                }
+            }
 
             if (exerciseFiles.length === 0) {
                 throw new Error("No exercise templates found in Templates/exercises/");

@@ -1,8 +1,8 @@
 ---
-id: f5d058
+id: 4191a2
 workout_title: push-1
 date: 2025-12-18
-time: 00:59
+time: 01:34
 exercises:
   - 741600
   - 741600
@@ -54,11 +54,12 @@ Logs:
   - Workouts/2025-12-18 - push-1/Log/4.md
   - Workouts/2025-12-18 - push-1/Log/5.md
 ExercisesSummary: Triceps - dumbbells skull crusher x3
-duration: 0 Minutes
+duration: 1 Minute
 tags:
   - workout
 ExerciseCounts:
   Triceps - dumbbells skull crusher: 3
+Total Volume: 1200
 ---
 
 ```dataviewjs

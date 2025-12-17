@@ -346,32 +346,67 @@ async function update(property, value, filePath) {
 
 async function updateWorkoutLogs(workoutFile, logFile, exerciseName = '') {
     try {
+        const logFolder = logFile.parent;
+        const logFiles = logFolder.children
+            .filter(f => f.extension === 'md')
+            .sort((a, b) => parseInt(a.basename) - parseInt(b.basename));
+        
+        // Find the latest "Workout start" index
+        let latestStartIndex = -1;
+        for (let i = logFiles.length - 1; i >= 0; i--) {
+            const content = await app.vault.read(logFiles[i]);
+            const exerciseMatch = content.match(/^exercise:\s*(.+)$/m);
+            const exercise = exerciseMatch ? exerciseMatch[1].trim() : '';
+            if (exercise === 'Workout start') {
+                latestStartIndex = i;
+                break;
+            }
+        }
+        
+        // Only include logs after the latest start
+        const relevantLogs = logFiles.filter((f, idx) => idx >= latestStartIndex && f.extension === 'md');
+        
+        // Read and calculate exercise counts BEFORE updating frontmatter
+        const exerciseCounts = {};
+        let totalVolume = 0;
+        
+        for (const logFileObj of relevantLogs) {
+            const content = await app.vault.read(logFileObj);
+            const exerciseMatch = content.match(/^exercise:\s*(.+)$/m);
+            const volumeMatch = content.match(/^volume:\s*(\d+(?:\.\d+)?)/m);
+            
+            const ex = exerciseMatch ? exerciseMatch[1].trim() : '';
+            const vol = volumeMatch ? parseFloat(volumeMatch[1]) : 0;
+            
+            if (ex && !ex.includes('Workout')) {
+                exerciseCounts[ex] = (exerciseCounts[ex] || 0) + 1;
+                totalVolume += vol;
+            }
+        }
+        
+        // Now update frontmatter with the calculated values
         await app.fileManager.processFrontMatter(workoutFile, (fm) => {
             // Initialize Logs array if it doesn't exist
             if (!fm['Logs']) {
                 fm['Logs'] = [];
             }
-            // Store the file path directly (Bases can work with file paths)
-            if (!fm['Logs'].includes(logFile.path)) {
-                fm['Logs'].push(logFile.path);
-            }
+            // Store only relevant log file paths
+            fm['Logs'] = relevantLogs.map(f => f.path);
             
-            // Update exercise counts only if exerciseName is provided and not a workout marker
-            if (exerciseName && !exerciseName.includes("Workout")) {
-                // Initialize ExerciseCounts if it doesn't exist
-                if (!fm['ExerciseCounts']) {
-                    fm['ExerciseCounts'] = {};
-                }
-                // Increment count for this exercise
-                fm['ExerciseCounts'][exerciseName] = (fm['ExerciseCounts'][exerciseName] || 0) + 1;
-                
-                // Create a formatted summary string for display
-                const summary = Object.entries(fm['ExerciseCounts'])
-                    .map(([name, count]) => `${name} x${count}`)
-                    .join(", ");
-                fm['ExercisesSummary'] = summary;
-            }
+            // Set the exercise counts
+            fm['ExerciseCounts'] = exerciseCounts;
+            
+            // Create summary
+            const summary = Object.entries(exerciseCounts)
+                .map(([name, count]) => `${name} x${count}`)
+                .join(", ");
+            fm['ExercisesSummary'] = summary;
+            fm['Total Volume'] = totalVolume;
         });
+        
+        // Recalculate duration from latest start/end
+        await calculateAndStoreDuration(workoutFile, logFolder);
+        
     } catch (error) {
         console.error("Error updating workout logs:", error);
     }
@@ -391,13 +426,32 @@ async function calculateAndStoreDuration(workoutFile, logFolder) {
             return; // Need at least start and end
         }
         
-        // Get the first (start) and last (end) log files
-        const startFile = logFiles[0];
-        const endFile = logFiles[logFiles.length - 1];
+        // Find the LATEST workout start and end
+        let latestStartFile = null;
+        let latestEndFile = null;
+        
+        for (let i = logFiles.length - 1; i >= 0; i--) {
+            const content = await app.vault.read(logFiles[i]);
+            const exerciseMatch = content.match(/^exercise:\s*(.+)$/m);
+            const exercise = exerciseMatch ? exerciseMatch[1].trim() : '';
+            
+            if (!latestEndFile && exercise === 'Workout end') {
+                latestEndFile = logFiles[i];
+            }
+            if (!latestStartFile && exercise === 'Workout start') {
+                latestStartFile = logFiles[i];
+            }
+            
+            if (latestStartFile && latestEndFile) break;
+        }
+        
+        if (!latestStartFile || !latestEndFile) {
+            return; // No valid start/end pair
+        }
         
         // Read the dates from both files
-        const startContent = await app.vault.read(startFile);
-        const endContent = await app.vault.read(endFile);
+        const startContent = await app.vault.read(latestStartFile);
+        const endContent = await app.vault.read(latestEndFile);
         
         const startMatch = startContent.match(/^date:\s*(.+)$/m);
         const endMatch = endContent.match(/^date:\s*(.+)$/m);

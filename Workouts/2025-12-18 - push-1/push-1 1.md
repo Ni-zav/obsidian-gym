@@ -1,65 +1,17 @@
 ---
-id: 9f3f4e
+id: a236e9
 workout_title: push-1
 date: 2025-12-18
-time: 01:02
-exercises:
-  - 741600
-  - 741600
-  - 741600
-  - 741600
-  - 379969
-  - 379969
-  - 379969
-  - 379969
-  - 728817
-  - 728817
-  - 728817
-  - 728817
-  - 728817
-  - 808829
-  - 808829
-  - 808829
-  - 535529
-  - 535529
-  - 535529
-  - 535529
-workout_order:
-  - 741600
-  - 741600
-  - 741600
-  - 741600
-  - 379969
-  - 379969
-  - 379969
-  - 379969
-  - 728817
-  - 728817
-  - 728817
-  - 728817
-  - 728817
-  - 808829
-  - 808829
-  - 808829
-  - 535529
-  - 535529
-  - 535529
-  - 535529
+time: 01:37
+exercises: [741600, 741600, 741600, 741600, 379969, 379969, 379969, 379969, 728817, 728817, 728817, 728817, 728817, 808829, 808829, 808829, 535529, 535529, 535529, 535529]
+workout_order: [741600, 741600, 741600, 741600, 379969, 379969, 379969, 379969, 728817, 728817, 728817, 728817, 728817, 808829, 808829, 808829, 535529, 535529, 535529, 535529]
 workout_type: Weight Training
 workout_place: Home
-Logs:
-  - Workouts/2025-12-18 - push-1/Log/6.md
-  - Workouts/2025-12-18 - push-1/Log/7.md
-  - Workouts/2025-12-18 - push-1/Log/8.md
-  - Workouts/2025-12-18 - push-1/Log/9.md
-  - Workouts/2025-12-18 - push-1/Log/10.md
-ExercisesSummary: Exercise x6, Triceps - dumbbells skull crusher x2
-duration: 24 Minutes
+Logs: []
+ExercisesSummary: 
+duration: 
 tags:
-  - workout
-ExerciseCounts:
-  Exercise: 6
-  Triceps - dumbbells skull crusher: 2
+ - workout
 ---
 
 ```dataviewjs
@@ -78,7 +30,7 @@ class: ""
 cssStyle: ""
 backgroundImage: ""
 tooltip: ""
-id: ""
+id: E99B38CC-ACF7-19DD-534D-91323EEADBEE
 hidden: false
 actions:
   - type: command

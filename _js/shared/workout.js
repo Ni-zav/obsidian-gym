@@ -527,28 +527,44 @@ class workout {
             const isStartLog = content.includes('Workout start');
             
             if (isStartLog) {
-                // If deleting start, ask for confirmation and delete all logs
-                if (!confirm('Delete workout start? This will delete ALL exercise logs for this workout.')) {
+                // If deleting start, ask for confirmation and delete only this workout session
+                if (!confirm('Delete this workout session? This will delete all exercise logs for THIS workout only.')) {
                     return;
                 }
                 
-                // Delete all files in the Log folder
                 const logFolder = file.parent;
-                const allFiles = logFolder.children.filter(f => f.extension === 'md');
+                const allFiles = logFolder.children
+                    .filter(f => f.extension === 'md')
+                    .sort((a, b) => parseInt(a.basename) - parseInt(b.basename));
                 
-                for (const logFile of allFiles) {
-                    await app.vault.delete(logFile);
+                // Find the index of this start log
+                const startFileIndex = allFiles.findIndex(f => f.path === logFilePath);
+                if (startFileIndex === -1) return;
+                
+                // Find the corresponding end log (search forward from this start)
+                let endFileIndex = -1;
+                for (let i = startFileIndex + 1; i < allFiles.length; i++) {
+                    const logContent = await app.vault.read(allFiles[i]);
+                    if (logContent.includes('Workout end')) {
+                        endFileIndex = i;
+                        break;
+                    }
                 }
                 
-                // Reset workout metrics
-                await app.fileManager.processFrontMatter(workoutFile, (fm) => {
-                    fm['Logs'] = [];
-                    fm['ExerciseCounts'] = {};
-                    fm['ExercisesSummary'] = '';
-                    fm['duration'] = '';
-                });
+                // If no end found, delete from start to end of all files
+                if (endFileIndex === -1) {
+                    endFileIndex = allFiles.length - 1;
+                }
                 
-                new Notice('Workout cleared - all logs deleted');
+                // Delete only files from start to end (inclusive)
+                for (let i = startFileIndex; i <= endFileIndex; i++) {
+                    await app.vault.delete(allFiles[i]);
+                }
+                
+                // Recalculate metrics based on remaining logs
+                await this.recalculateWorkoutMetrics(workoutFile);
+                
+                new Notice('Workout session deleted - metrics recalculated');
             } else {
                 // Normal delete for regular exercises
                 if (!confirm('Delete this exercise log?')) {

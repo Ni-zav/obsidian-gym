@@ -186,38 +186,71 @@ class workout {
             tableData
         );
         
-        // Hide the File Path column and add buttons after the table
-        context.container.style.display = 'block';
-        
-        // Create buttons for each exercise
+        // Add inline icon buttons for each exercise
+        const exerciseRows = context.container.querySelectorAll('tr');
         performed.array().forEach((e, index) => {
+            // Skip header row (index 0)
+            const rowIndex = index + 1;
+            if (rowIndex >= exerciseRows.length) return;
+            
+            const row = exerciseRows[rowIndex];
             const isStartOrEnd = e.exercise === "Workout start" || e.exercise === "Workout end";
-            const buttonContainer = context.container.createEl('div', {
-                cls: 'workout-actions-row',
-                attr: { 'data-index': index }
-            });
+            
+            // Create button container
+            const buttonCell = document.createElement('td');
+            buttonCell.style.cssText = `
+                display: flex;
+                gap: 6px;
+                align-items: center;
+                white-space: nowrap;
+            `;
             
             // Only show edit for regular exercises
             if (!isStartOrEnd) {
-                const editBtn = buttonContainer.createEl('button', {
-                    text: 'Edit',
-                    cls: 'workout-edit-btn',
-                    attr: { 'data-file': e.file.path }
-                });
+                const editBtn = document.createElement('button');
+                editBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/><path d="M20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+                editBtn.style.cssText = `
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    padding: 4px;
+                    display: flex;
+                    align-items: center;
+                    color: var(--text-normal);
+                    opacity: 0.7;
+                    transition: opacity 0.2s;
+                `;
+                editBtn.onmouseover = () => editBtn.style.opacity = '1';
+                editBtn.onmouseout = () => editBtn.style.opacity = '0.7';
                 editBtn.onclick = async () => {
                     await this.editLogFile(e.file.path, current.file);
                 };
+                buttonCell.appendChild(editBtn);
             }
             
             // Show delete for all (start/end will delete all logs)
-            const deleteBtn = buttonContainer.createEl('button', {
-                text: 'Delete',
-                cls: 'workout-delete-btn',
-                attr: { 'data-file': e.file.path }
-            });
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-9l-1 1H5v2h14V4z"/></svg>';
+            deleteBtn.style.cssText = `
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 4px;
+                display: flex;
+                align-items: center;
+                color: var(--text-normal);
+                opacity: 0.7;
+                transition: opacity 0.2s;
+            `;
+            deleteBtn.onmouseover = () => deleteBtn.style.opacity = '1';
+            deleteBtn.onmouseout = () => deleteBtn.style.opacity = '0.7';
             deleteBtn.onclick = async () => {
                 await this.deleteLogFile(e.file.path, current.file);
             };
+            buttonCell.appendChild(deleteBtn);
+            
+            // Append button cell to the row
+            row.appendChild(buttonCell);
         });
     }
     

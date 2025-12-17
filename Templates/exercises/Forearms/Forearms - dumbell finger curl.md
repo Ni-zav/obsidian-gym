@@ -2,13 +2,13 @@
 id: 945619
 date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
 time: <% tp.date.now("HH:mm:ss") %>
-weight: <% await tp.system.prompt("Weight", "", true) %>
-reps: <% await tp.system.prompt("Reps", "20", true) %>
-effort: <% await tp.system.suggester(["1 (easy)", "2", "3", "4", "5 (failure)"], ["1", "2", "3", "4", "5"]) %>
+weight: 
+reps: 
+effort: 
 exercise: Forearms - dumbell finger curl
 muscle_group: Forearms
 equipment: Dumbbell
-note: <% await tp.system.prompt("Note", "", true) %>
+note: 
 instructions: 'yes'
 tags:
  - exercise

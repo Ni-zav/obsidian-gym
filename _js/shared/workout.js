@@ -361,7 +361,7 @@ class workout {
             const effortLabel = document.createElement('label');
             effortLabel.addClass('setting-item');
             const effortLabelText = document.createElement('span');
-            effortLabelText.textContent = 'Effort (1-10):';
+            effortLabelText.textContent = 'Effort (1-5):';
             effortLabelText.style.fontWeight = '600';
             effortLabelText.style.display = 'block';
             effortLabelText.style.marginBottom = '4px';
@@ -370,11 +370,41 @@ class workout {
             effortInput.type = 'number';
             effortInput.value = currentEffort;
             effortInput.min = '1';
-            effortInput.max = '10';
+            effortInput.max = '5';
             effortInput.placeholder = 'Enter effort';
             effortInput.addClass('setting-item-control');
             effortLabel.appendChild(effortInput);
             form.appendChild(effortLabel);
+            
+            // Notes input
+            const notesMatch = content.match(/^note:\s*(.*)$/m);
+            const currentNotes = notesMatch ? notesMatch[1].trim() : '';
+            
+            const notesLabel = document.createElement('label');
+            notesLabel.addClass('setting-item');
+            const notesLabelText = document.createElement('span');
+            notesLabelText.textContent = 'Notes:';
+            notesLabelText.style.fontWeight = '600';
+            notesLabelText.style.display = 'block';
+            notesLabelText.style.marginBottom = '4px';
+            notesLabel.appendChild(notesLabelText);
+            const notesInput = document.createElement('textarea');
+            notesInput.value = currentNotes;
+            notesInput.placeholder = 'Add notes...';
+            notesInput.rows = '2';
+            notesInput.style.cssText = `
+                padding: 8px;
+                background-color: var(--background-primary-alt);
+                border: 1px solid var(--background-modifier-border);
+                border-radius: 4px;
+                color: var(--text-normal);
+                width: 100%;
+                box-sizing: border-box;
+                font-family: inherit;
+                resize: vertical;
+            `;
+            notesLabel.appendChild(notesInput);
+            form.appendChild(notesLabel);
             
             // Buttons
             const buttonContainer = document.createElement('div');
@@ -437,6 +467,14 @@ class workout {
                 // Update or add effort
                 if (updatedContent.includes('effort:')) {
                     updatedContent = updatedContent.replace(/^effort:\s*.+$/m, `effort: ${newEffort}`);
+                }
+                
+                // Update or add notes
+                const newNotes = notesInput.value || '';
+                if (updatedContent.includes('note:')) {
+                    updatedContent = updatedContent.replace(/^note:\s*.*/m, `note: ${newNotes}`);
+                } else if (newNotes) {
+                    updatedContent = updatedContent.replace(/^effort:/m, `note: ${newNotes}\neffort:`);
                 }
                 
                 // Calculate volume

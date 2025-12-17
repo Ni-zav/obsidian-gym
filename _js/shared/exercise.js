@@ -5,6 +5,10 @@ class exercise
 		const data = n.dv.current();
 		let metadata = app.metadataCache.getFileCache(n.dv.current().file);
 
+		if (!metadata || !metadata.frontmatter) {
+			return;
+		}
+
 		let workout_id = metadata.frontmatter['workout_id'];
 
 		let weight = metadata.frontmatter['weight'];
@@ -51,6 +55,11 @@ class exercise
 	{
 		const data = n.dv.current()
 		let metadata = app.metadataCache.getFileCache(n.dv.current().file);
+		
+		if (!metadata || !metadata.frontmatter) {
+			return;
+		}
+		
 		// exercise
 		let exercise = this.fixExerciseName(metadata.frontmatter['exercise']);
 		let exercises = n.dv.pages('#exercise');
@@ -233,6 +242,7 @@ class exercise
 
 	fixExerciseName(e)
 	{
+		if (!e) return '';
 		return e.replace(' - ', ' ').toLowerCase();
 	}
 

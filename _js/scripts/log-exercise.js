@@ -275,37 +275,28 @@ module.exports = async function listFiles(params) {
             // Add workout_id to frontmatter
             let content = await app.vault.read(newNote);
             
-            // Parse frontmatter to get exercise name, weight, and reps
+            // Parse frontmatter to get exercise name
             const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
             let exerciseName = '';
-            let weight = 0;
-            let reps = 0;
             
             if (fmMatch) {
                 const fmContent = fmMatch[1];
                 const exerciseMatch = fmContent.match(/^exercise:\s*(.+)$/m);
-                const weightMatch = fmContent.match(/^weight:\s*(\d+(?:\.\d+)?)/m);
-                const repsMatch = fmContent.match(/^reps:\s*(\d+)/m);
                 
                 if (exerciseMatch) exerciseName = exerciseMatch[1].trim();
-                if (weightMatch) weight = parseFloat(weightMatch[1]);
-                if (repsMatch) reps = parseInt(repsMatch[1]);
             }
             
-            // Add workout_id to frontmatter
-            content = content.replace(/---\n+/m, `---\nworkout_id: ${newId}\n`);
-            
-            // Calculate and add volume if weight and reps exist
-            if (weight && reps) {
-                const volume = weight * reps;
-                content = content.replace(/^workout_id:/m, `volume: ${volume}\nworkout_id:`);
+            // Skip modal for start/end logs
+            if (exerciseName.includes("Workout")) {
+                content = content.replace(/---\n+/m, `---\nworkout_id: ${newId}\n`);
+                await app.vault.modify(newNote, content);
+                await updateWorkoutLogs(activeFile, newNote, '');
+                params.variables = { notePath: newNote.path };
+                return;
             }
             
-            await app.vault.modify(newNote, content);
-
-            // Update parent workout file with Logs property and exercise counts
-            await updateWorkoutLogs(activeFile, newNote, exerciseName);
-
+            // Show modal for exercise input
+            await showExerciseInputModal(newNote, activeFile, content, newId, exerciseName);
             params.variables = { notePath: newNote.path };
 
         } catch (error) {
@@ -453,4 +444,254 @@ function generateGuid() {
         result += Math.floor(Math.random() * 16).toString(16).toUpperCase();
     }
     return result;
+}
+
+async function showExerciseInputModal(newNote, workoutFile, content, newId, exerciseName) {
+    return new Promise((resolve) => {
+        // Create modal backdrop
+        const modalBackdrop = document.createElement('div');
+        modalBackdrop.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            pointer-events: auto;
+        `;
+        
+        const modalBox = document.createElement('div');
+        modalBox.style.cssText = `
+            background-color: var(--background-secondary);
+            border: 1px solid var(--background-modifier-border);
+            border-radius: 8px;
+            padding: 16px;
+            max-width: 300px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+        `;
+        
+        const title = document.createElement('h3');
+        title.textContent = `Log: ${exerciseName}`;
+        title.style.marginTop = '0';
+        title.style.marginBottom = '12px';
+        modalBox.appendChild(title);
+        
+        const form = document.createElement('form');
+        form.style.display = 'flex';
+        form.style.flexDirection = 'column';
+        form.style.gap = '12px';
+        
+        // Weight input
+        const weightLabel = document.createElement('label');
+        const weightLabelText = document.createElement('span');
+        weightLabelText.textContent = 'Weight (kg):';
+        weightLabelText.style.fontWeight = '600';
+        weightLabelText.style.display = 'block';
+        weightLabelText.style.marginBottom = '4px';
+        weightLabel.appendChild(weightLabelText);
+        const weightInput = document.createElement('input');
+        weightInput.type = 'number';
+        weightInput.step = '0.5';
+        weightInput.placeholder = 'Enter weight';
+        weightInput.style.cssText = `
+            padding: 8px;
+            background-color: var(--background-primary-alt);
+            border: 1px solid var(--background-modifier-border);
+            border-radius: 4px;
+            color: var(--text-normal);
+            width: 100%;
+            box-sizing: border-box;
+            pointer-events: auto;
+        `;
+        weightInput.disabled = false;
+        weightLabel.appendChild(weightInput);
+        form.appendChild(weightLabel);
+        
+        // Reps input
+        const repsLabel = document.createElement('label');
+        const repsLabelText = document.createElement('span');
+        repsLabelText.textContent = 'Reps:';
+        repsLabelText.style.fontWeight = '600';
+        repsLabelText.style.display = 'block';
+        repsLabelText.style.marginBottom = '4px';
+        repsLabel.appendChild(repsLabelText);
+        const repsInput = document.createElement('input');
+        repsInput.type = 'number';
+        repsInput.placeholder = 'Enter reps';
+        repsInput.style.cssText = `
+            padding: 8px;
+            background-color: var(--background-primary-alt);
+            border: 1px solid var(--background-modifier-border);
+            border-radius: 4px;
+            color: var(--text-normal);
+            width: 100%;
+            box-sizing: border-box;
+            pointer-events: auto;
+        `;
+        repsInput.disabled = false;
+        repsLabel.appendChild(repsInput);
+        form.appendChild(repsLabel);
+        
+        // Effort input
+        const effortLabel = document.createElement('label');
+        const effortLabelText = document.createElement('span');
+        effortLabelText.textContent = 'Effort (1-5):';
+        effortLabelText.style.fontWeight = '600';
+        effortLabelText.style.display = 'block';
+        effortLabelText.style.marginBottom = '4px';
+        effortLabel.appendChild(effortLabelText);
+        const effortInput = document.createElement('input');
+        effortInput.type = 'number';
+        effortInput.min = '1';
+        effortInput.max = '5';
+        effortInput.placeholder = 'Enter effort';
+        effortInput.style.cssText = `
+            padding: 8px;
+            background-color: var(--background-primary-alt);
+            border: 1px solid var(--background-modifier-border);
+            border-radius: 4px;
+            color: var(--text-normal);
+            width: 100%;
+            box-sizing: border-box;
+            pointer-events: auto;
+        `;
+        effortInput.disabled = false;
+        effortLabel.appendChild(effortInput);
+        form.appendChild(effortLabel);
+        
+        // Notes input
+        const notesLabel = document.createElement('label');
+        const notesLabelText = document.createElement('span');
+        notesLabelText.textContent = 'Notes:';
+        notesLabelText.style.fontWeight = '600';
+        notesLabelText.style.display = 'block';
+        notesLabelText.style.marginBottom = '4px';
+        notesLabel.appendChild(notesLabelText);
+        const notesInput = document.createElement('textarea');
+        notesInput.placeholder = 'Add notes...';
+        notesInput.rows = '2';
+        notesInput.style.cssText = `
+            padding: 8px;
+            background-color: var(--background-primary-alt);
+            border: 1px solid var(--background-modifier-border);
+            border-radius: 4px;
+            color: var(--text-normal);
+            width: 100%;
+            box-sizing: border-box;
+            font-family: inherit;
+            resize: vertical;
+            pointer-events: auto;
+        `;
+        notesInput.disabled = false;
+        notesLabel.appendChild(notesInput);
+        form.appendChild(notesLabel);
+        
+        // Buttons
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.cssText = `
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            justify-content: flex-end;
+        `;
+        
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Save';
+        saveBtn.type = 'button';
+        saveBtn.style.cssText = `
+            padding: 6px 12px;
+            background-color: var(--interactive-accent);
+            color: var(--text-on-accent);
+            border: 1px solid var(--interactive-accent);
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        `;
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.type = 'button';
+        cancelBtn.style.cssText = `
+            padding: 6px 12px;
+            background-color: var(--button-background);
+            border: 1px solid var(--background-modifier-border);
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-normal);
+        `;
+        
+        buttonContainer.appendChild(saveBtn);
+        buttonContainer.appendChild(cancelBtn);
+        form.appendChild(buttonContainer);
+        
+        modalBox.appendChild(form);
+        modalBackdrop.appendChild(modalBox);
+        
+        const cleanup = () => {
+            document.body.removeChild(modalBackdrop);
+        };
+        
+        saveBtn.onclick = async (e) => {
+            e.preventDefault();
+            
+            const weight = weightInput.value || '';
+            const reps = repsInput.value || '';
+            const effort = effortInput.value || '';
+            const notes = notesInput.value || '';
+            
+            // Use processFrontMatter to safely update the file
+            await app.fileManager.processFrontMatter(newNote, (fm) => {
+                fm['workout_id'] = newId;
+                if (weight) fm['weight'] = weight;
+                if (reps) fm['reps'] = reps;
+                if (effort) fm['effort'] = effort;
+                if (notes) fm['note'] = notes;
+                
+                // Calculate volume
+                if (weight && reps) {
+                    fm['volume'] = parseFloat(weight) * parseInt(reps);
+                }
+            });
+            
+            // Update parent workout
+            await updateWorkoutLogs(workoutFile, newNote, exerciseName);
+            
+            cleanup();
+            resolve();
+        };
+        
+        cancelBtn.onclick = (e) => {
+            e.preventDefault();
+            // Delete the created note since user cancelled
+            app.vault.delete(newNote);
+            cleanup();
+            resolve();
+        };
+        
+        // Close when clicking outside
+        modalBackdrop.onclick = (e) => {
+            if (e.target === modalBackdrop) {
+                app.vault.delete(newNote);
+                cleanup();
+                resolve();
+            }
+        };
+        
+        document.body.appendChild(modalBackdrop);
+        
+        // Focus on weight input
+        weightInput.focus();
+    });
 }

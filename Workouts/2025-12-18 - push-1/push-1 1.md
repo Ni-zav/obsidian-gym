@@ -1,8 +1,8 @@
 ---
-id: f5d058
+id: 9f3f4e
 workout_title: push-1
 date: 2025-12-18
-time: 00:59
+time: 01:02
 exercises:
   - 741600
   - 741600
@@ -48,17 +48,18 @@ workout_order:
 workout_type: Weight Training
 workout_place: Home
 Logs:
-  - Workouts/2025-12-18 - push-1/Log/1.md
-  - Workouts/2025-12-18 - push-1/Log/2.md
-  - Workouts/2025-12-18 - push-1/Log/3.md
-  - Workouts/2025-12-18 - push-1/Log/4.md
-  - Workouts/2025-12-18 - push-1/Log/5.md
-ExercisesSummary: Triceps - dumbbells skull crusher x3
-duration: 0 Minutes
+  - Workouts/2025-12-18 - push-1/Log/6.md
+  - Workouts/2025-12-18 - push-1/Log/7.md
+  - Workouts/2025-12-18 - push-1/Log/8.md
+  - Workouts/2025-12-18 - push-1/Log/9.md
+  - Workouts/2025-12-18 - push-1/Log/10.md
+ExercisesSummary: Exercise x6, Triceps - dumbbells skull crusher x2
+duration: 24 Minutes
 tags:
   - workout
 ExerciseCounts:
-  Triceps - dumbbells skull crusher: 3
+  Exercise: 6
+  Triceps - dumbbells skull crusher: 2
 ---
 
 ```dataviewjs

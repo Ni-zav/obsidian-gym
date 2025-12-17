@@ -58,6 +58,7 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 5. [CustomJS](https://github.com/saml-dev/obsidian-custom-js) - Custom JavaScript support
 6. [Obsidian Charts](https://github.com/phibr0/obsidian-charts) - Data visualization
 7. [Heatmap Calendar](https://github.com/Richardsl/heatmap-calendar-obsidian) - Workout calendar view
+8. [Homepage](https://github.com/mirnovov/obsidian-homepage) - To pin the [[Gym Log Dashboard]] on startup
 
 ## To-do
 - [x] fix renderRemaining() function
@@ -71,7 +72,8 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - [x] fix chart logic in workout routine
 - [x] fix chart on exercise, x-axis should be time and date, not just date.
 - [ ] ~~add relation between equipment and place for better exercises selection~~
-- [ ] add muscle-group or exercises dashboard
+- [x] add muscle-group or exercises dashboard
+	- using base! neat
 - [ ] add demo video
 - [ ] if possible, add full body visualization of each exercises done and soreness/muscle area (simulate rest periods and recovery)
 - [ ] hide properties is default on notes inside workouts folder

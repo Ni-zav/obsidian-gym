@@ -4,24 +4,73 @@
     "type": "split",
     "children": [
       {
-        "id": "4509724f8bf84da7",
+        "id": "bd4485f6c6da2eae",
         "type": "tabs",
         "children": [
           {
-            "id": "e7a7b303c61786dc",
+            "id": "05a18d9cc6d7e11b",
             "type": "leaf",
+            "pinned": true,
             "state": {
               "type": "markdown",
               "state": {
                 "file": "Gym Log Dashboard.md",
-                "mode": "preview",
+                "mode": "source",
                 "source": false
               },
+              "pinned": true,
               "icon": "lucide-file",
               "title": "Gym Log Dashboard"
             }
+          },
+          {
+            "id": "afeefc4f223a4b58",
+            "type": "leaf",
+            "pinned": true,
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Gym Log Dashboard.md",
+                "mode": "source",
+                "source": false
+              },
+              "pinned": true,
+              "icon": "lucide-file",
+              "title": "Gym Log Dashboard"
+            }
+          },
+          {
+            "id": "bc004848d5ede85d",
+            "type": "leaf",
+            "pinned": true,
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Gym Log Dashboard.md",
+                "mode": "source",
+                "source": false
+              },
+              "pinned": true,
+              "icon": "lucide-file",
+              "title": "Gym Log Dashboard"
+            }
+          },
+          {
+            "id": "fb2cc414b40378cb",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Workouts/2025-12-17 - push-1/push-1.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "push-1"
+            }
           }
-        ]
+        ],
+        "currentTab": 3
       }
     ],
     "direction": "vertical"
@@ -70,8 +119,8 @@
             "state": {
               "type": "starred",
               "state": {},
-              "icon": "lucide-file",
-              "title": "Plugin no longer active"
+              "icon": "lucide-ghost",
+              "title": "starred"
             }
           },
           {
@@ -88,7 +137,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 416.5041847229004
+    "width": 446.5
   },
   "right": {
     "id": "285bd5590c21a41e",
@@ -123,11 +172,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "Workouts/2025-12-17 - push-1/push-1.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links"
+              "title": "Outgoing links from push-1"
             }
           },
           {
@@ -170,6 +220,7 @@
   },
   "left-ribbon": {
     "hiddenItems": {
+      "bases:Create new base": false,
       "switcher:Open quick switcher": false,
       "graph:Open graph view": false,
       "canvas:Create new canvas": false,
@@ -177,46 +228,47 @@
       "command-palette:Open command palette": false,
       "media-extended:Open media": false,
       "templater-obsidian:Templater": false,
-      "homepage:Open homepage": false
+      "homepage:Open homepage": false,
+      "media-extended:Open external media": false,
+      "zenmode:Toggle Zen mode": false
     }
   },
-  "active": "e7a7b303c61786dc",
+  "active": "fb2cc414b40378cb",
   "lastOpenFiles": [
-    "error-logs.md",
+    "Workouts History.base",
+    "Workouts List.base",
+    "Add Workout or Exercise Here.md",
+    "Workouts/2025-12-17 - push-1/push-1.md",
+    "Workouts/2025-12-17 - push-1/Log/2.md",
     "Gym Log Dashboard.md",
-    "Workouts/2025-05-16 - push-1/push-1.md",
+    "Workouts/2025-12-17 - push-1/Log/1.md",
+    "Workouts/2025-12-17 - push-1/Log/8.md",
+    "Exercises List.base",
+    "error-logs.md",
+    "README.md",
+    "Exercise Dashboard.md",
+    "Templates/Workouts/gym/push-1.md",
+    "Templates/exercises/Chest/Chest - dumbells floor press.md",
+    "Templates/exercises/Chest/Chest - decline push up.md",
+    "Templates/exercises/Abs/Abs - leg raises.md",
+    "Templates/exercises/Untitled.md",
+    "Templates/Custom.md",
+    "Templates/Start.md",
+    "Templates/End.md",
+    "Templates/exercises/Core/Core - plank.md",
+    "Workouts/2025-12-17 - push-1/Log/4.md",
+    "Workouts/2025-12-17 - push-1/Log/3.md",
+    "Workouts/2025-12-17 - push-1/Log/7.md",
+    "Workouts/2025-12-17 - push-1/Log/6.md",
+    "Workouts/2025-12-17 - push-1/Log/5.md",
+    "Templates/exercises/Chest/Chest - chest fly.md",
+    "Workouts/2025-12-17 - push-1/Log",
+    "Workouts/2025-12-17 - push-1",
+    "First Media Note.md",
     "Workouts/2025-05-16 - push-1/Log",
     "Workouts/2025-05-16 - push-1",
     "Workouts",
-    "Templates/Workouts/gym/push-1.md",
-    "Templates/Workouts/gym/asd.md",
-    "Templates/Workouts/gym/timed-2.md",
-    "Templates/exercises/Core/Core - plank.md",
     "Templates/exercises/Core",
-    "Templates/exercises/Abs/Abs - bb.md",
-    "Workouts/2025-05-16 - full-body/full-body.md",
-    "Workouts/2025-05-16 - full-body/Log",
-    "Workouts/2025-05-16 - full-body",
-    "Workouts/2025-05-16 - timed-2/timed-2.md",
-    "Templates/exercises/Full Body/Full Body - jogging.md",
-    "Templates/exercises/Full Body",
-    "README.md",
-    "Workouts/2025-05-16 - timed-2/Log/4.md",
-    "Workouts/2025-05-16 - timed-2/Log/2.md",
-    "Templates/exercises/Abs/Abs - timed-2.md",
-    "Workouts/2025-05-16 - timed-2/Log/3.md",
-    "Workouts/2025-05-16 - timed-2/Log/1.md",
-    "Workouts/2025-05-16 - timed-2/Log",
-    "Workouts/2025-05-16 - timed-2",
-    "Templates/exercises/Abs/Abs - timed abs.md",
-    "Workouts/2025-05-16 - test-with-timed-2/test-with-timed-2.md",
-    "Workouts/2025-05-16 - test-with-timed-2/Log/3.md",
-    "Workouts/2025-05-16 - test-with-timed-2/Log/2.md",
-    "Workouts/2025-05-16 - test-with-timed-2/Log/1.md",
-    "Workouts/2025-05-16 - test-with-timed-2/Log",
-    "Templates/Workouts/gym/test-with-timed-2.md",
-    "Workouts/2025-05-16 - test-with-timed/Log/2.md",
-    "Workouts/2025-05-16 - test-with-timed/test-with-timed.md",
-    "Templates/exercises/Abs/Abs - bbb.md"
+    "Workouts/2025-05-16 - full-body/Log"
   ]
 }

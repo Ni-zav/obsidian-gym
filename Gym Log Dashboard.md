@@ -1,37 +1,8 @@
-| [[Exercise Dashboard]] | [[Workout Dashboard]] | 
+This is home for the Gym Log (You can use the [Homepage](https://github.com/mirnovov/obsidian-homepage) plugin to pin this page and keep it always open on startup)
 ***
-If you haven't add any exercise, start here to add some exercises:
-```meta-bind-button
-label: Add New Exercise
-style: primary
-class: ""
-cssStyle: ""
-backgroundImage: ""
-tooltip: ""
-id: ""
-hidden: false
-actions:
-  - type: command
-    command: quickadd:choice:aeaf28e2-ba08-4988-948d-79b10bde8deb
+| [[Add Workout or Exercise Here]] | [[Exercises List.base|Exercises List]] | [[Workouts List.base|Workouts List]] |
 
-```
-Secondly, create your routine here:
-```meta-bind-button
-label: Create Workout Routine
-icon: ""
-style: primary
-class: ""
-cssStyle: ""
-backgroundImage: ""
-tooltip: ""
-id: ""
-hidden: false
-actions:
-  - type: command
-    command: quickadd:choice:1ce4bca4-4630-4c48-944d-19adf1c3f623
-
-```
-Lastly, start that created routine(s) here for today's workout! (and always use this to start your workout)
+Start that created routine(s) here for today's workout! (always use this to start your workout)
 ```meta-bind-button
 label: Start Today's Workout
 icon: ""
@@ -48,6 +19,8 @@ actions:
 
 ```
 ---
+
+View: (might move it to the bases for much better view)
 
 ```dataviewjs
 

@@ -1,0 +1,24 @@
+formulas:
+  Untitled 2: link(file.folder.slice(9, 19))
+  Untitled: length(file.folder.children.filter(c => c.name == "Log").children) - 2
+properties:
+  formula.Untitled 2:
+    displayName: Date
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.folder.contains("Workouts") && !file.path.contains("/Log/")
+        - file.inFolder("Workouts")
+    order:
+      - file.name
+      - formula.Untitled 2
+      - time
+      - workout_type
+      - workout_place
+      - formula.Untitled
+    sort:
+      - property: formula.Untitled 2
+        direction: ASC
+    columnSize: {}

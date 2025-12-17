@@ -1,0 +1,30 @@
+formulas:
+  Untitled: ""
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.inFolder("Templates/exercises")
+        - not:
+            - file.inFolder("Templates/exercises/_library")
+    groupBy:
+      property: muscle_group
+      direction: ASC
+    order:
+      - file.name
+      - muscle_group
+      - equipment
+      - instructions
+    sort:
+      - property: formula.Untitled
+        direction: ASC
+      - property: file.name
+        direction: DESC
+      - property: equipment
+        direction: DESC
+    columnSize:
+      note.equipment: 152
+      note.instructions: 367
+    markers: none
+    indentProperties: false

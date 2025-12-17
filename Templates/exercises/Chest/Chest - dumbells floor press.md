@@ -9,9 +9,9 @@ exercise: Chest - dumbells floor press
 muscle_group: Chest
 equipment: Pair of Dumbbells
 note: <% await tp.system.prompt("Note", "", true) %>
-instructions: 'chest'
+instructions: chest
 tags:
- - exercise
+  - exercise
 ---
 
 ```dataviewjs

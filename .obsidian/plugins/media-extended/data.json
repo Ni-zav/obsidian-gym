@@ -12,6 +12,8 @@
   "playback.screenshot.quality": 0.8,
   "playback.screenshot.folder-path": null,
   "note.embed.load-strategy": "eager",
+  "note.embed.handle-hosted": true,
+  "note.embed.handle-direct-url": true,
   "link.click-behavior": "split",
   "link.altclick-behavior": "window",
   "link.handle-hosted": true,
@@ -25,7 +27,5 @@
   "note.template.screenshot-embed": "{{TITLE}}{{DURATION}}|50",
   "note.template.insert-at": "after-cursor",
   "media-lib.folder-path": "media-lib",
-  "cache.cover-image.max-size-mb": 100,
-  "note.embed.handle-hosted": true,
-  "note.embed.handle-direct-url": true
+  "cache.cover-image.max-size-mb": 100
 }

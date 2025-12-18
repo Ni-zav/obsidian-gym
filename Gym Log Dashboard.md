@@ -18,5 +18,5 @@ actions:
     command: quickadd:choice:c547bcae-f9e1-462e-be41-5c729807d8ac
 
 ```
-## [[Workouts History.base|Workouts History]]
 
+Then come here to log your just-created-now-workouts: [[Workouts History.base|Workouts History]]

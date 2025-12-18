@@ -36,9 +36,22 @@
               "icon": "lucide-file",
               "title": "Gym Log Dashboard"
             }
+          },
+          {
+            "id": "ef41ee22a5755a92",
+            "type": "leaf",
+            "state": {
+              "type": "bases",
+              "state": {
+                "file": "Workouts History.base",
+                "viewName": "Table"
+              },
+              "icon": "lucide-table",
+              "title": "Workouts History"
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -198,10 +211,11 @@
       "media-extended:Open external media": false
     }
   },
-  "active": "8832db69e33eb332",
+  "active": "7b33950de697b8a5",
   "lastOpenFiles": [
-    "Workouts History.base",
+    "obsidian-gym.zip",
     "Gym Log Dashboard.md",
+    "Workouts History.base",
     "Workouts/2025-12-18 - abc/abc.md",
     "Workouts/2025-12-18 - abc/Log/4.md",
     "Workouts/2025-12-18 - abc/Log/5.md",

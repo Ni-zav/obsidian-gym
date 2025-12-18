@@ -24,11 +24,11 @@ views:
       - duration
       - ExercisesSummary
     sort:
-      - property: formula.Exercises
-        direction: ASC
-      - property: workout_type
-        direction: ASC
       - property: formula.Daily Note Link
+        direction: DESC
+      - property: file.ctime
+        direction: DESC
+      - property: workout_type
         direction: ASC
     columnSize:
       note.duration: 137

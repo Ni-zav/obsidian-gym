@@ -4,12 +4,12 @@ date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
 time: <% tp.date.now("HH:mm:ss") %>
 timed: true
 duration: <% await tp.system.prompt("Duration (seconds)", "3600", true) %>
-weight: <% await tp.system.prompt("Weight", "", true) %>
-effort: <% await tp.system.suggester(["1 (easy)", "2", "3", "4", "5 (failure)"], ["1", "2", "3", "4", "5"]) %>
+weight: 
+effort: 
 exercise: Full Body - jogging
 muscle_group: Full Body
 equipment: Bodyweight
-note: <% await tp.system.prompt("Note", "", true) %>
+note: 
 video_url: "later on."
 instructions: 'jogging.'
 tags:

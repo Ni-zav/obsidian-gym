@@ -1,0 +1,36 @@
+formulas:
+  Daily Note Link: link(file.folder.slice(9, 19))
+  Sets: file.properties.Logs.length - 2
+  Total Volume: file.properties.Logs.reduce(if(file(value).properties.volume, acc + file(value).properties.volume, acc), 0)
+properties:
+  formula.Daily Note Link:
+    displayName: Date
+  file.properties.ExercisesSummary:
+    displayName: ExercisesSummary
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.folder.contains("Workouts") && !file.path.contains("/Log/")
+        - file.inFolder("Workouts")
+    order:
+      - file.name
+      - formula.Daily Note Link
+      - time
+      - workout_type
+      - workout_place
+      - formula.Total Volume
+      - duration
+      - ExercisesSummary
+    sort:
+      - property: formula.Daily Note Link
+        direction: DESC
+      - property: file.ctime
+        direction: DESC
+      - property: workout_type
+        direction: ASC
+    columnSize:
+      note.duration: 137
+    cardSize: 300
+    rowHeight: medium

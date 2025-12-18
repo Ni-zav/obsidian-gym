@@ -11,3 +11,99 @@
 
 /* Optional: Load any additional scripts */
 @import url("scripts/startTimer.js");
+
+/* Workout action buttons styling */
+.workout-actions-row {
+    display: flex;
+    gap: 8px;
+    margin: 8px 0;
+    align-items: center;
+}
+
+.workout-edit-btn,
+.workout-delete-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+    border: 1px solid #999;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.workout-edit-btn:hover {
+    background-color: #4CAF50;
+    color: white;
+    border-color: #45a049;
+}
+
+.workout-delete-btn:hover {
+    background-color: #f44336;
+    color: white;
+    border-color: #da190b;
+}
+
+.workout-edit-btn:active,
+.workout-delete-btn:active {
+    transform: scale(0.95);
+}
+
+/* Edit form styling */
+.edit-label {
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.edit-input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.edit-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 4px rgba(76, 175, 80, 0.3);
+}
+
+.edit-button-container {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    justify-content: flex-end;
+}
+
+.edit-save-btn,
+.edit-cancel-btn {
+    padding: 8px 16px;
+    border: 1px solid #999;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.edit-save-btn {
+    background-color: #4CAF50;
+    color: white;
+    border-color: #45a049;
+}
+
+.edit-save-btn:hover {
+    background-color: #45a049;
+}
+
+.edit-cancel-btn {
+    background-color: #f0f0f0;
+    border-color: #999;
+}
+
+.edit-cancel-btn:hover {
+    background-color: #e0e0e0;
+}

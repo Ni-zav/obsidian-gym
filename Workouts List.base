@@ -1,0 +1,15 @@
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.inFolder("Templates/Workouts")
+    order:
+      - file.name
+      - workout_type
+      - workout_place
+      - file.mtime
+    sort:
+      - property: workout_type
+        direction: DESC
+    columnSize: {}

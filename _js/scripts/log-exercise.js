@@ -64,6 +64,18 @@ module.exports = async function listFiles(params) {
         });
         let performedExerciseCount = performedEx.length;
 
+        // Check if workout has already ended
+        const workoutEnded = performedEx.some(file => {
+            const cache = app.metadataCache.getFileCache(file);
+            return cache?.frontmatter?.exercise === 'Workout end';
+        });
+
+        if (workoutEnded) {
+            await showWorkoutEndedModal();
+            params.variables = { notePath: "" };
+            return;
+        }
+
         // Count how many times each exercise has been performed
         const performedCounts = {};
         performedEx.forEach(performed => {
@@ -764,5 +776,96 @@ async function showExerciseInputModal(newNote, workoutFile, content, newId, exer
         
         // Focus on weight input
         weightInput.focus();
+    });
+}
+async function showWorkoutEndedModal() {
+    return new Promise((resolve) => {
+        // Create modal backdrop
+        const modalBackdrop = document.createElement('div');
+        modalBackdrop.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            pointer-events: auto;
+        `;
+        
+        const modalBox = document.createElement('div');
+        modalBox.style.cssText = `
+            background-color: var(--background-secondary);
+            border: 1px solid var(--background-modifier-border);
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+        `;
+        
+        const title = document.createElement('h3');
+        title.textContent = 'Workout Ended';
+        title.style.marginTop = '0';
+        title.style.marginBottom = '12px';
+        title.style.color = 'var(--text-normal)';
+        modalBox.appendChild(title);
+        
+        const message = document.createElement('p');
+        message.textContent = 'This workout has already ended. Please delete the end workout log from the Log folder if you want to add more exercises.';
+        message.style.marginBottom = '20px';
+        message.style.color = 'var(--text-muted)';
+        message.style.lineHeight = '1.5';
+        modalBox.appendChild(message);
+        
+        // OK button
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.cssText = `
+            display: flex;
+            justify-content: flex-end;
+        `;
+        
+        const okBtn = document.createElement('button');
+        okBtn.textContent = 'OK';
+        okBtn.type = 'button';
+        okBtn.style.cssText = `
+            padding: 6px 16px;
+            background-color: var(--interactive-accent);
+            color: var(--text-on-accent);
+            border: 1px solid var(--interactive-accent);
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        `;
+        
+        buttonContainer.appendChild(okBtn);
+        modalBox.appendChild(buttonContainer);
+        modalBackdrop.appendChild(modalBox);
+        
+        const cleanup = () => {
+            document.body.removeChild(modalBackdrop);
+        };
+        
+        okBtn.onclick = (e) => {
+            e.preventDefault();
+            cleanup();
+            resolve();
+        };
+        
+        // Close when clicking outside
+        modalBackdrop.onclick = (e) => {
+            if (e.target === modalBackdrop) {
+                cleanup();
+                resolve();
+            }
+        };
+        
+        document.body.appendChild(modalBackdrop);
     });
 }

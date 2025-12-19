@@ -14,7 +14,7 @@ class timer {
         this.display.textContent = "00:00";
 
         const controlsDiv = container.createEl("div", { cls: "timer-controls" });
-        const startBtn = controlsDiv.createEl("button", { text: "Start" });
+        const startBtn = controlsDiv.createEl("button", { text: "Start (60s)" });
         const stopBtn = controlsDiv.createEl("button", { text: "Stop" });
 
         startBtn.addEventListener("click", () => this.start(60));
@@ -43,6 +43,8 @@ class timer {
             this.timerId = null;
         }
         this.isRunning = false;
+        this.remainingTime = 0;
+        this.updateDisplay();
     }    updateDisplay() {
         if (!this.display) return;
         const minutes = Math.floor(this.remainingTime / 60);

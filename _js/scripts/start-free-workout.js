@@ -26,7 +26,16 @@ module.exports = async function startFreeWorkout(params) {
         }
 
         // Create new file with default free workout content
+        // Check if base filename exists and find a unique one
         let fileName = "Free Workout.md";
+        let baseFileName = "Free Workout";
+        let counter = 1;
+        
+        while (await app.vault.exists(targetPath + '/' + fileName)) {
+            fileName = baseFileName + ' ' + counter + '.md';
+            counter++;
+        }
+        
         let newNote;
 
         if (!await app.vault.exists(targetPath + '/' + fileName)) {
@@ -105,7 +114,7 @@ workout.renderEffortChart(note);
 
             newNote = await app.vault.create(targetPath + '/' + fileName, content);
         } else {
-            new Notice("Free workout already exists for today");
+            new Notice("Free workout file already exists");
             params.variables = { notePath: "" };
             return;
         }

@@ -24,17 +24,17 @@
             }
           },
           {
-            "id": "c46672b2bf1f762b",
+            "id": "fe665c71d2bbe089",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Workouts/2025-12-19 - Free Workout/Free Workout.md",
+                "file": "Workouts/2025-12-19 - Free Workout/Free Workout 2.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Free Workout"
+              "title": "Free Workout 2"
             }
           }
         ],
@@ -198,43 +198,43 @@
       "media-extended:Open external media": false
     }
   },
-  "active": "c46672b2bf1f762b",
+  "active": "fe665c71d2bbe089",
   "lastOpenFiles": [
-    "Workouts/2025-12-19 - Free Workout/Log/3.md",
-    "Workouts/2025-12-19 - Free Workout/Log/2.md",
-    "Workouts/2025-12-19 - Free Workout/Log/1.md",
     "Home.md",
-    "Workouts/2025-12-19 - Free Workout/Free Workout.md",
-    "Workouts/2025-12-19 - Free Workout/Log",
-    "Workouts/2025-12-19 - Free Workout",
-    "Free Workout - Implementation Guide.md",
+    "Workouts/2025-12-19 - Free Workout/Free Workout 2.md",
+    "Workouts/2025-12-19 - abc/abc 3.md",
+    "Workouts/2025-12-19 - abc/abc 2.md",
+    "Workouts/2025-12-19 - Free Workout/Free Workout 1.md",
     "Workouts/2025-12-19 - abc/abc 1.md",
     "Workouts/2025-12-19 - abc/abc.md",
     "Workouts/2025-12-19 - abc/Log",
     "Workouts/2025-12-19 - abc",
+    "Data Visualization.md",
+    "Workouts History.base",
+    "Free Workout Guide.md",
+    "Workouts/2025-12-19 - Free Workout (2)/Free Workout.md",
+    "Workouts/2025-12-19 - Free Workout (2)/Log",
+    "Workouts/2025-12-19 - Free Workout (2)",
+    "Workouts/2025-12-19 - Free Workout/Free Workout.md",
+    "Workouts/2025-12-19 - Free Workout/Log/3.md",
+    "Workouts/2025-12-19 - Free Workout/Log/2.md",
+    "Workouts/2025-12-19 - Free Workout/Log/1.md",
+    "Workouts/2025-12-19 - Free Workout/Log",
+    "Workouts/2025-12-19 - Free Workout",
+    "Free Workout - Implementation Guide.md",
     "Free Workout - Technical Details.md",
     "_js/scripts/log-free-workout-exercise.js",
-    "Free Workout Guide.md",
     "_js/scripts/start-free-workout.js",
-    "Data Visualization.md",
     "README.md",
     "Exercises List.base",
-    "Workouts History.base",
     "error-logs.md",
     "Workouts/2025-12-18 - abc/abc.md",
     "Workouts/2025-12-18 - abc/Log/1.md",
     "Workouts/2025-12-18 - abc/Log/2.md",
     "Workouts/2025-12-18 - abc/Log/3.md",
     "Workouts/2025-12-18 - abc/Log/4.md",
-    "Workouts/2025-12-18 - abc/Log",
-    "Workouts/2025-12-18 - abc",
     "Workouts/2025-12-18 - abc/Log/5.md",
     "Add Workout or Exercise Here.md",
-    "Templates/Workouts/gym/abc.md",
-    "Workouts/2025-12-17 - push-1/Log/5.md",
-    "Workouts/2025-12-17 - push-1/Log/4.md",
-    "Workouts/2025-12-17 - push-1/Log/3.md",
-    "Workouts/2025-12-17 - push-1/Log/2.md",
-    "Workouts/2025-12-17 - push-1/Log/1.md"
+    "Templates/Workouts/gym/abc.md"
   ]
 }

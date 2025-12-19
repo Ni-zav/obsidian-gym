@@ -104,6 +104,10 @@ module.exports = async function startTodaysWorkout(params) {
         params.variables = { notePath: newNote.path };
         console.log("Successfully created workout: " + newNote.path);
 
+        // Open the new note
+        const leaf = app.workspace.getLeaf(false);
+        await leaf.openFile(newNote);
+
     } catch (error) {
         console.error("Error creating workout:", error);
         // Re-throw the error to be handled by the calling function

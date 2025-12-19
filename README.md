@@ -13,22 +13,34 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - 🔄 Custom exercise support
 - ⚡ Quick exercise logging
 - 📅 Calendar heatmap for workout tracking
+- 🆓 Start unplanned workouts and add exercises on the fly
 
 
 ## Usage Guide
 
 ### Starting a Workout
 
-1. Open "Workout list"
-2. Click "Start Workout"
+#### Routine-Based Workout
+1. Open Home page
+2. Click "▶ Start Today's Workout"
 3. Select a workout template
-4. Begin logging exercises
+4. File automatically opens
+5. Begin logging exercises
+
+#### Free Workout (Unplanned)
+1. Open Home page
+2. Click "🆓 Start Free Workout"
+3. File automatically opens
+4. Click "Log Exercise" to add any exercises on the fly
+5. Exercises available: All exercises from your library
+6. Multiple free workouts can be created on the same day
 
 ### Logging Exercises
 
 1. In an active workout:
    - Click "Log Exercise"
-   - Select from remaining exercises
+   - **Routine workouts**: Select from remaining planned exercises
+   - **Free workouts**: Select from ALL exercises in your library
    - Enter weight, reps, and effort
    - Add optional notes
 
@@ -38,6 +50,7 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 2. Select exercises from library
 3. Specify sets for each exercise
 4. Save template
+5. File automatically opens
 
 ### Adding New Exercises
 
@@ -81,7 +94,10 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 	- [ ] add stopwatch feature
 - [x] should i change muscle group selections to multiple select? (require much more time for user to add themselves, kind of bad ux)
 	- just add notes about most used muscle on exercise creation instead.
-- [ ] add ability to start workout without specific exercises sets/lists.
+- [x] add ability to start workout without specific exercises sets/lists.
+	- [x] **Free Workout Mode** - Start unplanned workouts with all exercises available
+	- [x] **Auto-open workouts** - Newly created workouts automatically open for immediate use
+	- [x] **Multiple free workouts per day** - Can create multiple free workouts on the same day
 
 Now it is fully usable, might not need relation equipment and place (adding new relational data is time-consuming so.. no). Will do hide properties, musclegroup/exercises dashboard, demo video, and if possible add full body visualization.
 

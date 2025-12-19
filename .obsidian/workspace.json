@@ -29,12 +29,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Workouts/2025-12-19 - Free Workout/Free Workout 2.md",
+                "file": "Home.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Free Workout 2"
+              "title": "Home"
             }
           }
         ],
@@ -200,8 +200,8 @@
   },
   "active": "fe665c71d2bbe089",
   "lastOpenFiles": [
-    "Home.md",
     "Workouts/2025-12-19 - Free Workout/Free Workout 2.md",
+    "Home.md",
     "Workouts/2025-12-19 - abc/abc 3.md",
     "Workouts/2025-12-19 - abc/abc 2.md",
     "Workouts/2025-12-19 - Free Workout/Free Workout 1.md",

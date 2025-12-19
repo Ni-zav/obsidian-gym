@@ -31,6 +31,6 @@ views:
       - property: workout_type
         direction: ASC
     columnSize:
-      note.duration: 137
+      note.duration: 122
     cardSize: 300
     rowHeight: medium

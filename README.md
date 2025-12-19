@@ -58,7 +58,7 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 5. [CustomJS](https://github.com/saml-dev/obsidian-custom-js) - Custom JavaScript support
 6. [Obsidian Charts](https://github.com/phibr0/obsidian-charts) - Data visualization
 7. [Heatmap Calendar](https://github.com/Richardsl/heatmap-calendar-obsidian) - Workout calendar view
-8. [Homepage](https://github.com/mirnovov/obsidian-homepage) - To pin the [[Gym Log Dashboard]] on startup
+8. [Homepage](https://github.com/mirnovov/obsidian-homepage) - To pin the [[Home]] on startup
 
 ## To-do
 - [x] fix renderRemaining() function
@@ -67,18 +67,21 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - [x] Add some exercises templates
 - [x] Add few more workout templates
 - [x] Add some basic/general muscle groups
-- [ ] ~~Add Workout Program Feature (but I don't know what is program yet) (might not be needed for simple and streamlined system)~~
+- [ ] ~~Add Workout Program Feature (but I don't know what is program yet) (might not be needed for simple and streamlined system)~~ no
 - [x] change order of input fields to be more user-friendly
 - [x] fix chart logic in workout routine
 - [x] fix chart on exercise, x-axis should be time and date, not just date.
-- [ ] ~~add relation between equipment and place for better exercises selection~~
+- [ ] ~~add relation between equipment and place for better exercises selection~~ no
 - [x] add muscle-group or exercises dashboard
 	- using base! neat
 - [ ] add demo video
 - [ ] if possible, add full body visualization of each exercises done and soreness/muscle area (simulate rest periods and recovery)
 - [ ] hide properties is default on notes inside workouts folder
-- [ ] fix timer and add stopwatch feature
-- [ ] should i change muscle group selections to multiple select? (require much more time for user to add themselves, kind of bad ux)
+- [x] fix timer and add stopwatch feature
+	- [ ] add stopwatch feature
+- [x] should i change muscle group selections to multiple select? (require much more time for user to add themselves, kind of bad ux)
+	- just add notes about most used muscle on exercise creation instead.
+- [ ] add ability to start workout without specific exercises sets/lists.
 
 Now it is fully usable, might not need relation equipment and place (adding new relational data is time-consuming so.. no). Will do hide properties, musclegroup/exercises dashboard, demo video, and if possible add full body visualization.
 

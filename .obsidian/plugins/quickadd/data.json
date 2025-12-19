@@ -121,6 +121,26 @@
       "runOnStartup": false
     },
     {
+      "id": "f7e2c8d1-8a9c-4b5d-9e7f-3c1a2b4d6e8f",
+      "name": "Start Free Workout",
+      "type": "Macro",
+      "command": true,
+      "macro": {
+        "id": "c5a7d9f3-4e2b-4c6a-8d1f-2a5e9c3b7d4f",
+        "name": "Start Free Workout",
+        "commands": [
+          {
+            "name": "start-free-workout",
+            "type": "UserScript",
+            "id": "a3e5c9f7-2d4b-4a6c-8e1f-3b6d9c2a5e7f",
+            "path": "_js/scripts/start-free-workout.js",
+            "settings": {}
+          }
+        ]
+      },
+      "runOnStartup": false
+    },
+    {
       "id": "e8054961-a337-40e0-a978-3d8e32da8018",
       "name": "Log",
       "type": "Macro",
@@ -292,6 +312,20 @@
           "type": "UserScript",
           "id": "be9ab39a-7a1e-463b-95bc-fb3c551d2a41",
           "path": "_js/scripts/create-workout-routine.js",
+          "settings": {}
+        }
+      ],
+      "runOnStartup": false
+    },
+    {
+      "name": "Start Free Workout",
+      "id": "c5a7d9f3-4e2b-4c6a-8d1f-2a5e9c3b7d4f",
+      "commands": [
+        {
+          "name": "start-free-workout",
+          "type": "UserScript",
+          "id": "a3e5c9f7-2d4b-4a6c-8e1f-3b6d9c2a5e7f",
+          "path": "_js/scripts/start-free-workout.js",
           "settings": {}
         }
       ],

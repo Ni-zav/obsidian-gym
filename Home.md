@@ -24,6 +24,24 @@ actions:
 
 ```
 
+Or start a free workout and add exercises as you go:
+
+```meta-bind-button
+label: 🆓 Start Free Workout
+icon: ""
+style: default
+class: ""
+cssStyle: ""
+backgroundImage: ""
+tooltip: ""
+id: ""
+hidden: false
+actions:
+  - type: command
+    command: quickadd:choice:f7e2c8d1-8a9c-4b5d-9e7f-3c1a2b4d6e8f
+
+```
+
 ---
 
 ## 📋 Quick Navigation

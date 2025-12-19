@@ -49,6 +49,9 @@ module.exports = async function listFiles(params) {
             throw new Error("No workout ID found in active file");
         }
 
+        // Check if this is a free workout (empty exercises array)
+        const isFreeWorkout = exerciseIds.length === 0;
+
         // Count how many times each exercise should be performed
         const exerciseCounts = {};
         exerciseIds.forEach(id => {
@@ -106,23 +109,32 @@ module.exports = async function listFiles(params) {
                 console.log("No Start template found in Templates/Start.md");
             }
         } else {
-            // Get all exercises for this workout that aren't completed
-            console.log("Finding incomplete exercises for workout...");
-            const workoutEx = allFiles.filter(file => {
-                if (!file.path.startsWith('Templates/exercises/')) return false;
-                
-                const cache = app.metadataCache.getFileCache(file);
-                const tags = obsidian.getAllTags(cache);
-                const fm = cache?.frontmatter;
-                
-                return tags?.includes('#exercise') && 
-                       !fm?.workout_id && 
-                       fm?.id && 
-                       exerciseIds?.includes(fm.id) &&
-                       !isExerciseCompleted(fm.id);
-            });
+            // Check if this is a free workout - if so, show all exercises
+            if (isFreeWorkout) {
+                console.log("Free workout detected - showing all exercises");
+                const allExercises = filterFiles((fm, tags) => {
+                    return tags?.includes("#exercise") && !fm?.workout_id;
+                }, allFiles);
+                exercises.push(...allExercises);
+            } else {
+                // Get all exercises for this workout that aren't completed
+                console.log("Finding incomplete exercises for workout...");
+                const workoutEx = allFiles.filter(file => {
+                    if (!file.path.startsWith('Templates/exercises/')) return false;
+                    
+                    const cache = app.metadataCache.getFileCache(file);
+                    const tags = obsidian.getAllTags(cache);
+                    const fm = cache?.frontmatter;
+                    
+                    return tags?.includes('#exercise') && 
+                           !fm?.workout_id && 
+                           fm?.id && 
+                           exerciseIds?.includes(fm.id) &&
+                           !isExerciseCompleted(fm.id);
+                });
 
-            exercises.push(...workoutEx);
+                exercises.push(...workoutEx);
+            }
         }
 
         // Sort exercises by basename
@@ -141,8 +153,8 @@ module.exports = async function listFiles(params) {
             if (custom[0]) {
                 sortedExercises.push(custom[0]);
             }
-            // Add option to show all exercises if there are any incomplete exercises
-            if (Object.keys(exerciseCounts).some(id => !isExerciseCompleted(id))) {
+            // Add option to show all exercises if there are any incomplete exercises (routine-based only)
+            if (!isFreeWorkout && Object.keys(exerciseCounts).some(id => !isExerciseCompleted(id))) {
                 sortedExercises.push({ basename: 'Show all exercises' });
             }
             // Add 'End Workout' option if workout has started
@@ -161,6 +173,12 @@ module.exports = async function listFiles(params) {
                 if (!file?.basename) return 'Unknown';
                 if (file.basename === 'Show all exercises') return file.basename;
                 if (file.basename === 'End Workout') return file.basename;
+                
+                // For free workouts, don't show counts
+                if (isFreeWorkout) {
+                    return file.basename;
+                }
+                
                 const id = cache.getFileCache(file)?.frontmatter?.id;
                 if (id) {
                     const performed = performedCounts[id] || 0;

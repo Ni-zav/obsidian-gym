@@ -352,7 +352,7 @@ module.exports = async function listFiles(params) {
             let content = await app.vault.read(newNote);
             
             // Parse frontmatter to get exercise name
-            const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+            const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
             let exerciseName = '';
             
             if (fmMatch) {
@@ -364,7 +364,7 @@ module.exports = async function listFiles(params) {
             
             // Skip modal for start/end logs
             if (exerciseName.includes("Workout")) {
-                content = content.replace(/---\n+/m, `---\nworkout_id: ${newId}\n`);
+                content = content.replace(/---\r?\n/, `---\nworkout_id: ${newId}\n`);
                 await app.vault.modify(newNote, content);
                 await updateWorkoutLogs(activeFile, newNote, '');
                 params.variables = { notePath: newNote.path };
@@ -415,7 +415,7 @@ async function update(property, value, filePath) {
     if (regex.test(content)) {
         content = content.replace(regex, `${property}: ${value}`);
     } else {
-        content = content.replace(/---\n+/m, `---\n${property}: ${value}\n`);
+        content = content.replace(/---\r?\n+/m, `---\n${property}: ${value}\n`);
     }
     
     await app.vault.modify(file, content);

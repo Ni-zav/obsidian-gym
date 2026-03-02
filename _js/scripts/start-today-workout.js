@@ -116,7 +116,7 @@ module.exports = async function startTodaysWorkout(params) {
 
             // Add id to FrontMatter
             let content = await app.vault.read(newNote);
-            const regex = /---\n+/m;
+            const regex = /---\r?\n+/m;
             const subst = '---\nid: ' + generateGuid() + '\n';
             content = content.replace(regex, subst);
             await app.vault.modify(newNote, content);

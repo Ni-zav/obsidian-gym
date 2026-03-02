@@ -45,7 +45,9 @@ class timer {
         this.isRunning = false;
         this.remainingTime = 0;
         this.updateDisplay();
-    }    updateDisplay() {
+    }
+
+    updateDisplay() {
         if (!this.display) return;
         const minutes = Math.floor(this.remainingTime / 60);
         const seconds = this.remainingTime % 60;

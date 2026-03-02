@@ -26,7 +26,9 @@ class stats {
             remaining,
             percentage
         };
-    }    renderProgressBar(container, data) {
+    }
+
+    renderProgressBar(container, data) {
         const barContainer = container.createEl('div', { cls: 'progress-container' });
         const bar = barContainer.createEl('div', { cls: 'progress-bar' });
         bar.style.width = `${data.percentage}%`;

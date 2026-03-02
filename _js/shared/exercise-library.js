@@ -1,21 +1,21 @@
-function getCategoriesPath() {
-    const customPath = globalThis?.obsidianGymPaths?.exerciseCategoriesPath;
-    if (customPath) return customPath;
-
-    const customRoot = globalThis?.obsidianGymPaths?.exercisesRoot;
-    const exercisesRoot = customRoot || 'Templates/exercises';
-    return `${exercisesRoot}/_library/categories.json`;
-}
-
 class exerciseLibrary {
     constructor() {
         this.categories = null;
         this.loadCategories();
     }
 
+    getCategoriesPath() {
+        const customPath = globalThis?.obsidianGymPaths?.exerciseCategoriesPath;
+        if (customPath) return customPath;
+
+        const customRoot = globalThis?.obsidianGymPaths?.exercisesRoot;
+        const exercisesRoot = customRoot || 'Templates/exercises';
+        return `${exercisesRoot}/_library/categories.json`;
+    }
+
     async loadCategories() {
         try {
-            const categoriesPath = getCategoriesPath();
+            const categoriesPath = this.getCategoriesPath();
             const categoriesContent = await app.vault.adapter.read(categoriesPath);
             this.categories = JSON.parse(categoriesContent);
         } catch (error) {

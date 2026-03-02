@@ -3,7 +3,9 @@ class workout {
         // Get utils and exercise-library from customJS if available
         this.utils = window.customJS?.utils || new utils();
         this.exerciseLibrary = window.customJS?.exerciseLibrary || new exerciseLibrary();
-    }    renderHeader(context) {
+    }
+
+    renderHeader(context) {
         if (!context?.dv) return;
         const current = context.dv.current();
         

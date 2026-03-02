@@ -34,7 +34,9 @@ class prTracker {
             });
 
         return allSets;
-    }    isPR(currentSet, previousSets, type) {
+    }
+
+    isPR(currentSet, previousSets, type) {
         if (!currentSet[type]) return false;
         return !previousSets.some(set => (set[type] || 0) > currentSet[type]);
     }

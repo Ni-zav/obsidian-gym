@@ -23,7 +23,7 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 
 - custom folder for the obsidian gyms on the community plugins settings 
 
-![[Pasted image 20260302232044.png]]
+![Pasted image 20260302232044.png](Pasted%20image%2020260302232044.png)
 
 
 

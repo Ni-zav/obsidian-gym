@@ -1,3 +1,5 @@
+const { getPathConfig, joinVaultPath } = require("../shared/path-config");
+
 module.exports = async function createTodaysWorkout(params) {
     try {
         // Validate required parameters
@@ -8,14 +10,15 @@ module.exports = async function createTodaysWorkout(params) {
         console.log("Script: Create today's workout.");
 
         const obsidian = params.obsidian;
+        const pathConfig = getPathConfig();
         const templater = app.plugins.plugins["templater-obsidian"].templater;
         const cache = app.metadataCache;
         const files = app.vault.getMarkdownFiles();
         let workouts = [];
 
-        // Only collect workout templates from Templates/Workouts
+        // Only collect workout templates from configured workout templates root
         for(const file of files) {
-            if (!file.path.startsWith('Templates/Workouts/')) continue;
+            if (!file.path.startsWith(`${pathConfig.workoutTemplatesRoot}/`)) continue;
             
             const file_cache = cache.getFileCache(file);
             if (!file_cache) continue;
@@ -29,7 +32,7 @@ module.exports = async function createTodaysWorkout(params) {
         }
 
         if (workouts.length === 0) {
-            throw new Error("No workout templates found in Templates/Workouts/");
+            throw new Error(`No workout templates found in ${pathConfig.workoutTemplatesRoot}/`);
         }
 
         function sortworkout(a, b) {
@@ -59,7 +62,7 @@ module.exports = async function createTodaysWorkout(params) {
 
         let now = moment(new Date());
         let nameWoExt = templateFile.name.replace('.md', '');
-        let targetPath = 'Workouts/' + now.format("YYYY-MM-DD") + ' - ' + nameWoExt;
+        let targetPath = joinVaultPath(pathConfig.workoutsRoot, `${now.format("YYYY-MM-DD")} - ${nameWoExt}`);
         
         // Create folders if they don't exist
         if (!await app.vault.exists(targetPath)) {

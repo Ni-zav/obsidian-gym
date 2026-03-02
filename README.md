@@ -62,6 +62,15 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
    - Instructions
    - Optional video URL
 
+### Exercise Folder Location
+
+- Default folders are:
+   - `Templates/exercises` for exercise templates
+   - `Templates/Workouts` for workout templates
+   - `Templates` for shared templates like `Start.md` and `End.md`
+   - `Workouts` for generated daily workout notes
+- To customize these paths, edit `_js/shared/path-config.js` only.
+
 ## Plugins
 
 1. [Dataview](https://github.com/blacksmithgu/obsidian-dataview) - Data querying and visualization

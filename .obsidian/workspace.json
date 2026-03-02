@@ -105,7 +105,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 446.5
+    "width": 209.5
   },
   "right": {
     "id": "285bd5590c21a41e",
@@ -193,9 +193,9 @@
       "canvas:Create new canvas": false,
       "daily-notes:Open today's daily note": false,
       "command-palette:Open command palette": false,
+      "media-extended:Open external media": false,
       "templater-obsidian:Templater": false,
-      "homepage:Open homepage": false,
-      "media-extended:Open external media": false
+      "homepage:Open homepage": false
     }
   },
   "active": "fe665c71d2bbe089",

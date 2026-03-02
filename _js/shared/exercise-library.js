@@ -1,3 +1,8 @@
+function getExercisesRoot() {
+    const customRoot = globalThis?.obsidianGymPaths?.exercisesRoot;
+    return customRoot || 'Templates/exercises';
+}
+
 class exerciseLibrary {
     constructor() {
         this.categories = null;
@@ -6,7 +11,8 @@ class exerciseLibrary {
 
     async loadCategories() {
         try {
-            const categoriesPath = 'Templates/exercises/_library/categories.json';
+            const EXERCISES_ROOT = getExercisesRoot();
+            const categoriesPath = `${EXERCISES_ROOT}/_library/categories.json`;
             const categoriesContent = await app.vault.adapter.read(categoriesPath);
             this.categories = JSON.parse(categoriesContent);
         } catch (error) {

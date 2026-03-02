@@ -1,3 +1,5 @@
+const { getPathConfig, getExerciseLibraryPath, joinVaultPath } = require("../shared/path-config");
+
 class WorkoutBuilder {
     constructor(app, quickAdd) {
         if (!app || !quickAdd) {
@@ -5,6 +7,9 @@ class WorkoutBuilder {
         }
         this.app = app;
         this.quickAdd = quickAdd;
+        const pathConfig = getPathConfig();
+        this.exercisesRoot = pathConfig.exercisesRoot;
+        this.workoutTemplatesRoot = pathConfig.workoutTemplatesRoot;
         this.categories = null;
         this.workoutCategories = null;
         this.exercises = {};
@@ -25,7 +30,7 @@ class WorkoutBuilder {
 
     async loadWorkoutCategories() {
         try {
-            const categoriesPath = "Templates/exercises/_library/workout_categories.json";
+            const categoriesPath = getExerciseLibraryPath("workout_categories.json", { exercisesRoot: this.exercisesRoot });
             if (!await this.app.vault.adapter.exists(categoriesPath)) {
                 throw new Error("Workout categories file not found at: " + categoriesPath);
             }
@@ -87,7 +92,7 @@ class WorkoutBuilder {
 
     async loadCategories() {
         try {
-            const categoriesPath = "Templates/exercises/_library/categories.json";
+            const categoriesPath = getExerciseLibraryPath("categories.json", { exercisesRoot: this.exercisesRoot });
             if (!await this.app.vault.adapter.exists(categoriesPath)) {
                 throw new Error("Categories file not found at: " + categoriesPath);
             }
@@ -131,8 +136,8 @@ class WorkoutBuilder {
             const allFiles = this.app.vault.getMarkdownFiles();
             
             for (const file of allFiles) {
-                // Only include files from Templates/exercises folder
-                if (!file.path.startsWith('Templates/exercises/')) continue;
+                // Only include files from exercises root folder
+                if (!file.path.startsWith(`${this.exercisesRoot}/`)) continue;
                 
                 const cache = this.app.metadataCache.getFileCache(file);
                 if (cache?.frontmatter?.tags?.includes('exercise')) {
@@ -141,7 +146,7 @@ class WorkoutBuilder {
             }
 
             if (exerciseFiles.length === 0) {
-                throw new Error("No exercise templates found in Templates/exercises/");
+                throw new Error(`No exercise templates found in ${this.exercisesRoot}/`);
             }
 
             // Group exercises by muscle group
@@ -169,7 +174,7 @@ class WorkoutBuilder {
                 .reduce((sum, exercises) => sum + exercises.length, 0);
             
             if (totalExercises === 0) {
-                throw new Error("No valid exercise templates found in Templates/exercises/");
+                throw new Error(`No valid exercise templates found in ${this.exercisesRoot}/`);
             }
 
         } catch (error) {
@@ -331,7 +336,7 @@ class WorkoutBuilder {
     }
 
     async saveWorkout(name, content) {
-        const targetPath = "Templates/Workouts/gym";
+        const targetPath = joinVaultPath(this.workoutTemplatesRoot, "gym");
         
         // Ensure target directory exists
         if (!await this.app.vault.adapter.exists(targetPath)) {

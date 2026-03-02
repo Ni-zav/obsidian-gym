@@ -1,4 +1,10 @@
 let obsidian = null;
+const { getPathConfig, getTemplateFilePath } = require("../shared/path-config");
+const pathConfig = getPathConfig();
+const EXERCISES_ROOT = pathConfig.exercisesRoot;
+const WORKOUT_TEMPLATES_ROOT = pathConfig.workoutTemplatesRoot;
+const START_TEMPLATE_PATH = getTemplateFilePath("Start.md", pathConfig);
+const END_TEMPLATE_PATH = getTemplateFilePath("End.md", pathConfig);
 
 // Helper function to filter files
 function filterFiles(filter, files) {
@@ -101,12 +107,12 @@ module.exports = async function listFiles(params) {
             console.log("No exercises performed yet, looking for Start template...");
             
             // Look specifically for the Start template in the Templates root
-            const startTemplate = app.vault.getAbstractFileByPath('Templates/Start.md');
+            const startTemplate = app.vault.getAbstractFileByPath(START_TEMPLATE_PATH);
             if (startTemplate) {
                 console.log("Found Start template, adding to exercise list");
                 exercises.push(startTemplate);
             } else {
-                console.log("No Start template found in Templates/Start.md");
+                console.log(`No Start template found in ${START_TEMPLATE_PATH}`);
             }
         } else {
             // Check if this is a free workout - if so, show all exercises
@@ -120,7 +126,7 @@ module.exports = async function listFiles(params) {
                 // Get all exercises for this workout that aren't completed
                 console.log("Finding incomplete exercises for workout...");
                 const workoutEx = allFiles.filter(file => {
-                    if (!file.path.startsWith('Templates/exercises/')) return false;
+                    if (!file.path.startsWith(`${EXERCISES_ROOT}/`)) return false;
                     
                     const cache = app.metadataCache.getFileCache(file);
                     const tags = obsidian.getAllTags(cache);
@@ -199,9 +205,9 @@ module.exports = async function listFiles(params) {
         // Handle End Workout selection
         if (notesDisplay.basename === 'End Workout') {
             // Log End.md in Log folder
-            const endTemplate = app.vault.getAbstractFileByPath('Templates/End.md');
+            const endTemplate = app.vault.getAbstractFileByPath(END_TEMPLATE_PATH);
             if (!endTemplate) {
-                throw new Error('Templates/End.md not found');
+                throw new Error(`${END_TEMPLATE_PATH} not found`);
             }
             const parentFolder = app.vault.getAbstractFileByPath(activeFile.path).parent;
             if (!parentFolder) {
@@ -348,8 +354,8 @@ module.exports = async function listFiles(params) {
 
 function filterFiles(filterFunction, files) {
     return files.filter(file => {
-        // Only include exercise templates from Templates/exercises folder
-        if (file.path.startsWith('Templates/exercises/') || file.path.startsWith('Templates/Workouts/')) {
+        // Only include exercise templates from configured exercises root
+        if (file.path.startsWith(`${EXERCISES_ROOT}/`) || file.path.startsWith(`${WORKOUT_TEMPLATES_ROOT}/`)) {
             const cache = app.metadataCache.getFileCache(file);
             const tags = obsidian.getAllTags(cache);
             return filterFunction(cache?.frontmatter, tags);

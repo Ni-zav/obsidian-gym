@@ -1,9 +1,12 @@
+const { getPathConfig, getExerciseLibraryPath, joinVaultPath } = require("../shared/path-config");
+
 module.exports = async function addExerciseToLibrary(params) {
     try {
         const { app, quickAddApi: { suggester, inputPrompt } } = params;
+        const pathConfig = getPathConfig();
 
         // Load categories
-        const categoriesPath = "Templates/exercises/_library/categories.json";
+        const categoriesPath = getExerciseLibraryPath("categories.json", pathConfig);
         const categoriesFile = await app.vault.adapter.read(categoriesPath);
         const categories = JSON.parse(categoriesFile);
 
@@ -45,7 +48,7 @@ module.exports = async function addExerciseToLibrary(params) {
         }
 
         // Setup target path
-        const targetPath = `Templates/exercises/${muscleGroup}`;
+        const targetPath = joinVaultPath(pathConfig.exercisesRoot, muscleGroup);
 
         // Create muscle group folder if it doesn't exist
         if (!await app.vault.adapter.exists(targetPath)) {

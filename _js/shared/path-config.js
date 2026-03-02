@@ -1,11 +1,13 @@
 const PATH_CONFIG = {
     exercisesRoot: "Templates/exercises",
-    exerciseCategoriesPath: "Templates/exercises/_library/categories.json",
-    workoutCategoriesPath: "Templates/exercises/_library/workout_categories.json",
+    templateNotesRoot: "Templates/exercises",
     workoutTemplatesRoot: "Templates/Workouts",
     workoutsRoot: "Workouts",
-    programTemplatePath: "Templates/programs/_templates/program-template.md",
-    programsOutputRoot: "Templates/programs/active-programs",
+    programsRoot: "Templates/programs",
+    exerciseCategoriesPath: "Templates/exercises/_library/categories.json",
+    workoutCategoriesPath: "Templates/exercises/_library/workout_categories.json",
+    programTemplatePath: "Templates/programs/program-template.md",
+    programsOutputRoot: "Templates/programs",
     startTemplatePath: "Templates/exercises/Start.md",
     endTemplatePath: "Templates/exercises/End.md",
     customTemplatePath: "Templates/exercises/Custom.md"
@@ -24,15 +26,18 @@ function getGlobalPathOverrides() {
     const overrides = globalThis.obsidianGymPaths;
     const legacyTemplatesRoot = normalizePath(overrides.templatesRoot);
     const legacyTemplateNotesRoot = normalizePath(overrides.templateNotesRoot) || legacyTemplatesRoot;
+    const templateNotesRoot = normalizePath(overrides.templateNotesRoot) || legacyTemplateNotesRoot;
+
     const legacyProgramsRoot = normalizePath(overrides.programsRoot) || (legacyTemplateNotesRoot ? joinVaultPath(legacyTemplateNotesRoot, "programs") : "");
+    const programsRoot = normalizePath(overrides.programsRoot) || normalizePath(overrides.programsOutputRoot) || legacyProgramsRoot;
     const exercisesRoot = normalizePath(overrides.exercisesRoot);
 
     return {
         exercisesRoot,
-        exerciseCategoriesPath: normalizePath(overrides.exerciseCategoriesPath),
-        workoutCategoriesPath: normalizePath(overrides.workoutCategoriesPath),
+        templateNotesRoot,
         workoutTemplatesRoot: normalizePath(overrides.workoutTemplatesRoot),
         workoutsRoot: normalizePath(overrides.workoutsRoot),
+        programsRoot,
         programTemplatePath: normalizePath(overrides.programTemplatePath),
         programsOutputRoot: normalizePath(overrides.programsOutputRoot),
         startTemplatePath: normalizePath(overrides.startTemplatePath),
@@ -58,20 +63,23 @@ function joinVaultPath(...segments) {
 function getPathConfig() {
     const overrides = getGlobalPathOverrides();
     const exercisesRoot = overrides.exercisesRoot || PATH_CONFIG.exercisesRoot;
-    const legacyTemplateNotesRoot = overrides.legacyTemplateNotesRoot || "";
+    const templateNotesRoot = overrides.templateNotesRoot || PATH_CONFIG.templateNotesRoot || exercisesRoot;
     const legacyProgramsRoot = overrides.legacyProgramsRoot || "";
+    const programsRoot = overrides.programsRoot || PATH_CONFIG.programsRoot || legacyProgramsRoot;
 
     return {
         exercisesRoot,
-        exerciseCategoriesPath: overrides.exerciseCategoriesPath || joinVaultPath(exercisesRoot, "_library/categories.json"),
-        workoutCategoriesPath: overrides.workoutCategoriesPath || joinVaultPath(exercisesRoot, "_library/workout_categories.json"),
+        templateNotesRoot,
         workoutTemplatesRoot: overrides.workoutTemplatesRoot || PATH_CONFIG.workoutTemplatesRoot,
         workoutsRoot: overrides.workoutsRoot || PATH_CONFIG.workoutsRoot,
-        programTemplatePath: overrides.programTemplatePath || (legacyProgramsRoot ? joinVaultPath(legacyProgramsRoot, "_templates/program-template.md") : PATH_CONFIG.programTemplatePath),
-        programsOutputRoot: overrides.programsOutputRoot || (legacyProgramsRoot ? joinVaultPath(legacyProgramsRoot, "active-programs") : PATH_CONFIG.programsOutputRoot),
-        startTemplatePath: overrides.startTemplatePath || (legacyTemplateNotesRoot ? joinVaultPath(legacyTemplateNotesRoot, "Start.md") : joinVaultPath(exercisesRoot, "Start.md")),
-        endTemplatePath: overrides.endTemplatePath || (legacyTemplateNotesRoot ? joinVaultPath(legacyTemplateNotesRoot, "End.md") : joinVaultPath(exercisesRoot, "End.md")),
-        customTemplatePath: overrides.customTemplatePath || (legacyTemplateNotesRoot ? joinVaultPath(legacyTemplateNotesRoot, "Custom.md") : joinVaultPath(exercisesRoot, "Custom.md"))
+        programsRoot,
+        exerciseCategoriesPath: joinVaultPath(exercisesRoot, "_library/categories.json"),
+        workoutCategoriesPath: joinVaultPath(exercisesRoot, "_library/workout_categories.json"),
+        programTemplatePath: overrides.programTemplatePath || (legacyProgramsRoot ? joinVaultPath(legacyProgramsRoot, "_templates/program-template.md") : joinVaultPath(programsRoot, "program-template.md")),
+        programsOutputRoot: programsRoot,
+        startTemplatePath: joinVaultPath(templateNotesRoot, "Start.md"),
+        endTemplatePath: joinVaultPath(templateNotesRoot, "End.md"),
+        customTemplatePath: joinVaultPath(templateNotesRoot, "Custom.md")
     };
 }
 
@@ -91,11 +99,11 @@ function getExerciseLibraryPath(fileName, config = getPathConfig()) {
 }
 
 function getProgramTemplatePath(config = getPathConfig()) {
-    return config.programTemplatePath;
+    return joinVaultPath(config.programsRoot, "program-template.md");
 }
 
 function getProgramsActiveRoot(config = getPathConfig()) {
-    return config.programsOutputRoot;
+    return config.programsRoot;
 }
 
 module.exports = {

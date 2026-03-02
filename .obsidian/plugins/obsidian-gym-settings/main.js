@@ -2,12 +2,14 @@ const { Plugin, PluginSettingTab, Setting, Notice, TFolder, TFile } = require("o
 
 const DEFAULT_PATHS = {
     exercisesRoot: "Templates/exercises",
-    exerciseCategoriesPath: "Templates/exercises/_library/categories.json",
-    workoutCategoriesPath: "Templates/exercises/_library/workout_categories.json",
+    templateNotesRoot: "Templates/exercises",
     workoutTemplatesRoot: "Templates/Workouts",
     workoutsRoot: "Workouts",
-    programTemplatePath: "Templates/programs/_templates/program-template.md",
-    programsOutputRoot: "Templates/programs/active-programs",
+    programsRoot: "Templates/programs",
+    exerciseCategoriesPath: "Templates/exercises/_library/categories.json",
+    workoutCategoriesPath: "Templates/exercises/_library/workout_categories.json",
+    programTemplatePath: "Templates/programs/program-template.md",
+    programsOutputRoot: "Templates/programs",
     startTemplatePath: "Templates/exercises/Start.md",
     endTemplatePath: "Templates/exercises/End.md",
     customTemplatePath: "Templates/exercises/Custom.md"
@@ -92,6 +94,8 @@ class ObsidianGymSettingsPlugin extends Plugin {
 
     normalizePaths(paths) {
         const exercisesRoot = normalizeVaultPath(paths.exercisesRoot) || DEFAULT_PATHS.exercisesRoot;
+        const templateNotesRoot = normalizeVaultPath(paths.templateNotesRoot) || exercisesRoot;
+        const programsRoot = normalizeVaultPath(paths.programsRoot) || DEFAULT_PATHS.programsRoot;
 
         const legacyTemplatesRoot = normalizeVaultPath(paths.templatesRoot);
         const legacyTemplateNotesRoot = normalizeVaultPath(paths.templateNotesRoot) || legacyTemplatesRoot;
@@ -99,15 +103,17 @@ class ObsidianGymSettingsPlugin extends Plugin {
 
         return {
             exercisesRoot,
-            exerciseCategoriesPath: normalizeVaultPath(paths.exerciseCategoriesPath) || joinVaultPath(exercisesRoot, "_library/categories.json"),
-            workoutCategoriesPath: normalizeVaultPath(paths.workoutCategoriesPath) || joinVaultPath(exercisesRoot, "_library/workout_categories.json"),
+            templateNotesRoot,
             workoutTemplatesRoot: normalizeVaultPath(paths.workoutTemplatesRoot) || DEFAULT_PATHS.workoutTemplatesRoot,
             workoutsRoot: normalizeVaultPath(paths.workoutsRoot) || DEFAULT_PATHS.workoutsRoot,
-            programTemplatePath: normalizeVaultPath(paths.programTemplatePath) || (legacyProgramsRoot ? joinVaultPath(legacyProgramsRoot, "_templates/program-template.md") : DEFAULT_PATHS.programTemplatePath),
-            programsOutputRoot: normalizeVaultPath(paths.programsOutputRoot) || (legacyProgramsRoot ? joinVaultPath(legacyProgramsRoot, "active-programs") : DEFAULT_PATHS.programsOutputRoot),
-            startTemplatePath: normalizeVaultPath(paths.startTemplatePath) || (legacyTemplateNotesRoot ? joinVaultPath(legacyTemplateNotesRoot, "Start.md") : joinVaultPath(exercisesRoot, "Start.md")),
-            endTemplatePath: normalizeVaultPath(paths.endTemplatePath) || (legacyTemplateNotesRoot ? joinVaultPath(legacyTemplateNotesRoot, "End.md") : joinVaultPath(exercisesRoot, "End.md")),
-            customTemplatePath: normalizeVaultPath(paths.customTemplatePath) || (legacyTemplateNotesRoot ? joinVaultPath(legacyTemplateNotesRoot, "Custom.md") : joinVaultPath(exercisesRoot, "Custom.md"))
+            programsRoot,
+            exerciseCategoriesPath: joinVaultPath(exercisesRoot, "_library/categories.json"),
+            workoutCategoriesPath: joinVaultPath(exercisesRoot, "_library/workout_categories.json"),
+            programTemplatePath: normalizeVaultPath(paths.programTemplatePath) || (legacyProgramsRoot ? joinVaultPath(legacyProgramsRoot, "_templates/program-template.md") : joinVaultPath(programsRoot, "program-template.md")),
+            programsOutputRoot: programsRoot,
+            startTemplatePath: joinVaultPath(templateNotesRoot, "Start.md"),
+            endTemplatePath: joinVaultPath(templateNotesRoot, "End.md"),
+            customTemplatePath: joinVaultPath(templateNotesRoot, "Custom.md")
         };
     }
 
@@ -137,14 +143,14 @@ class ObsidianGymSettingsPlugin extends Plugin {
 
         const folderFields = [
             paths.exercisesRoot,
+            paths.templateNotesRoot,
             paths.workoutTemplatesRoot,
             paths.workoutsRoot,
-            paths.programsOutputRoot
+            paths.programsRoot,
+            joinVaultPath(paths.exercisesRoot, "_library")
         ];
 
         const fileParentFields = [
-            paths.exerciseCategoriesPath,
-            paths.workoutCategoriesPath,
             paths.programTemplatePath,
             paths.startTemplatePath,
             paths.endTemplatePath,
@@ -292,8 +298,7 @@ class ObsidianGymSettingsPlugin extends Plugin {
             { from: oldPaths.exercisesRoot, to: newPaths.exercisesRoot },
             { from: oldPaths.workoutTemplatesRoot, to: newPaths.workoutTemplatesRoot },
             { from: oldPaths.workoutsRoot, to: newPaths.workoutsRoot },
-            { from: parentPath(oldPaths.programTemplatePath), to: parentPath(newPaths.programTemplatePath) },
-            { from: oldPaths.programsOutputRoot, to: newPaths.programsOutputRoot }
+            { from: oldPaths.programsRoot || oldPaths.programsOutputRoot, to: newPaths.programsRoot }
         ];
 
         for (const entry of folderEntries) {
@@ -357,7 +362,8 @@ class ObsidianGymSettingsPlugin extends Plugin {
             content = replaceAllLiteral(content, oldPaths.exercisesRoot, newPaths.exercisesRoot);
             content = replaceAllLiteral(content, oldPaths.workoutTemplatesRoot, newPaths.workoutTemplatesRoot);
             content = replaceAllLiteral(content, oldPaths.workoutsRoot, newPaths.workoutsRoot);
-            content = replaceAllLiteral(content, oldPaths.programsOutputRoot, newPaths.programsOutputRoot);
+            content = replaceAllLiteral(content, oldPaths.programsOutputRoot, newPaths.programsRoot);
+            content = replaceAllLiteral(content, oldPaths.programsRoot, newPaths.programsRoot);
 
             if (content !== original) {
                 await this.app.vault.adapter.write(filePath, content);
@@ -392,20 +398,12 @@ class ObsidianGymSettingsTab extends PluginSettingTab {
                 .onChange(value => draft.exercisesRoot = normalizeVaultPath(value)));
 
         new Setting(containerEl)
-            .setName("Exercise categories file")
-            .setDesc("Path to categories.json")
+            .setName("Template notes folder")
+            .setDesc("Single folder for Start.md, End.md, and Custom.md")
             .addText(text => text
-                .setPlaceholder("Templates/exercises/_library/categories.json")
-                .setValue(draft.exerciseCategoriesPath)
-                .onChange(value => draft.exerciseCategoriesPath = normalizeVaultPath(value)));
-
-        new Setting(containerEl)
-            .setName("Workout categories file")
-            .setDesc("Path to workout_categories.json")
-            .addText(text => text
-                .setPlaceholder("Templates/exercises/_library/workout_categories.json")
-                .setValue(draft.workoutCategoriesPath)
-                .onChange(value => draft.workoutCategoriesPath = normalizeVaultPath(value)));
+                .setPlaceholder("Templates/exercises")
+                .setValue(draft.templateNotesRoot || draft.exercisesRoot)
+                .onChange(value => draft.templateNotesRoot = normalizeVaultPath(value)));
 
         new Setting(containerEl)
             .setName("Workout templates root")
@@ -424,44 +422,12 @@ class ObsidianGymSettingsTab extends PluginSettingTab {
                 .onChange(value => draft.workoutsRoot = normalizeVaultPath(value)));
 
         new Setting(containerEl)
-            .setName("Program template file")
-            .setDesc("Path to program-template.md")
+            .setName("Programs folder")
+            .setDesc("Single folder for program-template.md and created program notes")
             .addText(text => text
-                .setPlaceholder("Templates/programs/_templates/program-template.md")
-                .setValue(draft.programTemplatePath)
-                .onChange(value => draft.programTemplatePath = normalizeVaultPath(value)));
-
-        new Setting(containerEl)
-            .setName("Programs output root")
-            .setDesc("Folder where created program notes are saved")
-            .addText(text => text
-                .setPlaceholder("Templates/programs/active-programs")
-                .setValue(draft.programsOutputRoot)
-                .onChange(value => draft.programsOutputRoot = normalizeVaultPath(value)));
-
-        new Setting(containerEl)
-            .setName("Start template file")
-            .setDesc("Path to Start.md (default is inside exercises root)")
-            .addText(text => text
-                .setPlaceholder("Templates/exercises/Start.md")
-                .setValue(draft.startTemplatePath)
-                .onChange(value => draft.startTemplatePath = normalizeVaultPath(value)));
-
-        new Setting(containerEl)
-            .setName("End template file")
-            .setDesc("Path to End.md (default is inside exercises root)")
-            .addText(text => text
-                .setPlaceholder("Templates/exercises/End.md")
-                .setValue(draft.endTemplatePath)
-                .onChange(value => draft.endTemplatePath = normalizeVaultPath(value)));
-
-        new Setting(containerEl)
-            .setName("Custom template file")
-            .setDesc("Path to Custom.md (default is inside exercises root)")
-            .addText(text => text
-                .setPlaceholder("Templates/exercises/Custom.md")
-                .setValue(draft.customTemplatePath)
-                .onChange(value => draft.customTemplatePath = normalizeVaultPath(value)));
+                .setPlaceholder("Templates/programs")
+                .setValue(draft.programsRoot || draft.programsOutputRoot)
+                .onChange(value => draft.programsRoot = normalizeVaultPath(value)));
 
         new Setting(containerEl)
             .setName("Save path settings")

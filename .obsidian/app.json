@@ -30,5 +30,6 @@
   "alwaysUpdateLinks": true,
   "showLineNumber": true,
   "defaultViewMode": "source",
-  "readableLineLength": false
+  "readableLineLength": false,
+  "attachmentFolderPath": "Attachments"
 }

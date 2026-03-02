@@ -3,7 +3,8 @@ views:
     name: Table
     filters:
       and:
-        - file.inFolder("Templates/programs/active-programs")
+        - file.inFolder("Templates/programs")
+        - file.name != "program-template"
     order:
       - file.name
       - date

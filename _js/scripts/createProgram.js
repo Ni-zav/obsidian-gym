@@ -28,7 +28,7 @@ module.exports = async function createProgram(params) {
         
         const targetFolder = app.vault.getAbstractFileByPath(targetPath);
         if (!targetFolder) {
-            throw new Error("Failed to access or create the active programs folder");
+            throw new Error("Failed to access or create the programs folder");
         }        // Create new program from template
         const timestamp = moment().format("YYYY-MM-DD");
         const fileName = `${timestamp}-${programName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.md`;

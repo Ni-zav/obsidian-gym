@@ -49,7 +49,7 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 1. Use "Create Workout Routine"
 2. Select exercises from library
 3. Specify sets for each exercise
-4. Save template
+4. Save template,
 5. File automatically opens
 
 ### Adding New Exercises
@@ -66,12 +66,11 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 
 - Default folders are:
    - `Templates/exercises` for exercise templates
-   - `Templates/exercises/Start.md`, `Templates/exercises/End.md`, `Templates/exercises/Custom.md` for template notes
+   - `Templates/exercises` (same folder) for `Start.md`, `End.md`, and `Custom.md`
    - `Templates/exercises/_library/categories.json` for exercise categories
    - `Templates/exercises/_library/workout_categories.json` for workout categories
    - `Templates/Workouts` for workout templates
-   - `Templates/programs/_templates/program-template.md` for program template
-   - `Templates/programs/active-programs` for created program notes
+   - `Templates/programs` (same folder) for `program-template.md` and created program notes
    - `Workouts` for generated daily workout notes
 - Prefer using the **Obsidian Gym Settings** plugin UI to customize these paths.
 - `_js/shared/path-config.js` remains the default/fallback configuration.
@@ -82,15 +81,10 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - Open **Settings → Community plugins → Obsidian Gym Settings**.
 - Configure these paths from the plugin UI:
    - Exercises root
-   - Exercise categories file
-   - Workout categories file
+   - Template notes folder
    - Workout templates root
    - Workouts root
-   - Program template file
-   - Programs output root
-   - Start template file
-   - End template file
-   - Custom template file
+   - Programs folder
 - Use **Save** to apply new paths for future operations.
 - Use **Save + Migrate** to move existing exercises, workout templates, workouts, programs, category files, and template note files to the new paths.
 - Base views (`Exercises List.base`, `Workouts List.base`, `Workouts History.base`, `Program List.base`, `Program History.base`) are auto-updated during path changes.

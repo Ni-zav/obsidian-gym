@@ -6,6 +6,9 @@ views:
     filters:
       and:
         - file.inFolder("Templates/exercises")
+        - file.name != "Start"
+        - file.name != "End"
+        - file.name != "Custom"
         - not:
             - file.inFolder("Templates/exercises/_library")
     groupBy:

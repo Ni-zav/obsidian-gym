@@ -36,8 +36,22 @@
               "icon": "lucide-file",
               "title": "Home"
             }
+          },
+          {
+            "id": "cebf17e40ca96280",
+            "type": "leaf",
+            "state": {
+              "type": "bases",
+              "state": {
+                "file": "Exercises List.base",
+                "viewName": "Table"
+              },
+              "icon": "lucide-table",
+              "title": "Exercises List"
+            }
           }
-        ]
+        ],
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -197,10 +211,17 @@
       "homepage:Open homepage": false
     }
   },
-  "active": "55bd7826b153dd7d",
+  "active": "cebf17e40ca96280",
   "lastOpenFiles": [
-    "Workouts/2025-12-19 - Free Workout/Free Workout 2.md",
+    "Workouts List.base",
+    "Workouts History.base",
+    "Program History.base",
+    "Program List.base",
     "Home.md",
+    "Templates/exercises/Custom.md",
+    "Templates/exercises/End.md",
+    "Templates/exercises/Start.md",
+    "Workouts/2025-12-19 - Free Workout/Free Workout 2.md",
     "Workouts/2025-12-19 - abc/abc 3.md",
     "Workouts/2025-12-19 - abc/abc 2.md",
     "Workouts/2025-12-19 - Free Workout/Free Workout 1.md",
@@ -209,7 +230,6 @@
     "Workouts/2025-12-19 - abc/Log",
     "Workouts/2025-12-19 - abc",
     "Data Visualization.md",
-    "Workouts History.base",
     "Free Workout Guide.md",
     "Workouts/2025-12-19 - Free Workout (2)/Free Workout.md",
     "Workouts/2025-12-19 - Free Workout (2)/Log",
@@ -223,17 +243,11 @@
     "Free Workout - Implementation Guide.md",
     "Free Workout - Technical Details.md",
     "_js/scripts/log-free-workout-exercise.js",
-    "_js/scripts/start-free-workout.js",
     "README.md",
-    "Exercises List.base",
     "error-logs.md",
     "Workouts/2025-12-18 - abc/abc.md",
     "Workouts/2025-12-18 - abc/Log/1.md",
     "Workouts/2025-12-18 - abc/Log/2.md",
-    "Workouts/2025-12-18 - abc/Log/3.md",
-    "Workouts/2025-12-18 - abc/Log/4.md",
-    "Workouts/2025-12-18 - abc/Log/5.md",
-    "Add Workout or Exercise Here.md",
-    "Templates/Workouts/gym/abc.md"
+    "Workouts/2025-12-18 - abc/Log/3.md"
   ]
 }

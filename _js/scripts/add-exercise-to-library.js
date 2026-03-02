@@ -1,5 +1,11 @@
 const { getPathConfig, getExerciseLibraryPath, joinVaultPath } = require("../shared/path-config");
 
+function getParentPath(pathValue) {
+    const idx = pathValue.lastIndexOf('/');
+    if (idx === -1) return "";
+    return pathValue.slice(0, idx);
+}
+
 module.exports = async function addExerciseToLibrary(params) {
     try {
         const { app, quickAddApi: { suggester, inputPrompt } } = params;
@@ -7,6 +13,13 @@ module.exports = async function addExerciseToLibrary(params) {
 
         // Load categories
         const categoriesPath = getExerciseLibraryPath("categories.json", pathConfig);
+        const categoriesParent = getParentPath(categoriesPath);
+        if (categoriesParent && !await app.vault.adapter.exists(categoriesParent)) {
+            await app.vault.createFolder(categoriesParent);
+        }
+        if (!await app.vault.adapter.exists(categoriesPath)) {
+            throw new Error(`Categories file not found at: ${categoriesPath}`);
+        }
         const categoriesFile = await app.vault.adapter.read(categoriesPath);
         const categories = JSON.parse(categoriesFile);
 

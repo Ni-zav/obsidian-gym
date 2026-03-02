@@ -1,4 +1,10 @@
-const { getPathConfig, getExerciseLibraryPath, joinVaultPath } = require("../shared/path-config");
+const { getPathConfig, joinVaultPath } = require("../shared/path-config");
+
+function getParentPath(pathValue) {
+    const idx = pathValue.lastIndexOf('/');
+    if (idx === -1) return "";
+    return pathValue.slice(0, idx);
+}
 
 class WorkoutBuilder {
     constructor(app, quickAdd) {
@@ -9,6 +15,8 @@ class WorkoutBuilder {
         this.quickAdd = quickAdd;
         const pathConfig = getPathConfig();
         this.exercisesRoot = pathConfig.exercisesRoot;
+        this.exerciseCategoriesPath = pathConfig.exerciseCategoriesPath;
+        this.workoutCategoriesPath = pathConfig.workoutCategoriesPath;
         this.workoutTemplatesRoot = pathConfig.workoutTemplatesRoot;
         this.categories = null;
         this.workoutCategories = null;
@@ -30,7 +38,11 @@ class WorkoutBuilder {
 
     async loadWorkoutCategories() {
         try {
-            const categoriesPath = getExerciseLibraryPath("workout_categories.json", { exercisesRoot: this.exercisesRoot });
+            const categoriesPath = this.workoutCategoriesPath;
+            const categoriesParent = getParentPath(categoriesPath);
+            if (categoriesParent && !await this.app.vault.adapter.exists(categoriesParent)) {
+                await this.app.vault.createFolder(categoriesParent);
+            }
             if (!await this.app.vault.adapter.exists(categoriesPath)) {
                 throw new Error("Workout categories file not found at: " + categoriesPath);
             }
@@ -92,7 +104,11 @@ class WorkoutBuilder {
 
     async loadCategories() {
         try {
-            const categoriesPath = getExerciseLibraryPath("categories.json", { exercisesRoot: this.exercisesRoot });
+            const categoriesPath = this.exerciseCategoriesPath;
+            const categoriesParent = getParentPath(categoriesPath);
+            if (categoriesParent && !await this.app.vault.adapter.exists(categoriesParent)) {
+                await this.app.vault.createFolder(categoriesParent);
+            }
             if (!await this.app.vault.adapter.exists(categoriesPath)) {
                 throw new Error("Categories file not found at: " + categoriesPath);
             }

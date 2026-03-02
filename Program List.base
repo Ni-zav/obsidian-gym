@@ -1,0 +1,14 @@
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.inFolder("Templates/programs/active-programs")
+    order:
+      - file.name
+      - program_name
+      - file.mtime
+    sort:
+      - property: file.mtime
+        direction: DESC
+    columnSize: {}

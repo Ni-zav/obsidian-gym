@@ -1,3 +1,5 @@
+const { getPathConfig, joinVaultPath } = require("../shared/path-config");
+
 module.exports = async function startFreeWorkout(params) {
     try {
         // Validate required parameters
@@ -9,10 +11,11 @@ module.exports = async function startFreeWorkout(params) {
 
         const obsidian = params.obsidian;
         const templater = app.plugins.plugins["templater-obsidian"].templater;
+        const pathConfig = getPathConfig();
 
         let now = moment(new Date());
         const workoutName = "Free Workout";
-        let targetPath = 'Workouts/' + now.format("YYYY-MM-DD") + ' - ' + workoutName;
+        let targetPath = joinVaultPath(pathConfig.workoutsRoot, `${now.format("YYYY-MM-DD")} - ${workoutName}`);
         
         // Create folders if they don't exist
         if (!await app.vault.exists(targetPath)) {

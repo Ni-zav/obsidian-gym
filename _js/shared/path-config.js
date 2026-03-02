@@ -5,6 +5,25 @@ const PATH_CONFIG = {
     workoutsRoot: "Workouts"
 };
 
+function normalizePath(pathValue) {
+    if (!pathValue || typeof pathValue !== "string") return "";
+    return pathValue.replace(/\\/g, '/').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+}
+
+function getGlobalPathOverrides() {
+    if (typeof globalThis === "undefined" || !globalThis.obsidianGymPaths) {
+        return {};
+    }
+
+    const overrides = globalThis.obsidianGymPaths;
+    return {
+        templatesRoot: normalizePath(overrides.templatesRoot),
+        exercisesRoot: normalizePath(overrides.exercisesRoot),
+        workoutTemplatesRoot: normalizePath(overrides.workoutTemplatesRoot),
+        workoutsRoot: normalizePath(overrides.workoutsRoot)
+    };
+}
+
 function joinVaultPath(...segments) {
     return segments
         .filter(Boolean)
@@ -17,7 +36,13 @@ function joinVaultPath(...segments) {
 }
 
 function getPathConfig() {
-    return { ...PATH_CONFIG };
+    const overrides = getGlobalPathOverrides();
+    return {
+        templatesRoot: overrides.templatesRoot || PATH_CONFIG.templatesRoot,
+        exercisesRoot: overrides.exercisesRoot || PATH_CONFIG.exercisesRoot,
+        workoutTemplatesRoot: overrides.workoutTemplatesRoot || PATH_CONFIG.workoutTemplatesRoot,
+        workoutsRoot: overrides.workoutsRoot || PATH_CONFIG.workoutsRoot
+    };
 }
 
 function getTemplateFilePath(fileName, config = getPathConfig()) {
@@ -37,5 +62,8 @@ module.exports = {
 };
 
 if (typeof globalThis !== "undefined") {
-    globalThis.obsidianGymPaths = getPathConfig();
+    globalThis.obsidianGymPaths = {
+        ...(globalThis.obsidianGymPaths || {}),
+        ...getPathConfig()
+    };
 }

@@ -37,8 +37,7 @@
               "title": "Home"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -198,7 +197,7 @@
       "homepage:Open homepage": false
     }
   },
-  "active": "fe665c71d2bbe089",
+  "active": "55bd7826b153dd7d",
   "lastOpenFiles": [
     "Workouts/2025-12-19 - Free Workout/Free Workout 2.md",
     "Home.md",

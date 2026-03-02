@@ -1,4 +1,4 @@
-const { getPathConfig, joinVaultPath } = require("../shared/path-config");
+const { getPathConfig, getProgramTemplatePath, getProgramsActiveRoot } = require("../shared/path-config");
 
 module.exports = async function createProgram(params) {
     const { app, quickAddApi: { inputPrompt, suggester } } = params;
@@ -8,7 +8,7 @@ module.exports = async function createProgram(params) {
         const templater = app.plugins.plugins["templater-obsidian"].templater;
 
         // Ensure template exists
-        const templatePath = joinVaultPath(pathConfig.templatesRoot, "programs/_templates/program-template.md");
+        const templatePath = getProgramTemplatePath(pathConfig);
         const templateFile = app.vault.getAbstractFileByPath(templatePath);
         if (!templateFile) {
             throw new Error("Program template not found! Please check that the template exists at: " + templatePath);
@@ -21,7 +21,7 @@ module.exports = async function createProgram(params) {
         }
 
         // Create target folder if it doesn't exist
-        const targetPath = joinVaultPath(pathConfig.templatesRoot, "programs/active-programs");
+        const targetPath = getProgramsActiveRoot(pathConfig);
         if (!await app.vault.adapter.exists(targetPath)) {
             await app.vault.createFolder(targetPath);
         }

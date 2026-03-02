@@ -1,7 +1,8 @@
 const { Plugin, PluginSettingTab, Setting, Notice, TFolder, TFile } = require("obsidian");
 
 const DEFAULT_PATHS = {
-    templatesRoot: "Templates",
+    templateNotesRoot: "Templates",
+    programsRoot: "Templates/programs",
     exercisesRoot: "Templates/exercises",
     workoutTemplatesRoot: "Templates/Workouts",
     workoutsRoot: "Workouts"
@@ -83,8 +84,13 @@ class ObsidianGymSettingsPlugin extends Plugin {
     }
 
     normalizePaths(paths) {
+        const legacyTemplatesRoot = normalizeVaultPath(paths.templatesRoot);
+        const templateNotesRoot = normalizeVaultPath(paths.templateNotesRoot) || legacyTemplatesRoot || DEFAULT_PATHS.templateNotesRoot;
+        const programsRoot = normalizeVaultPath(paths.programsRoot) || joinVaultPath(templateNotesRoot, "programs");
+
         return {
-            templatesRoot: normalizeVaultPath(paths.templatesRoot) || DEFAULT_PATHS.templatesRoot,
+            templateNotesRoot,
+            programsRoot,
             exercisesRoot: normalizeVaultPath(paths.exercisesRoot) || DEFAULT_PATHS.exercisesRoot,
             workoutTemplatesRoot: normalizeVaultPath(paths.workoutTemplatesRoot) || DEFAULT_PATHS.workoutTemplatesRoot,
             workoutsRoot: normalizeVaultPath(paths.workoutsRoot) || DEFAULT_PATHS.workoutsRoot
@@ -140,7 +146,8 @@ class ObsidianGymSettingsPlugin extends Plugin {
         const roots = [
             { from: oldPaths.exercisesRoot, to: newPaths.exercisesRoot, label: "exercises" },
             { from: oldPaths.workoutTemplatesRoot, to: newPaths.workoutTemplatesRoot, label: "workout templates" },
-            { from: oldPaths.workoutsRoot, to: newPaths.workoutsRoot, label: "workouts" }
+            { from: oldPaths.workoutsRoot, to: newPaths.workoutsRoot, label: "workouts" },
+            { from: oldPaths.programsRoot, to: newPaths.programsRoot, label: "programs" }
         ];
 
         for (const root of roots) {
@@ -151,10 +158,10 @@ class ObsidianGymSettingsPlugin extends Plugin {
             summary.errors += result.errors;
         }
 
-        const templateAssets = ["Start.md", "End.md", "Custom.md", "programs"];
+        const templateAssets = ["Start.md", "End.md", "Custom.md"];
         for (const asset of templateAssets) {
-            const from = joinVaultPath(oldPaths.templatesRoot, asset);
-            const to = joinVaultPath(newPaths.templatesRoot, asset);
+            const from = joinVaultPath(oldPaths.templateNotesRoot, asset);
+            const to = joinVaultPath(newPaths.templateNotesRoot, asset);
             const result = await this.migratePathAsset(from, to);
             summary.moved += result.moved;
             summary.conflicts += result.conflicts;
@@ -323,12 +330,20 @@ class ObsidianGymSettingsTab extends PluginSettingTab {
         });
 
         new Setting(containerEl)
-            .setName("Templates root")
-            .setDesc("Base folder for shared templates (Start.md, End.md, Custom.md, programs)")
+            .setName("Template notes root")
+            .setDesc("Folder for Start.md, End.md, and Custom.md")
             .addText(text => text
                 .setPlaceholder("Templates")
-                .setValue(draft.templatesRoot)
-                .onChange(value => draft.templatesRoot = normalizeVaultPath(value)));
+                .setValue(draft.templateNotesRoot)
+                .onChange(value => draft.templateNotesRoot = normalizeVaultPath(value)));
+
+        new Setting(containerEl)
+            .setName("Programs root")
+            .setDesc("Folder containing programs subfolders (_templates and active-programs)")
+            .addText(text => text
+                .setPlaceholder("Templates/programs")
+                .setValue(draft.programsRoot)
+                .onChange(value => draft.programsRoot = normalizeVaultPath(value)));
 
         new Setting(containerEl)
             .setName("Exercises root")
@@ -366,7 +381,7 @@ class ObsidianGymSettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Save and migrate existing data")
-            .setDesc("Moves exercises, workout templates, workouts, and core template files to the new paths")
+            .setDesc("Moves exercises, workout templates, workouts, programs, and core template note files to the new paths")
             .addButton(button => button
                 .setButtonText("Save + Migrate")
                 .setWarning()

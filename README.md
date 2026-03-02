@@ -67,7 +67,8 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - Default folders are:
    - `Templates/exercises` for exercise templates
    - `Templates/Workouts` for workout templates
-   - `Templates` for shared templates like `Start.md` and `End.md`
+   - `Templates` for shared template notes (`Start.md`, `End.md`, `Custom.md`)
+   - `Templates/programs` for program templates and active program notes
    - `Workouts` for generated daily workout notes
 - Prefer using the **Obsidian Gym Settings** plugin UI to customize these paths.
 - `_js/shared/path-config.js` remains the default/fallback configuration.
@@ -77,12 +78,13 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - A local plugin is included at `.obsidian/plugins/obsidian-gym-settings`.
 - Open **Settings → Community plugins → Obsidian Gym Settings**.
 - Configure these paths from the plugin UI:
-   - Templates root
+   - Template notes root
+   - Programs root
    - Exercises root
    - Workout templates root
    - Workouts root
 - Use **Save** to apply new paths for future operations.
-- Use **Save + Migrate** to move existing exercises, workout templates, workouts, and core template assets (`Start.md`, `End.md`, `Custom.md`, `programs`) to the new paths.
+- Use **Save + Migrate** to move existing exercises, workout templates, workouts, programs, and core template note files (`Start.md`, `End.md`, `Custom.md`) to the new paths.
 - Base views (`Exercises List.base`, `Workouts List.base`, `Workouts History.base`) are auto-updated during path changes.
 
 ## Plugins

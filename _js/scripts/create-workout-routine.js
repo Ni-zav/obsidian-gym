@@ -1,4 +1,42 @@
-const { getPathConfig, joinVaultPath } = require("../shared/path-config");
+function normalizePath(pathValue) {
+    if (!pathValue || typeof pathValue !== "string") return "";
+    return pathValue.replace(/\\/g, '/').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+}
+
+function joinVaultPath(...segments) {
+    return segments
+        .filter(Boolean)
+        .map((segment, index) => {
+            const value = String(segment);
+            if (index === 0) return value.replace(/\/+$/, '');
+            return value.replace(/^\/+/, '').replace(/\/+$/, '');
+        })
+        .join('/');
+}
+
+function getPathConfig() {
+    const overrides = globalThis?.obsidianGymPaths || {};
+    const exercisesRoot = normalizePath(overrides.exercisesRoot) || "Templates/exercises";
+    const templateNotesRoot = normalizePath(overrides.templateNotesRoot) || exercisesRoot;
+    const workoutTemplatesRoot = normalizePath(overrides.workoutTemplatesRoot) || "Templates/Workouts";
+    const workoutsRoot = normalizePath(overrides.workoutsRoot) || "Workouts";
+    const programsRoot = normalizePath(overrides.programsRoot) || "Templates/programs";
+
+    return {
+        exercisesRoot,
+        templateNotesRoot,
+        workoutTemplatesRoot,
+        workoutsRoot,
+        programsRoot,
+        exerciseCategoriesPath: joinVaultPath(exercisesRoot, "_library/categories.json"),
+        workoutCategoriesPath: joinVaultPath(exercisesRoot, "_library/workout_categories.json"),
+        startTemplatePath: joinVaultPath(templateNotesRoot, "Start.md"),
+        endTemplatePath: joinVaultPath(templateNotesRoot, "End.md"),
+        customTemplatePath: joinVaultPath(templateNotesRoot, "Custom.md"),
+        programTemplatePath: joinVaultPath(programsRoot, "program-template.md"),
+        programsOutputRoot: programsRoot
+    };
+}
 
 function getParentPath(pathValue) {
     const idx = pathValue.lastIndexOf('/');

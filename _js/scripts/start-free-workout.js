@@ -1,4 +1,25 @@
-const { getPathConfig, joinVaultPath } = require("../shared/path-config");
+function normalizePath(pathValue) {
+    if (!pathValue || typeof pathValue !== "string") return "";
+    return pathValue.replace(/\\/g, '/').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+}
+
+function joinVaultPath(...segments) {
+    return segments
+        .filter(Boolean)
+        .map((segment, index) => {
+            const value = String(segment);
+            if (index === 0) return value.replace(/\/+$/, '');
+            return value.replace(/^\/+/, '').replace(/\/+$/, '');
+        })
+        .join('/');
+}
+
+function getPathConfig() {
+    const overrides = globalThis?.obsidianGymPaths || {};
+    return {
+        workoutsRoot: normalizePath(overrides.workoutsRoot) || "Workouts"
+    };
+}
 
 module.exports = async function startFreeWorkout(params) {
     try {

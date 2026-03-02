@@ -1,5 +1,39 @@
 let obsidian = null;
-const { getPathConfig, getTemplateFilePath } = require("../shared/path-config");
+
+function normalizePath(pathValue) {
+    if (!pathValue || typeof pathValue !== "string") return "";
+    return pathValue.replace(/\\/g, '/').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+}
+
+function joinVaultPath(...segments) {
+    return segments
+        .filter(Boolean)
+        .map((segment, index) => {
+            const value = String(segment);
+            if (index === 0) return value.replace(/\/+$/, '');
+            return value.replace(/^\/+/, '').replace(/\/+$/, '');
+        })
+        .join('/');
+}
+
+function getPathConfig() {
+    const overrides = globalThis?.obsidianGymPaths || {};
+    const exercisesRoot = normalizePath(overrides.exercisesRoot) || "Templates/exercises";
+    const templateNotesRoot = normalizePath(overrides.templateNotesRoot) || exercisesRoot;
+    return {
+        exercisesRoot,
+        workoutTemplatesRoot: normalizePath(overrides.workoutTemplatesRoot) || "Templates/Workouts",
+        startTemplatePath: joinVaultPath(templateNotesRoot, "Start.md"),
+        endTemplatePath: joinVaultPath(templateNotesRoot, "End.md")
+    };
+}
+
+function getTemplateFilePath(fileName, config = getPathConfig()) {
+    const lowered = String(fileName || "").toLowerCase();
+    if (lowered === "start.md") return config.startTemplatePath;
+    if (lowered === "end.md") return config.endTemplatePath;
+    return joinVaultPath(config.exercisesRoot, fileName);
+}
 
 function getConfiguredPaths() {
     const pathConfig = getPathConfig();

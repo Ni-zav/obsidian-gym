@@ -1,4 +1,33 @@
-const { getPathConfig, getProgramTemplatePath, getProgramsActiveRoot } = require("../shared/path-config");
+function normalizePath(pathValue) {
+    if (!pathValue || typeof pathValue !== "string") return "";
+    return pathValue.replace(/\\/g, '/').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+}
+
+function joinVaultPath(...segments) {
+    return segments
+        .filter(Boolean)
+        .map((segment, index) => {
+            const value = String(segment);
+            if (index === 0) return value.replace(/\/+$/, '');
+            return value.replace(/^\/+/, '').replace(/\/+$/, '');
+        })
+        .join('/');
+}
+
+function getPathConfig() {
+    const overrides = globalThis?.obsidianGymPaths || {};
+    return {
+        programsRoot: normalizePath(overrides.programsRoot) || "Templates/programs"
+    };
+}
+
+function getProgramTemplatePath(config = getPathConfig()) {
+    return joinVaultPath(config.programsRoot, "program-template.md");
+}
+
+function getProgramsActiveRoot(config = getPathConfig()) {
+    return config.programsRoot;
+}
 
 module.exports = async function createProgram(params) {
     const { app, quickAddApi: { inputPrompt, suggester } } = params;

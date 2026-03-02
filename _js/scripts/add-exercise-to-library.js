@@ -1,4 +1,34 @@
-const { getPathConfig, getExerciseLibraryPath, joinVaultPath } = require("../shared/path-config");
+function normalizePath(pathValue) {
+    if (!pathValue || typeof pathValue !== "string") return "";
+    return pathValue.replace(/\\/g, '/').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+}
+
+function joinVaultPath(...segments) {
+    return segments
+        .filter(Boolean)
+        .map((segment, index) => {
+            const value = String(segment);
+            if (index === 0) return value.replace(/\/+$/, '');
+            return value.replace(/^\/+/, '').replace(/\/+$/, '');
+        })
+        .join('/');
+}
+
+function getPathConfig() {
+    const overrides = globalThis?.obsidianGymPaths || {};
+    const exercisesRoot = normalizePath(overrides.exercisesRoot) || "Templates/exercises";
+    return {
+        exercisesRoot,
+        exerciseCategoriesPath: joinVaultPath(exercisesRoot, "_library/categories.json")
+    };
+}
+
+function getExerciseLibraryPath(fileName, config = getPathConfig()) {
+    if (String(fileName || "").toLowerCase() === "categories.json") {
+        return config.exerciseCategoriesPath;
+    }
+    return joinVaultPath(config.exercisesRoot, "_library", fileName);
+}
 
 function getParentPath(pathValue) {
     const idx = pathValue.lastIndexOf('/');

@@ -16,6 +16,17 @@ An advanced workout tracking system for [Obsidian](https://obsidian.md/), based 
 - 🆓 Start unplanned workouts and add exercises on the fly
 
 
+## Update
+
+
+### 2026-03-02
+
+- custom folder for the obsidian gyms on the community plugins settings 
+
+![[Pasted image 20260302232044.png]]
+
+
+
 ## Usage Guide
 
 ### Starting a Workout

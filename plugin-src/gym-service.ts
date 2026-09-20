@@ -421,3 +421,9 @@ export class GymService {
     finally { if (this.queues.get(key) === next) this.queues.delete(key); }
   }
 }
+ previous.catch(() => undefined).then(operation);
+    this.queues.set(key, next.then(() => undefined, () => undefined));
+    try { return await next; }
+    finally { if (this.queues.get(key) === next) this.queues.delete(key); }
+  }
+}

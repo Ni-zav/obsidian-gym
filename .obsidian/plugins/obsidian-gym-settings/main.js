@@ -8,13 +8,22 @@ const DEFAULT_PATHS = {
 
 function normalizeVaultPath(value) {
     if (!value || typeof value !== "string") return "";
-    return value.replace(/\\/g, "/").trim().replace(/^\\/+/, "").replace(/\\/+$/, "");
+    let normalized = value.split(String.fromCharCode(92)).join("/").trim();
+    while (normalized.startsWith("/")) normalized = normalized.slice(1);
+    while (normalized.endsWith("/")) normalized = normalized.slice(0, -1);
+    return normalized;
 }
 
 function joinVaultPath(...parts) {
     return parts.filter(Boolean).map((part, index) => {
-        const value = String(part);
-        return index === 0 ? value.replace(/\\/+$/, "") : value.replace(/^\\/+/, "").replace(/\\/+$/, "");
+        let value = String(part);
+        if (index === 0) {
+            while (value.endsWith("/")) value = value.slice(0, -1);
+        } else {
+            while (value.startsWith("/")) value = value.slice(1);
+            while (value.endsWith("/")) value = value.slice(0, -1);
+        }
+        return value;
     }).join("/");
 }
 
@@ -156,7 +165,8 @@ class ObsidianGymSettingsPlugin extends Plugin {
             }
             if (source instanceof TFolder) {
                 for (const file of this.app.vault.getFiles().filter(file => this.isWithin(file.path, mapping.from))) {
-                    const rel = file.path.slice(mapping.from.length).replace(/^\\//, "");
+                    let rel = file.path.slice(mapping.from.length);
+                    if (rel.startsWith("/")) rel = rel.slice(1);
                     const target = joinVaultPath(mapping.to, rel);
                     if (this.app.vault.getAbstractFileByPath(target)) result.conflicts += 1;
                     else result.movable += 1;
@@ -198,7 +208,8 @@ class ObsidianGymSettingsPlugin extends Plugin {
                     .filter(file => this.isWithin(file.path, mapping.from))
                     .sort((a, b) => a.path.length - b.path.length);
                 for (const file of files) {
-                    const rel = file.path.slice(mapping.from.length).replace(/^\\//, "");
+                    let rel = file.path.slice(mapping.from.length);
+                    if (rel.startsWith("/")) rel = rel.slice(1);
                     const target = joinVaultPath(mapping.to, rel);
                     if (this.app.vault.getAbstractFileByPath(target)) {
                         summary.conflicts += 1;

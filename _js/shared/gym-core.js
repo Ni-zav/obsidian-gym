@@ -461,12 +461,39 @@ class gymCore {
             for (const item of index.byName.get(String(name)) || []) results.set(item.file.path, item);
         }
 
-        const items = [...results.values()];
-        return excludeFilePath ? items.filter(item => item.file.path !== excludeFilePath) : items;
+        let items = [...results.values()];
+        if (excludeFilePath) items = items.filter(item => item.file.path !== excludeFilePath);
+        return items.sort((a, b) =>
+            new Date(a.fm.performed_at || a.fm.date || 0) - new Date(b.fm.performed_at || b.fm.date || 0)
+        );
     }
 
     getLatestSet(exerciseId, exerciseName) {
-        return this.getPreviousSets(exerciseId, exerciseName).at(-1) || null;
+        const index = this.getLogHistoryIndex();
+        let latest = null;
+        const consider = item => {
+            if (!item) return;
+            if (!latest) {
+                latest = item;
+                return;
+            }
+            const currentTime = new Date(item.fm.performed_at || item.fm.date || 0).getTime();
+            const latestTime = new Date(latest.fm.performed_at || latest.fm.date || 0).getTime();
+            if (currentTime >= latestTime) latest = item;
+        };
+
+        if (exerciseId !== null && exerciseId !== undefined) {
+            const byId = index.byId.get(String(exerciseId));
+            if (byId?.length) consider(byId[byId.length - 1]);
+        }
+
+        const definition = exerciseId !== null && exerciseId !== undefined ? this.getExerciseById(exerciseId) : this.getExerciseByName(exerciseName);
+        const names = [exerciseName, ...(Array.isArray(definition?.fm?.aliases) ? definition.fm.aliases : [])].filter(Boolean);
+        for (const name of names) {
+            const byName = index.byName.get(String(name));
+            if (byName?.length) consider(byName[byName.length - 1]);
+        }
+        return latest;
     }
 
     detectPR(current, previous) {

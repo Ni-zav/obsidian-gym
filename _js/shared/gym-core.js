@@ -211,19 +211,28 @@ class gymCore {
         return workoutFile?.parent ? this.app.vault.getAbstractFileByPath(this.joinPath(workoutFile.parent.path, "Log")) : null;
     }
 
+    getWorkoutLogEntries(workoutFile) {
+        if (!workoutFile) return [];
+        const key = "workoutLogs:" + workoutFile.path;
+        return this._cached(key, () => {
+            const workoutId = this.frontmatter(workoutFile).id;
+            const folder = this.getLogFolder(workoutFile);
+            if (!folder?.children) return [];
+            return folder.children
+                .filter(file => file.extension === "md")
+                .map(file => ({ file, fm: this.logFrontmatter(file) }))
+                .filter(item => String(item.fm.workout_id || "") === String(workoutId || ""))
+                .sort((a, b) => {
+                    const an = Number(a.file.basename);
+                    const bn = Number(b.file.basename);
+                    if (Number.isFinite(an) && Number.isFinite(bn)) return an - bn;
+                    return a.file.basename.localeCompare(b.file.basename, undefined, { numeric: true });
+                });
+        }, 750);
+    }
+
     getWorkoutLogs(workoutFile) {
-        const workoutId = this.frontmatter(workoutFile).id;
-        const folder = this.getLogFolder(workoutFile);
-        if (!folder?.children) return [];
-        return folder.children
-            .filter(file => file.extension === "md")
-            .filter(file => String(this.frontmatter(file).workout_id || "") === String(workoutId || ""))
-            .sort((a, b) => {
-                const an = Number(a.basename);
-                const bn = Number(b.basename);
-                if (Number.isFinite(an) && Number.isFinite(bn)) return an - bn;
-                return a.basename.localeCompare(b.basename, undefined, { numeric: true });
-            });
+        return this.getWorkoutLogEntries(workoutFile).map(item => item.file);
     }
 
     async nextLogPath(workoutFile) {
@@ -255,7 +264,7 @@ class gymCore {
         return Number.isFinite(n) ? n : null;
     }
 
-    async createLog(workoutFile, payload) {
+    async createLog(workoutFile, payload, options = {}) {
         if (!workoutFile) throw new Error("Workout file not found");
         const workoutId = this.frontmatter(workoutFile).id;
         if (!workoutId) throw new Error("Workout has no id");
@@ -292,7 +301,7 @@ class gymCore {
 
         const file = await this.app.vault.create(path, lines);
         this.invalidateCaches();
-        await this.recalculateWorkoutMetrics(workoutFile);
+        if (options.recalculate !== false) await this.recalculateWorkoutMetrics(workoutFile);
         return file;
     }
 
@@ -308,7 +317,11 @@ class gymCore {
         const fm = this.frontmatter(workoutFile);
         if (fm.status === "completed") return null;
         const timestamp = this.nowTimestamp();
-        const file = await this.createLog(workoutFile, { exercise: "Workout end", performed_at: timestamp, timed: false });
+        const file = await this.createLog(
+            workoutFile,
+            { exercise: "Workout end", performed_at: timestamp, timed: false },
+            { recalculate: false }
+        );
         await this.updateFrontmatter(workoutFile, { status: "completed", ended_at: timestamp });
         await this.recalculateWorkoutMetrics(workoutFile);
         return file;
@@ -447,8 +460,7 @@ class gymCore {
         const planned = Array.isArray(fm.exercises) ? fm.exercises.map(String) : [];
         const skipped = new Set((Array.isArray(fm.skipped_exercises) ? fm.skipped_exercises : []).map(String));
         const counts = {};
-        for (const logFile of this.getWorkoutLogs(workoutFile)) {
-            const log = this.logFrontmatter(logFile);
+        for (const { fm: log } of this.getWorkoutLogEntries(workoutFile)) {
             if (log.exercise_id) counts[String(log.exercise_id)] = (counts[String(log.exercise_id)] || 0) + 1;
         }
         const remaining = [];
@@ -468,7 +480,7 @@ class gymCore {
     }
 
     async recalculateWorkoutMetrics(workoutFile) {
-        const entries = this.getWorkoutLogs(workoutFile).map(file => ({ file, fm: this.logFrontmatter(file) }));
+        const entries = this.getWorkoutLogEntries(workoutFile);
         const regular = entries.filter(item => item.fm.exercise !== "Workout start" && item.fm.exercise !== "Workout end");
 
         const counts = {};

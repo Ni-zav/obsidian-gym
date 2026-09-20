@@ -1,78 +1,53 @@
 class utils {
+    get app() {
+        return globalThis.customJS?.app || globalThis.app;
+    }
+
     filterFiles(filterFunction, files) {
-        const cache = app.metadataCache;
-        const result = [];
-        for (let f of files) {
-            const metadata = cache.getFileCache(f);
-            const tags = obsidian.getAllTags(metadata);
-            if (filterFunction(metadata.frontmatter, tags)) {
-                result.push(f);
-            }
-        }
-        return result;
+        return (files || []).filter(file => {
+            const metadata = this.app.metadataCache.getFileCache(file);
+            if (!metadata?.frontmatter) return false;
+            const tags = Array.isArray(metadata.frontmatter.tags) ? metadata.frontmatter.tags.map(t => "#" + String(t).replace(/^#/, "")) : [];
+            return filterFunction(metadata.frontmatter, tags);
+        });
     }
 
     addTagsAndFrontmatter(files) {
-        const cache = app.metadataCache;
-        const result = [];
-        for (let f of files) {
-            const metadata = cache.getFileCache(f);
-            if (!metadata || !metadata.frontmatter) continue;
-            
-            result.push({
-                file: f,
-                frontmatter: metadata.frontmatter,
-                tags: obsidian.getAllTags(metadata)
-            });
-        }
-        return result;
+        return (files || []).map(file => {
+            const metadata = this.app.metadataCache.getFileCache(file);
+            if (!metadata?.frontmatter) return null;
+            return { file, frontmatter: metadata.frontmatter, tags: metadata.frontmatter.tags || [] };
+        }).filter(Boolean);
     }
 
     calculateVolume(weight, reps) {
-        if (!weight || !reps) return 0;
-        return weight * reps;
+        const w = Number(weight), r = Number(reps);
+        return Number.isFinite(w) && Number.isFinite(r) && w >= 0 && r >= 0 ? w * r : 0;
     }
 
     formatDate(date) {
-        if (!date) return '';
-        return moment(date).format('YYYY-MM-DD');
+        if (!date) return "";
+        return typeof moment !== "undefined" ? moment(date).format("YYYY-MM-DD") : String(date).slice(0, 10);
     }
 
     calculateOneRepMax(weight, reps) {
-        if (!weight || !reps) return 0;
-        // Brzycki formula
-        return weight * (36 / (37 - reps));
+        const w = Number(weight), r = Number(reps);
+        if (!Number.isFinite(w) || !Number.isFinite(r) || w <= 0 || r <= 0 || r >= 37) return 0;
+        return w * (36 / (37 - r));
     }
 
-    roundToNearest(value, nearest = 5) {
-        if (!value) return 0;
-        return Math.round(value / nearest) * nearest;
+    roundToNearest(value, nearest = 2.5) {
+        const n = Number(value), step = Number(nearest);
+        if (!Number.isFinite(n) || !Number.isFinite(step) || step <= 0) return 0;
+        return Math.round(n / step) * step;
     }
 
     async getExerciseHistory(exerciseName) {
-        if (!exerciseName) return [];
-        
-        return app.vault.getMarkdownFiles()
-            .filter(file => {
-                const cache = app.metadataCache.getFileCache(file);
-                return cache?.frontmatter?.exercise === exerciseName;
-            })
-            .map(file => {
-                const cache = app.metadataCache.getFileCache(file);
-                return {
-                    date: cache.frontmatter.date,
-                    weight: cache.frontmatter.weight,
-                    reps: cache.frontmatter.reps,
-                    effort: cache.frontmatter.effort
-                };
-            })
-            .sort((a, b) => moment(a.date).diff(moment(b.date)));
+        const core = globalThis.customJS?.gymCore;
+        return core ? core.getPreviousSets(null, exerciseName).map(item => item.fm) : [];
     }
 
     sanitizeInput(input) {
-        if (!input) return '';
-        return String(input)
-            .replace(/[<>]/g, '')
-            .trim();
+        return input == null ? "" : String(input).replace(/[<>]/g, "").trim();
     }
 }

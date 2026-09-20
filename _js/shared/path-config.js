@@ -9,13 +9,22 @@ class pathConfig {
 
     normalizePath(value) {
         if (!value || typeof value !== "string") return "";
-        return value.replace(/\\/g, "/").trim().replace(/^\\/+/, "").replace(/\\/+$/, "");
+        let normalized = value.split(String.fromCharCode(92)).join("/").trim();
+        while (normalized.startsWith("/")) normalized = normalized.slice(1);
+        while (normalized.endsWith("/")) normalized = normalized.slice(0, -1);
+        return normalized;
     }
 
     joinVaultPath(...segments) {
         return segments.filter(Boolean).map((segment, index) => {
-            const value = String(segment);
-            return index === 0 ? value.replace(/\\/+$/, "") : value.replace(/^\\/+/, "").replace(/\\/+$/, "");
+            let value = String(segment);
+            if (index === 0) {
+                while (value.endsWith("/")) value = value.slice(0, -1);
+            } else {
+                while (value.startsWith("/")) value = value.slice(1);
+                while (value.endsWith("/")) value = value.slice(0, -1);
+            }
+            return value;
         }).join("/");
     }
 

@@ -99,7 +99,7 @@ class workout {
         if (sessions.length) {
             context.dv.header(3, "Recent");
             context.dv.table(["Workout", "Date", "Duration", "Volume"], sessions.slice(0, 5).map(item => [
-                item.file.link,
+                context.dv.fileLink(item.file.path),
                 item.fm.date || "",
                 item.fm.duration || "",
                 Math.round(Number(item.fm["Total Volume"] || 0))
@@ -135,7 +135,7 @@ class workout {
                 : (this.core.numberOrNull(ex.default_reps ?? ex.reps) ?? "—");
             const weight = this.core.numberOrNull(ex.default_weight_kg ?? ex.weight);
             return [
-                item?.file?.link || ex.exercise || id,
+                item?.file ? context.dv.fileLink(item.file.path) : (ex.exercise || id),
                 ex.muscle_group || "",
                 ex.equipment || "",
                 target,

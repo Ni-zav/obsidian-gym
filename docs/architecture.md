@@ -65,3 +65,20 @@ New history relationships should rely on `exercise_id`, not the exercise name.
 ## Design rule
 
 Do not add new path parsing or direct whole-vault workout logic to command scripts. Put shared behavior in `gym-core.js` and keep command scripts as interaction orchestration.
+
+
+## Performance model
+
+The shared core uses short-lived, lazily built indexes instead of repeatedly scanning the vault from every renderer or picker:
+
+- exercise definitions: indexed by ID, name, and aliases
+- workout routines: cached routine list
+- workout sessions: indexed by workout ID and active state
+- exercise history: indexed by exercise ID and name
+- current workout logs: parsed once per short render window
+
+General indexes use a 1.5-second safety TTL and are explicitly invalidated when gym code writes related files. Current-workout log entries use a shorter 750 ms cache. This keeps normal interaction immediate while allowing manual file edits to become visible without persistent event listeners.
+
+Persistent metadata/vault event listeners were intentionally avoided in CustomJS because script reloads can create duplicate listeners and lifecycle leaks. If Obsidian Gym later becomes a full standalone plugin, replacing TTL caches with plugin-lifecycle-managed event indexes would be a reasonable next optimization.
+
+Full vault scans remain in Audit/Migration/Bulk Repair commands because those are rare administrative operations where completeness is more important than interactive latency.

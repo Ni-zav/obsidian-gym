@@ -74,7 +74,9 @@ Configure them in **Settings → Community plugins → Obsidian Gym Settings**.
 Path migration has a command-palette preview:
 
 - **Obsidian Gym Settings: Preview gym path migration**
-- **Obsidian Gym Settings: Migrate gym data from previous paths**\n- **Obsidian Gym Settings: Audit gym data** — writes an integrity report\n- **Obsidian Gym Settings: Recalculate all workout metrics** — rebuilds derived session fields
+- **Obsidian Gym Settings: Migrate gym data from previous paths**
+- **Obsidian Gym Settings: Audit gym data** — writes an integrity report
+- **Obsidian Gym Settings: Recalculate all workout metrics** — rebuilds derived session fields
 
 See [docs/data-model.md](docs/data-model.md) and [docs/migration.md](docs/migration.md).
 

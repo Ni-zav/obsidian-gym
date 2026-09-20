@@ -235,4 +235,89 @@ export class GymService {
   async skipExercise(workoutFile: TFile, exerciseId: string): Promise<void> {
     const fm = this.index.frontmatter(workoutFile);
     const skipped = new Set((Array.isArray(fm.skipped_exercises) ? fm.skipped_exercises : []).map(String));
-    skipped.add(String(exerci
+    skipped.add(String(exerciseId));
+    await this.updateFrontmatter(workoutFile, { skipped_exercises: [...skipped] });
+  }
+
+  async setNextExercise(workoutFile: TFile, exerciseId: string): Promise<void> {
+    const fm = this.index.frontmatter(workoutFile);
+    const plan = normalizePlan(fm);
+    const index = plan.findIndex((item) => item.exercise_id === String(exerciseId));
+    if (index <= 0) return;
+    const [item] = plan.splice(index, 1);
+    plan.unshift(item);
+    await this.updateFrontmatter(workoutFile, { exercise_plan: plan });
+  }
+
+  async replaceExercise(workoutFile: TFile, fromId: string, toId: string): Promise<void> {
+    const fm = this.index.frontmatter(workoutFile);
+    const counts = new Map<string, number>();
+    for (const log of this.index.getLogsForWorkout(fm.id, false)) {
+      if (log.exerciseId && String(log.fm.set_type || "working") !== "warmup") counts.set(log.exerciseId, (counts.get(log.exerciseId) || 0) + 1);
+    }
+    const next: RoutinePlanItem[] = [];
+    let replacementSets = 0;
+    for (const item of normalizePlan(fm)) {
+      if (item.exercise_id !== String(fromId)) { next.push(item); continue; }
+      const completed = Math.min(item.sets, counts.get(item.exercise_id) || 0);
+      if (completed) next.push({ exercise_id: item.exercise_id, sets: completed });
+      replacementSets += Math.max(0, item.sets - completed);
+    }
+    if (replacementSets) {
+      const existing = next.find((item) => item.exercise_id === String(toId));
+      if (existing) existing.sets += replacementSets;
+      else next.push({ exercise_id: String(toId), sets: replacementSets });
+    }
+    await this.updateFrontmatter(workoutFile, { exercise_plan: next });
+  }
+
+  async createExercise(input: {
+    name: string; muscleGroup: string; equipment: string; trackingMode: TrackingMode;
+    defaultReps?: number | null; defaultWeightKg?: number | null; defaultDurationSeconds?: number | null;
+    defaultDistanceKm?: number | null; defaultRestSeconds?: number | null; instructions?: string; videoUrl?: string; aliases?: string[];
+  }): Promise<TFile> {
+    const fullName = input.name.includes(" - ") ? input.name : input.muscleGroup + " - " + input.name;
+    const path = joinPath(this.settings.exercisesRoot, input.muscleGroup, fullName.replace(/[\\/:*?"<>|]/g, "-") + ".md");
+    if (this.app.vault.getAbstractFileByPath(path)) throw new Error("Exercise already exists: " + fullName);
+    const fm: Record<string, any> = {
+      schema_version: 3, id: uuid(), exercise: fullName, muscle_group: input.muscleGroup,
+      equipment: input.equipment, tracking_mode: input.trackingMode,
+      default_rest_seconds: Math.max(0, Number(input.defaultRestSeconds ?? this.settings.defaultRestSeconds)),
+      instructions: input.instructions || "", aliases: input.aliases || [], tags: ["exercise"],
+    };
+    if (input.defaultReps != null) fm.default_reps = Number(input.defaultReps);
+    if (input.defaultWeightKg != null) fm.default_weight_kg = Number(input.defaultWeightKg);
+    if (input.defaultDurationSeconds != null) fm.default_duration_seconds = Number(input.defaultDurationSeconds);
+    if (input.defaultDistanceKm != null) fm.default_distance_km = Number(input.defaultDistanceKm);
+    if (input.videoUrl) fm.video_url = input.videoUrl;
+    return this.createMarkdown(path, fm, "```obsidian-gym-exercise\n```");
+  }
+
+  async createRoutine(input: { name: string; workoutType: string; workoutPlace: string; plan: RoutinePlanItem[] }): Promise<TFile> {
+    const folder = joinPath(this.settings.workoutTemplatesRoot, "gym");
+    const slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "workout";
+    const path = joinPath(folder, slug + ".md");
+    if (this.app.vault.getAbstractFileByPath(path)) throw new Error("Routine already exists: " + input.name);
+    return this.createMarkdown(path, {
+      schema_version: 3, workout_title: input.name,
+      exercise_plan: input.plan.map((item) => ({ exercise_id: String(item.exercise_id), sets: Math.max(1, Math.floor(item.sets)) })),
+      workout_type: input.workoutType, workout_place: input.workoutPlace, tags: ["workout"],
+    }, "# " + input.name + "\n\n```obsidian-gym-routine\n```");
+  }
+
+  async loadCategories(): Promise<{ muscleGroups: string[]; equipment: string[]; workoutTypes: string[]; places: string[] }> {
+    const exerciseRaw = await this.app.vault.adapter.read(joinPath(this.settings.exercisesRoot, "_library/categories.json"));
+    const workoutRaw = await this.app.vault.adapter.read(joinPath(this.settings.exercisesRoot, "_library/workout_categories.json"));
+    const exercise = JSON.parse(exerciseRaw || "{}");
+    const workout = JSON.parse(workoutRaw || "{}");
+    return {
+      muscleGroups: Object.values(exercise.muscleGroups || {}).map((item: any) => String(item.name || "")).filter(Boolean),
+      equipment: (exercise.equipment || []).map(String),
+      workoutTypes: Object.values(workout.workoutTypes || {}).map((item: any) => String(item.name || "")).filter(Boolean),
+      places: Object.values(workout.places || {}).map((item: any) => String(item.name || "")).filter(Boolean),
+    };
+  }
+
+  detectPR(current: SetPayload, previous: Record<string, any>[]): PRResult[] {
+    if (current.set_type === "warmup") return [];
+    const

@@ -116,7 +116,11 @@ class gymCore {
     }
 
     getExerciseByName(name) {
-        return this.getExerciseDefinitions().find(item => item.fm.exercise === name || item.file.basename === name) || null;
+        return this.getExerciseDefinitions().find(item => {
+            if (item.fm.exercise === name || item.file.basename === name) return true;
+            const aliases = Array.isArray(item.fm.aliases) ? item.fm.aliases : [];
+            return aliases.includes(name);
+        }) || null;
     }
 
     getWorkoutTemplates() {

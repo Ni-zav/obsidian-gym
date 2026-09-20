@@ -1,109 +1,131 @@
-/* Load shared utilities and core functionality first */
-@import url("shared/utils.js");
-@import url("shared/timer.js");
-@import url("shared/workout.js");
+/* Obsidian Gym UI */
 
-/* Load feature-specific modules */
-@import url("shared/exercise-library.js");
-@import url("shared/exercise.js");
-@import url("shared/pr-tracker.js");
-@import url("shared/stats.js");
-
-/* Optional: Load any additional scripts */
-@import url("scripts/startTimer.js");
-
-/* Workout action buttons styling */
-.workout-actions-row {
+.workout-actions-row,
+.gym-home-actions,
+.timer-presets,
+.timer-controls,
+.gym-chart-filters,
+.gym-modal-actions,
+.gym-row-actions {
     display: flex;
-    gap: 8px;
-    margin: 8px 0;
+    flex-wrap: wrap;
+    gap: 0.5rem;
     align-items: center;
 }
 
-.workout-edit-btn,
-.workout-delete-btn {
-    padding: 6px 12px;
-    font-size: 13px;
-    border: 1px solid #999;
-    border-radius: 4px;
-    background-color: #f0f0f0;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-weight: 500;
+.gym-home-actions {
+    margin: 0.75rem 0 1rem;
 }
 
-.workout-edit-btn:hover {
-    background-color: #4CAF50;
-    color: white;
-    border-color: #45a049;
+.gym-primary-action {
+    min-width: 11rem;
 }
 
-.workout-delete-btn:hover {
-    background-color: #f44336;
-    color: white;
-    border-color: #da190b;
+.gym-muted {
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
 }
 
-.workout-edit-btn:active,
-.workout-delete-btn:active {
-    transform: scale(0.95);
-}
-
-/* Edit form styling */
-.edit-label {
+.gym-status-complete {
+    color: var(--text-success);
     font-weight: 600;
-    margin-bottom: 4px;
-    display: block;
 }
 
-.edit-input {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
+.gym-timer {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    padding: 0.75rem;
+    margin-block: 0.5rem 1rem;
+    max-width: 26rem;
+}
+
+.timer-display {
+    font-variant-numeric: tabular-nums;
+    font-size: 2rem;
+    line-height: 1.2;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.65rem;
+}
+
+.timer-presets {
+    margin-bottom: 0.5rem;
+}
+
+.gym-chart {
+    position: relative;
     width: 100%;
-    box-sizing: border-box;
+    min-height: 280px;
+    margin-block: 0.75rem 1.25rem;
 }
 
-.edit-input:focus {
-    outline: none;
-    border-color: #4CAF50;
-    box-shadow: 0 0 4px rgba(76, 175, 80, 0.3);
+.gym-session-chart {
+    min-height: 220px;
 }
 
-.edit-button-container {
-    display: flex;
-    gap: 8px;
-    margin-top: 16px;
-    justify-content: flex-end;
+.gym-chart-filters {
+    margin-bottom: 0.5rem;
 }
 
-.edit-save-btn,
-.edit-cancel-btn {
-    padding: 8px 16px;
-    border: 1px solid #999;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
+.gym-row-actions {
+    white-space: nowrap;
+}
+
+.gym-row-actions button {
+    padding: 0.2rem 0.45rem;
+    min-width: 2rem;
+}
+
+.gym-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgb(0 0 0 / 0.52);
+}
+
+.gym-modal {
+    width: min(28rem, 100%);
+    max-height: 85vh;
+    overflow: auto;
+    padding: 1rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-l);
+    background: var(--background-primary);
+    box-shadow: var(--shadow-l);
+}
+
+.gym-modal h3 {
+    margin-top: 0;
+}
+
+.gym-field {
+    display: grid;
+    gap: 0.35rem;
+    margin-block: 0.65rem;
+}
+
+.gym-field label {
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
     font-weight: 600;
-    transition: all 0.2s ease;
 }
 
-.edit-save-btn {
-    background-color: #4CAF50;
-    color: white;
-    border-color: #45a049;
+.gym-field input,
+.gym-field textarea {
+    width: 100%;
 }
 
-.edit-save-btn:hover {
-    background-color: #45a049;
+.gym-modal-actions {
+    justify-content: flex-end;
+    margin-top: 1rem;
 }
 
-.edit-cancel-btn {
-    background-color: #f0f0f0;
-    border-color: #999;
-}
-
-.edit-cancel-btn:hover {
-    background-color: #e0e0e0;
+.gym-video {
+    width: 100%;
+    max-width: 48rem;
+    aspect-ratio: 16 / 9;
+    border: 0;
+    border-radius: var(--radius-m);
 }

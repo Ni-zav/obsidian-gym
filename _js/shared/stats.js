@@ -1,4 +1,8 @@
 class stats {
+    get core() {
+        return globalThis.customJS?.gymCore;
+    }
+
     async renderProgramProgress(context) {
         if (!context?.dv) return;
         const current = context.dv.current();
@@ -25,5 +29,51 @@ class stats {
         const bar = root.createEl("div", { cls: "progress-bar" });
         bar.style.width = data.percentage + "%";
         root.createEl("div", { cls: "progress-text", text: data.percentage + "% complete (" + data.remaining + " days remaining)" });
+    }
+
+    renderRecovery(context) {
+        if (!context?.container || !this.core) return;
+        const definitions = this.core.getExerciseDefinitions();
+        const groups = [...new Set(definitions.map(item => item.fm.muscle_group).filter(Boolean))].sort();
+        const latest = new Map();
+        const root = this.core.paths.workoutsRoot + "/";
+
+        for (const file of this.core.app.vault.getMarkdownFiles()) {
+            if (!file.path.startsWith(root) || !file.path.includes("/Log/")) continue;
+            const log = this.core.logFrontmatter(file);
+            if (!log.exercise || log.exercise === "Workout start" || log.exercise === "Workout end") continue;
+            const exercise = log.exercise_id ? this.core.getExerciseById(log.exercise_id) : this.core.getExerciseByName(log.exercise);
+            const group = exercise?.fm?.muscle_group;
+            if (!group) continue;
+            const timestamp = new Date(log.performed_at || log.date || 0).getTime();
+            if (!Number.isFinite(timestamp)) continue;
+            if (!latest.has(group) || timestamp > latest.get(group)) latest.set(group, timestamp);
+        }
+
+        context.container.createEl("p", {
+            text: "Time-since-trained estimate only; it is not a physiological soreness or readiness measurement.",
+            cls: "gym-muted"
+        });
+
+        const grid = context.container.createDiv({ cls: "gym-recovery-grid" });
+        const now = Date.now();
+        for (const group of groups) {
+            const card = grid.createDiv({ cls: "gym-recovery-card" });
+            card.createEl("strong", { text: group });
+            const last = latest.get(group);
+            if (!last) {
+                card.createEl("div", { text: "No logged training yet", cls: "gym-muted" });
+                continue;
+            }
+            const hours = Math.max(0, (now - last) / 3600000);
+            const percent = Math.max(0, Math.min(100, Math.round((hours / 48) * 100)));
+            const status = hours >= 48 ? "48h+ gap" : hours >= 24 ? "24–48h gap" : "<24h gap";
+            card.createEl("div", { text: status, cls: "gym-muted" });
+            const track = card.createDiv({ cls: "gym-recovery-track" });
+            const bar = track.createDiv({ cls: "gym-recovery-bar" });
+            bar.style.width = percent + "%";
+            const date = typeof moment !== "undefined" ? moment(last).fromNow() : Math.round(hours) + "h ago";
+            card.createEl("small", { text: "Last trained " + date });
+        }
     }
 }

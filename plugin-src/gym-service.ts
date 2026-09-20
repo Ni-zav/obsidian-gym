@@ -365,4 +365,54 @@ export class GymService {
       if (String(lfm.set_type || "working") !== "warmup") {
         working += 1;
         const name = String(lfm.exercise || "Unknown");
-        counts[name] = (counts[name] || 0) + 1;
+        counts[name] = (counts[name] || 0) + 1; 1;
+        volume += setVolume(lfm.weight_kg, lfm.reps);
+        timedSeconds += numberOrNull(lfm.duration_seconds ?? lfm.duration) || 0;
+        distanceKm += numberOrNull(lfm.distance_km) || 0;
+      }
+      prCount += Array.isArray(lfm.prs) ? lfm.prs.length : 0;
+    }
+    const start = logs.find((log) => log.eventType === "workout_start")?.performedAt || fm.started_at;
+    const end = [...logs].reverse().find((log) => log.eventType === "workout_end")?.performedAt || fm.ended_at;
+    const durationMinutes = start ? Math.max(0, Math.round(((end ? new Date(end) : new Date()).getTime() - new Date(start).getTime()) / 60000)) : 0;
+    await this.updateFrontmatter(workoutFile, {
+      set_count: sets.length, working_set_count: working, exercise_counts: counts,
+      total_volume: Math.round(volume * 100) / 100, timed_seconds: Math.round(timedSeconds),
+      distance_km: Math.round(distanceKm * 1000) / 1000, pr_count: prCount,
+      duration_minutes: durationMinutes, status: end ? "completed" : "active",
+      started_at: start || fm.started_at || null, ended_at: end || null,
+    }, ["Logs", "ExerciseCounts", "ExercisesSummary", "Total Volume", "timed_load", "duration"]);
+  }
+
+  private async applySetDelta(workoutFile: TFile, setFm: Record<string, any>, prs: PRResult[]): Promise<void> {
+    const fm = this.index.frontmatter(workoutFile);
+    const working = String(setFm.set_type || "working") !== "warmup";
+    const counts = { ...(fm.exercise_counts || {}) };
+    if (working) counts[setFm.exercise] = Number(counts[setFm.exercise] || 0) + 1;
+    await this.updateFrontmatter(workoutFile, {
+      set_count: Number(fm.set_count || 0) + 1,
+      working_set_count: Number(fm.working_set_count || 0) + (working ? 1 : 0),
+      exercise_counts: counts,
+      total_volume: Number(fm.total_volume || 0) + (working ? setVolume(setFm.weight_kg, setFm.reps) : 0),
+      timed_seconds: Number(fm.timed_seconds || 0) + (working ? (numberOrNull(setFm.duration_seconds) || 0) : 0),
+      distance_km: Number(fm.distance_km || 0) + (working ? (numberOrNull(setFm.distance_km) || 0) : 0),
+      pr_count: Number(fm.pr_count || 0) + prs.length,
+    });
+  }
+
+  private async nextLogPath(workoutFile: TFile): Promise<string> {
+    const folder = joinPath(parentPath(workoutFile.path), "Log");
+    await this.ensureFolder(folder);
+    const entries = this.index.getLogsForWorkout(this.index.frontmatter(workoutFile).id, true);
+    let next = Math.max(0, ...entries.map((record) => Number(record.file.basename)).filter(Number.isFinite)) + 1;
+    for (;;) {
+      const candidate = joinPath(folder, String(next).padStart(3, "0") + ".md");
+      if (!this.app.vault.getAbstractFileByPath(candidate)) return candidate;
+      next += 1;
+    }
+  }
+
+  private async enqueue<T>(workoutFile: TFile, operation: () => Promise<T>): Promise<T> {
+    const key = String(this.index.frontmatter(workoutFile).id || workoutFile.path);
+    const previous = this.queues.get(key) || Promise.resolve();
+    const next =

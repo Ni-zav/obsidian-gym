@@ -2,7 +2,6 @@ class pathConfig {
     get defaults() {
         return {
             exercisesRoot: "Templates/exercises",
-            templateNotesRoot: "Templates/exercises",
             workoutTemplatesRoot: "Templates/Workouts",
             workoutsRoot: "Workouts"
         };
@@ -23,27 +22,19 @@ class pathConfig {
     getPathConfig() {
         const overrides = globalThis.obsidianGymPaths || {};
         const exercisesRoot = this.normalizePath(overrides.exercisesRoot) || this.defaults.exercisesRoot;
-        const templateNotesRoot = this.normalizePath(overrides.templateNotesRoot) || exercisesRoot;
         const workoutTemplatesRoot = this.normalizePath(overrides.workoutTemplatesRoot) || this.defaults.workoutTemplatesRoot;
         const workoutsRoot = this.normalizePath(overrides.workoutsRoot) || this.defaults.workoutsRoot;
         return {
             exercisesRoot,
-            templateNotesRoot,
             workoutTemplatesRoot,
             workoutsRoot,
             exerciseCategoriesPath: this.joinVaultPath(exercisesRoot, "_library/categories.json"),
             workoutCategoriesPath: this.joinVaultPath(exercisesRoot, "_library/workout_categories.json"),
-            startTemplatePath: this.joinVaultPath(templateNotesRoot, "Start.md"),
-            endTemplatePath: this.joinVaultPath(templateNotesRoot, "End.md"),
-            customTemplatePath: this.joinVaultPath(templateNotesRoot, "Custom.md")
         };
     }
 
     getTemplateFilePath(fileName, config = this.getPathConfig()) {
         const lowered = String(fileName || "").toLowerCase();
-        if (lowered === "start.md") return config.startTemplatePath;
-        if (lowered === "end.md") return config.endTemplatePath;
-        if (lowered === "custom.md") return config.customTemplatePath;
         return this.joinVaultPath(config.exercisesRoot, fileName);
     }
 

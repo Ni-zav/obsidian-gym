@@ -195,6 +195,16 @@ class LogModal extends Modal {
   }
 }
 
+class EditModal extends Modal {
+  constructor(plugin,workout,log,onDone){super(plugin.app);this.p=plugin;this.workout=workout;this.log=log;this.onDone=onDone;}
+  onOpen(){const c=this.contentEl,f=this.p.index.fm(this.log),m=modeOf(f);c.empty();c.createEl("h2",{text:"Edit set"});const type=selectField(c,"Set type",["working","warmup","drop","failure"],f.set_type||"working"),effort=selectField(c,"Effort",["","1","2","3","4","5"],f.effort??""),note=field(c,"Note",f.note||"","textarea"),controls={};
+    if(m==="strength"||m==="bodyweight"){controls.weight=field(c,"Weight (kg)",f.weight_kg??"","number");controls.reps=field(c,"Reps",f.reps??"","number");}
+    else if(m==="duration"){controls.duration=field(c,"Duration (seconds)",f.duration_seconds??f.duration??"","number");if(f.weight_kg!=null)controls.weight=field(c,"Weight (kg)",f.weight_kg,"number");}
+    else{controls.distance=field(c,"Distance (km)",f.distance_km??"","number");controls.duration=field(c,"Duration (seconds)",f.duration_seconds??"","number");}
+    const a=c.createDiv({cls:"gym-actions"});a.createEl("button",{text:"Cancel"}).onclick=()=>this.close();a.createEl("button",{text:"Save",cls:"mod-cta"}).onclick=async()=>{await this.p.gym.update(this.log,{set_type:type.value,effort:num(effort.value),note:note.value.trim(),weight_kg:controls.weight?num(controls.weight.value):undefined,reps:controls.reps?num(controls.reps.value):undefined,duration_seconds:controls.duration?num(controls.duration.value):undefined,distance_km:controls.distance?num(controls.distance.value):undefined},["weight","duration","date"]);await this.p.gym.recalc(this.workout);this.close();if(this.onDone)this.onDone();};
+  }
+}
+
 class ExerciseModal extends Modal {
   constructor(plugin){super(plugin.app);this.p=plugin;}
   async onOpen(){const c=this.contentEl;c.empty();c.createEl("h2",{text:"Add exercise"});let cats={muscleGroups:["Others"],equipment:["Bodyweight"]};try{const a=JSON.parse(await this.app.vault.adapter.read(join(this.p.settings.exercisesRoot,"_library/categories.json")));cats={muscleGroups:Object.values(a.muscleGroups||{}).map(x=>x.name),equipment:a.equipment||[]};}catch{}

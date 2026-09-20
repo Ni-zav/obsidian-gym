@@ -157,3 +157,8 @@
     border-radius: inherit;
     background: var(--interactive-accent);
 }
+
+/* Workout sessions favor the logging UI over the raw Properties block. */
+.gym-workout .metadata-container {
+    display: none;
+}

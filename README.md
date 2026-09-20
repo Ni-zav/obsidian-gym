@@ -1,153 +1,132 @@
-# Enhanced Obsidian Gym Log
+# Obsidian Gym
 
-An advanced workout tracking system for [Obsidian](https://obsidian.md/), based on and inspired by [martinjo's obsidian-gym-log](https://github.com/martinjo/obsidian-gym-log) with significant enhancements and improvements.
+A local-first workout tracker built on ordinary Obsidian Markdown. Exercise definitions, routines, workout sessions, and set logs remain readable files; JavaScript adds fast logging, timers, progression history, and dashboards.
 
-## Features
+## What it does
 
-- 📊 Rich data visualization with effort and volume charts
-- ⏱️ Built-in rest timer
-- 💪 Exercise library management
-- 📈 Progress tracking
-- 🎯 Set and rep counting
-- 📝 Workout templating
-- 🔄 Custom exercise support
-- ⚡ Quick exercise logging
-- 📅 Calendar heatmap for workout tracking
-- 🆓 Start unplanned workouts and add exercises on the fly
+- Routine-based and free workouts
+- Resume unfinished workouts from Home
+- Fast set logging with previous-set context
+- Same / +2.5 / -2.5 kg and +1 / -1 rep shortcuts
+- Repeat last set, undo, skip, replace, and choose the next exercise
+- Per-exercise automatic rest timers plus stopwatch mode
+- Explicit workout completion and duration tracking
+- Strict PR detection for weight, reps, and volume
+- Exercise history, estimated 1RM, weekly set count, and progression direction
+- Workout history and analytics using Obsidian Bases + Charts
+- Approximate muscle-group recovery-gap view
+- Configurable vault folders with safe migration preview
 
+## Requirements
 
-## Update
+Obsidian Gym now targets **Obsidian 1.13+**.
 
+Enabled runtime plugins:
 
-### 2026-03-02
+1. [QuickAdd](https://github.com/chhoumann/quickadd) — command entry points
+2. [Dataview](https://github.com/blacksmithgu/obsidian-dataview) — Markdown-driven renderers and queries
+3. [CustomJS](https://github.com/saml-dev/obsidian-custom-js) — shared gym services and UI
+4. [Charts](https://github.com/phibr0/obsidian-charts) — offline chart rendering
+5. Homepage — optional startup convenience
+6. **Obsidian Gym Settings** — local plugin in this repository
 
-- custom folder for the obsidian gyms on the community plugins settings 
+Templater, Meta Bind, Buttons, Media Extended, Tag Wrangler, and Heatmap Calendar are no longer runtime dependencies for the gym flow.
 
-![Pasted image 20260302232044.png](Attachments/Pasted%20image%2020260302232044.png)
+The repository keeps the plugin bundles already committed to the vault. After opening the vault, use Obsidian's normal Community Plugins updater for upstream plugin updates. Do not update only a plugin manifest without its matching compiled plugin bundle.
 
+## Start
 
+Open [[Home]].
 
-## Usage Guide
+- **Start workout** chooses a saved routine.
+- **Free workout** starts without a planned exercise list.
+- If a session is still active, Home changes the primary action to **Resume**.
 
-### Starting a Workout
+Starting a workout immediately creates a workout-start event. Finishing it creates the end event and freezes the final duration.
 
-#### Routine-Based Workout
-1. Open Home page
-2. Click "▶ Start Today's Workout"
-3. Select a workout template
-4. File automatically opens
-5. Begin logging exercises
+## Log a set
 
-#### Free Workout (Unplanned)
-1. Open Home page
-2. Click "🆓 Start Free Workout"
-3. File automatically opens
-4. Click "Log Exercise" to add any exercises on the fly
-5. Exercises available: All exercises from your library
-6. Multiple free workouts can be created on the same day
+Use **Log / Manage Exercise** inside a workout.
 
-### Logging Exercises
+The action menu supports:
 
-1. In an active workout:
-   - Click "Log Exercise"
-   - **Routine workouts**: Select from remaining planned exercises
-   - **Free workouts**: Select from ALL exercises in your library
-   - Enter weight, reps, and effort
-   - Add optional notes
+- log a planned exercise
+- log any extra exercise
+- repeat the last set
+- undo the last set
+- set the next planned exercise
+- skip an exercise for this session
+- replace a remaining exercise for this session
+- finish the workout
 
-### Creating Custom Workouts
+For existing exercises, the logger uses the latest set as the fastest default. Newly created exercises can define default reps/duration, weight, and rest time.
 
-1. Use "Create Workout Routine"
-2. Select exercises from library
-3. Specify sets for each exercise
-4. Save template,
-5. File automatically opens
+## Files and data
 
-### Adding New Exercises
+Default locations:
 
-1. Use "Add Exercise to Library"
-2. Enter exercise details:
-   - Name
-   - Muscle group
-   - Equipment
-   - Instructions
-   - Optional video URL
+- `Templates/exercises` — exercise definitions + category JSON
+- `Templates/Workouts` — saved routines
+- `Workouts` — generated sessions and `Log/` set events
 
-### Exercise Folder Location
+Configure them in **Settings → Community plugins → Obsidian Gym Settings**.
 
-- Default folders are:
-   - `Templates/exercises` for exercise templates
-   - `Templates/exercises` (same folder) for `Start.md`, `End.md`, and `Custom.md`
-   - `Templates/exercises/_library/categories.json` for exercise categories
-   - `Templates/exercises/_library/workout_categories.json` for workout categories
-   - `Templates/Workouts` for workout templates
-   - `Templates/programs` (same folder) for `program-template.md` and created program notes
-   - `Workouts` for generated daily workout notes
-- Prefer using the **Obsidian Gym Settings** plugin UI to customize these paths.
-- `_js/shared/path-config.js` remains the default/fallback configuration.
+Path migration has a command-palette preview:
 
-### Plugin Settings (Recommended)
+- **Obsidian Gym Settings: Preview gym path migration**
+- **Obsidian Gym Settings: Migrate gym data from previous paths**\n- **Obsidian Gym Settings: Audit gym data** — writes an integrity report\n- **Obsidian Gym Settings: Recalculate all workout metrics** — rebuilds derived session fields
 
-- A local plugin is included at `.obsidian/plugins/obsidian-gym-settings`.
-- Open **Settings → Community plugins → Obsidian Gym Settings**.
-- Configure these paths from the plugin UI:
-   - Exercises root
-   - Template notes folder
-   - Workout templates root
-   - Workouts root
-   - Programs folder
-- Use **Save** to apply new paths for future operations.
-- Use **Save + Migrate** to move existing exercises, workout templates, workouts, programs, category files, and template note files to the new paths.
-- Base views (`Exercises List.base`, `Workouts List.base`, `Workouts History.base`, `Program List.base`, `Program History.base`) are auto-updated during path changes.
+See [docs/data-model.md](docs/data-model.md) and [docs/migration.md](docs/migration.md).
 
-## Plugins
+## Schema v2
 
-1. [Dataview](https://github.com/blacksmithgu/obsidian-dataview) - Data querying and visualization
-2. [Meta Bind](https://github.com/mProjectsCode/obsidian-meta-bind-plugin) - Enhanced UI controls
-3. [Templater](https://github.com/SilentVoid13/Templater) - Advanced templating
-4. [QuickAdd](https://github.com/chhoumann/quickadd) - Quick actions and macros
-5. [CustomJS](https://github.com/saml-dev/obsidian-custom-js) - Custom JavaScript support
-6. [Obsidian Charts](https://github.com/phibr0/obsidian-charts) - Data visualization
-7. [Heatmap Calendar](https://github.com/Richardsl/heatmap-calendar-obsidian) - Workout calendar view
-8. [Homepage](https://github.com/mirnovov/obsidian-homepage) - To pin the [[Home]] on startup
+Newly created definitions and logs use stable UUIDs and separate definition defaults from performed-set data.
 
-## To-do
-- [x] fix renderRemaining() function
-- [x] change workout-type to something else (type of workout? push? upper body? cardio? recovery?)
-- [x] add timed workout functionality (warm up, plank, jog, etc.)
-- [x] Add some exercises templates
-- [x] Add few more workout templates
-- [x] Add some basic/general muscle groups
-- [ ] ~~Add Workout Program Feature (but I don't know what is program yet) (might not be needed for simple and streamlined system)~~ no
-- [x] change order of input fields to be more user-friendly
-- [x] fix chart logic in workout routine
-- [x] fix chart on exercise, x-axis should be time and date, not just date.
-- [ ] ~~add relation between equipment and place for better exercises selection~~ no
-- [x] add muscle-group or exercises dashboard
-	- using base! neat
-- [ ] add demo video
-- [ ] if possible, add full body visualization of each exercises done and soreness/muscle area (simulate rest periods and recovery)
-- [ ] hide properties is default on notes inside workouts folder
-- [x] fix timer and add stopwatch feature
-	- [ ] add stopwatch feature
-- [x] should i change muscle group selections to multiple select? (require much more time for user to add themselves, kind of bad ux)
-	- just add notes about most used muscle on exercise creation instead.
-- [x] add ability to start workout without specific exercises sets/lists.
-	- [x] **Free Workout Mode** - Start unplanned workouts with all exercises available
-	- [x] **Auto-open workouts** - Newly created workouts automatically open for immediate use
-	- [x] **Multiple free workouts per day** - Can create multiple free workouts on the same day
+Old exercise definitions with numeric IDs remain readable and usable. They are not rewritten in place because routine templates may already reference those IDs.
 
-Now it is fully usable, might not need relation equipment and place (adding new relational data is time-consuming so.. no). Will do hide properties, musclegroup/exercises dashboard, demo video, and if possible add full body visualization.
+## Dashboards
 
-Workout program not needed as is just meant for simple logging/tracking system.
+- [[Exercises List.base]]
+- [[Workouts List.base]]
+- [[Workouts History.base]]
+- [[Data Visualization]]
+- [[Recovery]]
 
-> *complexity is the enemy of execution. - Tony Robbins*
+The recovery page is deliberately only a **time-since-last-trained** display. It is not a physiological recovery or soreness measurement.
 
-## License
+## Architecture
 
-This project is open source and available under the MIT License.
+The current runtime is intentionally transitional:
 
-## Acknowledgments
+```text
+Markdown + Bases
+      ↑
+gym-core (data + session service)
+      ↑
+CustomJS renderers
+      ↑
+QuickAdd commands / DataviewJS buttons
+```
 
-- Original [obsidian-gym-log](https://github.com/martinjo/obsidian-gym-log) by martinjo
-- Obsidian Community for various plugins
+Templater is no longer in the runtime path. Folder logic, IDs, metrics, workout state, and history lookup live in one shared service instead of being copied into each QuickAdd script.
+
+See [docs/architecture.md](docs/architecture.md).
+
+## Updating
+
+Current modernization targets tested by design:
+
+- Obsidian 1.13+
+- Meta Bind 1.5.x-compatible markup
+- QuickAdd 2.x-compatible user scripts
+- Dataview 0.5.x
+- CustomJS 1.0.x
+- Charts 3.9.x
+
+Upstream plugins should be updated through Obsidian so `main.js`, `styles.css`, and `manifest.json` stay from the same release.
+
+## Project principle
+
+The vault should stay useful even if its UI code is temporarily unavailable: training data remains Markdown, JSON, and Bases rather than an opaque database.
+
+> Complexity is the enemy of execution.

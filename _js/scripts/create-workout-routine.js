@@ -1,504 +1,85 @@
-function normalizePath(pathValue) {
-    if (!pathValue || typeof pathValue !== "string") return "";
-    return pathValue.replace(/\\/g, '/').trim().replace(/^\/+/, '').replace(/\/+$/, '');
-}
-
-function joinVaultPath(...segments) {
-    return segments
-        .filter(Boolean)
-        .map((segment, index) => {
-            const value = String(segment);
-            if (index === 0) return value.replace(/\/+$/, '');
-            return value.replace(/^\/+/, '').replace(/\/+$/, '');
-        })
-        .join('/');
-}
-
-function getPathConfig() {
-    const overrides = globalThis?.obsidianGymPaths || {};
-    const exercisesRoot = normalizePath(overrides.exercisesRoot) || "Templates/exercises";
-    const templateNotesRoot = normalizePath(overrides.templateNotesRoot) || exercisesRoot;
-    const workoutTemplatesRoot = normalizePath(overrides.workoutTemplatesRoot) || "Templates/Workouts";
-    const workoutsRoot = normalizePath(overrides.workoutsRoot) || "Workouts";
-    const programsRoot = normalizePath(overrides.programsRoot) || "Templates/programs";
-
-    return {
-        exercisesRoot,
-        templateNotesRoot,
-        workoutTemplatesRoot,
-        workoutsRoot,
-        programsRoot,
-        exerciseCategoriesPath: joinVaultPath(exercisesRoot, "_library/categories.json"),
-        workoutCategoriesPath: joinVaultPath(exercisesRoot, "_library/workout_categories.json"),
-        startTemplatePath: joinVaultPath(templateNotesRoot, "Start.md"),
-        endTemplatePath: joinVaultPath(templateNotesRoot, "End.md"),
-        customTemplatePath: joinVaultPath(templateNotesRoot, "Custom.md"),
-        programTemplatePath: joinVaultPath(programsRoot, "program-template.md"),
-        programsOutputRoot: programsRoot
-    };
-}
-
-function getParentPath(pathValue) {
-    const idx = pathValue.lastIndexOf('/');
-    if (idx === -1) return "";
-    return pathValue.slice(0, idx);
-}
-
-class WorkoutBuilder {
-    constructor(app, quickAdd) {
-        if (!app || !quickAdd) {
-            throw new Error("WorkoutBuilder requires app and quickAdd parameters");
-        }
-        this.app = app;
-        this.quickAdd = quickAdd;
-        const pathConfig = getPathConfig();
-        this.exercisesRoot = pathConfig.exercisesRoot;
-        this.exerciseCategoriesPath = pathConfig.exerciseCategoriesPath;
-        this.workoutCategoriesPath = pathConfig.workoutCategoriesPath;
-        this.workoutTemplatesRoot = pathConfig.workoutTemplatesRoot;
-        this.categories = null;
-        this.workoutCategories = null;
-        this.exercises = {};
-        this.initialized = false;
-    }    async init() {
-        if (this.initialized) return;
-        
-        try {
-            await this.loadCategories();
-            await this.loadWorkoutCategories();
-            await this.loadExercises();
-            this.initialized = true;
-        } catch (error) {
-            console.error("Failed to initialize WorkoutBuilder:", error);
-            throw new Error("Failed to initialize workout builder: " + error.message);
-        }
-    }
-
-    async loadWorkoutCategories() {
-        try {
-            const categoriesPath = this.workoutCategoriesPath;
-            const categoriesParent = getParentPath(categoriesPath);
-            if (categoriesParent && !await this.app.vault.adapter.exists(categoriesParent)) {
-                await this.app.vault.createFolder(categoriesParent);
-            }
-            if (!await this.app.vault.adapter.exists(categoriesPath)) {
-                throw new Error("Workout categories file not found at: " + categoriesPath);
-            }
-
-            const categoriesContent = await this.app.vault.adapter.read(categoriesPath);
-            if (!categoriesContent) {
-                throw new Error("Workout categories file is empty");
-            }
-
-            try {
-                this.workoutCategories = JSON.parse(categoriesContent);
-                if (!this.workoutCategories || !this.workoutCategories.workoutTypes || !this.workoutCategories.places) {
-                    throw new Error("Invalid workout categories format");
-                }
-            } catch (e) {
-                throw new Error("Failed to parse workout categories JSON: " + e.message);
-            }
-        } catch (error) {
-            console.error("Error loading workout categories:", error);
-            throw error;
-        }
-    }
-
-    async selectWorkoutType() {
-        if (!this.initialized || !this.workoutCategories) {
-            throw new Error("WorkoutBuilder must be initialized before use");
-        }
-
-        const types = Object.entries(this.workoutCategories.workoutTypes).map(([key, type]) => ({
-            key,
-            name: type.name,
-            description: type.description
-        }));
-
-        return await this.quickAdd.suggester(
-            type => `${type.name} - ${type.description}`,
-            types,
-            "Select workout type"
-        );
-    }
-
-    async selectWorkoutPlace() {
-        if (!this.initialized || !this.workoutCategories) {
-            throw new Error("WorkoutBuilder must be initialized before use");
-        }
-
-        const places = Object.entries(this.workoutCategories.places).map(([key, place]) => ({
-            key,
-            name: place.name,
-            description: place.description
-        }));
-
-        return await this.quickAdd.suggester(
-            place => `${place.name} - ${place.description}`,
-            places,
-            "Select workout place"
-        );
-    }
-
-    async loadCategories() {
-        try {
-            const categoriesPath = this.exerciseCategoriesPath;
-            const categoriesParent = getParentPath(categoriesPath);
-            if (categoriesParent && !await this.app.vault.adapter.exists(categoriesParent)) {
-                await this.app.vault.createFolder(categoriesParent);
-            }
-            if (!await this.app.vault.adapter.exists(categoriesPath)) {
-                throw new Error("Categories file not found at: " + categoriesPath);
-            }
-
-            const categoriesContent = await this.app.vault.adapter.read(categoriesPath);
-            if (!categoriesContent) {
-                throw new Error("Categories file is empty");
-            }
-
-            try {
-                this.categories = JSON.parse(categoriesContent);
-                if (!this.categories || !this.categories.muscleGroups) {
-                    throw new Error("Invalid categories format");
-                }
-            } catch (e) {
-                throw new Error("Failed to parse categories JSON: " + e.message);
-            }
-        } catch (error) {
-            console.error("Error loading categories:", error);
-            throw error;
-        }
-    }
-
-    async loadExercises() {
-        if (!this.categories) {
-            throw new Error("Categories must be loaded before exercises");
-        }
-
-        try {
-            // Initialize exercise groups
-            Object.keys(this.categories.muscleGroups).forEach(key => {
-                const groupName = this.categories.muscleGroups[key].name;
-                this.exercises[groupName] = [];
-            });
-
-            // Use metadata cache's tag index for faster lookup
-            // This is more efficient than scanning all files
-            const exerciseFiles = [];
-            
-            // Get the metadata cache and look for files with 'exercise' tag
-            const allFiles = this.app.vault.getMarkdownFiles();
-            
-            for (const file of allFiles) {
-                // Only include files from exercises root folder
-                if (!file.path.startsWith(`${this.exercisesRoot}/`)) continue;
-                
-                const cache = this.app.metadataCache.getFileCache(file);
-                if (cache?.frontmatter?.tags?.includes('exercise')) {
-                    exerciseFiles.push(file);
-                }
-            }
-
-            if (exerciseFiles.length === 0) {
-                throw new Error(`No exercise templates found in ${this.exercisesRoot}/`);
-            }
-
-            // Group exercises by muscle group
-            exerciseFiles.forEach(file => {
-                const cache = this.app.metadataCache.getFileCache(file);
-                if (!cache?.frontmatter?.muscle_group) return;
-
-                const muscleGroup = cache.frontmatter.muscle_group;
-                const groupKey = Object.keys(this.categories.muscleGroups)
-                    .find(key => this.categories.muscleGroups[key].name.toLowerCase() === muscleGroup.toLowerCase());
-
-                if (groupKey) {
-                    const groupName = this.categories.muscleGroups[groupKey].name;
-                    this.exercises[groupName].push({
-                        name: cache.frontmatter.exercise || file.basename,
-                        id: cache.frontmatter.id,
-                        equipment: cache.frontmatter.equipment || 'No equipment specified',
-                        file: file
-                    });
-                }
-            });
-
-            // Validate that we have at least one exercise loaded
-            const totalExercises = Object.values(this.exercises)
-                .reduce((sum, exercises) => sum + exercises.length, 0);
-            
-            if (totalExercises === 0) {
-                throw new Error(`No valid exercise templates found in ${this.exercisesRoot}/`);
-            }
-
-        } catch (error) {
-            console.error("Error loading exercises:", error);
-            throw error;
-        }
-    }
-
-    async selectMuscleGroup() {
-        if (!this.initialized) {
-            throw new Error("WorkoutBuilder must be initialized before use");
-        }
-
-        // Get groups that have exercises
-        const availableGroups = Object.entries(this.exercises)
-            .filter(([_, exercises]) => exercises.length > 0)
-            .map(([group, exercises]) => ({
-                name: group,
-                count: exercises.length
-            }));
-
-        if (availableGroups.length === 0) {
-            throw new Error("No exercises found in any muscle group");
-        }
-
-        return await this.quickAdd.suggester(
-            group => `${group.name} (${group.count} exercises)`,
-            availableGroups,
-            "Select muscle group"
-        );
-    }
-
-    async selectExercise(muscleGroup) {
-        if (!muscleGroup || !muscleGroup.name) {
-            return null;
-        }
-
-        const exercises = this.exercises[muscleGroup.name];
-        if (!exercises || exercises.length === 0) {
-            throw new Error(`No exercises found for muscle group: ${muscleGroup.name}`);
-        }
-
-        return await this.quickAdd.suggester(
-            exercise => `${exercise.name} (${exercise.equipment})`,
-            exercises,
-            "Select exercise"
-        );
-    }
-
-    async selectExerciseDirect() {
-        if (!this.initialized) {
-            throw new Error("WorkoutBuilder must be initialized before use");
-        }
-        // Flatten all exercises into a single array
-        const allExercises = Object.values(this.exercises).flat();
-        if (allExercises.length === 0) {
-            throw new Error("No exercises found");
-        }
-        return await this.quickAdd.suggester(
-            exercise => `${exercise.name} (${exercise.equipment})`,
-            allExercises,
-            "Select exercise"
-        );
-    }
-
-    async getSetsCount() {
-        const sets = await this.quickAdd.inputPrompt("Number of sets", "3");
-        if (!sets) {
-            return null;
-        }
-
-        const setsNum = parseInt(sets);
-        if (isNaN(setsNum) || setsNum < 1) {
-            new Notice("Please enter a valid number of sets (must be 1 or greater)");
-            return null;
-        }
-
-        return setsNum;
-    }    generateWorkoutContent(name, exercises, workoutType, workoutPlace) {
-        const exerciseIds = exercises
-            .map(e => Array(e.sets).fill(e.id))
-            .flat();
-
-        return [
-            "---",
-            `workout_title: ${name}`,
-            `date: <% tp.date.now("YYYY-MM-DD") %>`,
-            `time: <% tp.date.now("HH:mm") %>`,
-            `exercises: [${exerciseIds.join(", ")}]`,
-            `workout_order: [${exerciseIds.join(", ")}]`,
-            `workout_type: ${workoutType.name}`,
-            `workout_place: ${workoutPlace.name}`,
-            "tags:",
-            " - workout",
-            "---",
-            "",
-            "```dataviewjs",
-            "const {workout} = customJS;",
-            "const note = {dv: dv, container: this.container, window: window};",
-            "workout.renderHeader(note);",
-            "```",
-            "",
-            "## Rest Timer",
-            "---",
-            "```meta-bind-button",
-            "label: Start Timer",
-            "icon: \"\"",
-            "style: default",
-            "class: \"\"",
-            "cssStyle: \"\"",
-            "backgroundImage: \"\"",
-            "tooltip: \"\"",
-            "id: \"\"",
-            "hidden: false",
-            "actions:",
-            "  - type: command",
-            "    command: quickadd:choice:a9b81cef-90e8-4dce-a426-791f54e2a43d",
-            "```",
-            "",
-            "```dataviewjs",
-            "const {timer} = customJS;",
-            "await timer.renderTimerControls(this);",
-            "```",
-            "",
-            "## Log Exercise",
-            "---",
-            "```meta-bind-button",
-            "label: Log Exercise",
-            "icon: \"\"",
-            "style: primary",
-            "class: \"\"",
-            "cssStyle: \"\"",
-            "backgroundImage: \"\"",
-            "tooltip: \"\"",
-            "id: \"\"",
-            "hidden: false",
-            "actions:",
-            "  - type: command",
-            "    command: quickadd:choice:d5df32b0-6a04-481d-9a8d-b9bd1b2f0ea7",
-            "```",
-            "",
-            "## Remaining Exercises",
-            "---",
-            "```dataviewjs",
-            "const {workout} = customJS;",
-            "const note = {dv: dv, container: this.container, window: window};",
-            "workout.renderRemaining(note);",
-            "```",
-            "",
-            "## Performed Exercises",
-            "---",
-            "```dataviewjs",
-            "const {workout} = customJS;",
-            "const note = {dv: dv, container: this.container, window: window};",
-            "workout.renderPerformed(note);",
-            "workout.renderEffortChart(note);",
-            "```"
-        ].join("\n");
-    }
-
-    async saveWorkout(name, content) {
-        const targetPath = joinVaultPath(this.workoutTemplatesRoot, "gym");
-        
-        // Ensure target directory exists
-        if (!await this.app.vault.adapter.exists(targetPath)) {
-            await this.app.vault.createFolder(targetPath);
-        }
-
-        // Clean up filename, removing invalid characters and convert spaces to hyphens
-        const fileName = `${name.toLowerCase().replace(/[^a-zA-Z0-9-]/g, '-')}.md`;
-        const filePath = `${targetPath}/${fileName}`;
-        
-        // Don't overwrite existing files
-        if (await this.app.vault.adapter.exists(filePath)) {
-            throw new Error(`A workout routine named '${name}' already exists. Please choose a different name.`);
-        }
-        
-        const file = await this.app.vault.create(filePath, content);
-        return file;
-    }
-}
-
 module.exports = async function createWorkoutRoutine(params) {
-    const { app, quickAddApi } = params;
+    const core = globalThis.customJS?.gymCore;
+    if (!core) throw new Error("Gym core is not loaded. Reload Obsidian.");
+    const { suggester, inputPrompt } = params.quickAddApi;
 
     try {
-        // Initialize workout builder
-        const builder = new WorkoutBuilder(app, quickAddApi);
-        await builder.init();
+        const name = (await inputPrompt("Workout name", ""))?.trim();
+        if (!name) return;
 
-        // Get workout name
-        const workoutName = await quickAddApi.inputPrompt("Enter workout name (e.g., Push Day, Leg Day)");
-        if (!workoutName) {
-            console.log("Workout creation cancelled - no name provided");
+        const exercises = core.getExerciseDefinitions().sort((a, b) =>
+            (a.fm.exercise || a.file.basename).localeCompare(b.fm.exercise || b.file.basename)
+        );
+        if (!exercises.length) {
+            new Notice("No exercises found");
             return;
         }
 
-        // Build workout
-        const selectedExercises = [];
-        let addingExercises = true;
-
-        while (addingExercises) {
-            // Directly select exercise from all available
-            const exercise = await builder.selectExerciseDirect();
-            if (!exercise) {
-                console.log("Exercise selection cancelled");
-                break;
-            }
-
-            // Get sets
-            const sets = await builder.getSetsCount();
-            if (!sets) {
-                console.log("Sets input cancelled");
-                break;
-            }
-
-            // Add to selected exercises
-            selectedExercises.push({
-                id: exercise.id,
-                name: exercise.name,
-                sets: sets
-            });
-
-            // Ask to continue
-            const continueChoice = await quickAddApi.suggester(
-                ["Add another exercise", "Finish and save workout"],
-                ["continue", "finish"],
-                "What would you like to do?"
+        const selected = [];
+        while (true) {
+            const choice = await suggester(
+                item => {
+                    const label = item.fm.exercise || item.file.basename;
+                    const last = core.getLatestSet(item.fm.id, label);
+                    const history = last ? " · last " + (last.fm.weight_kg ?? "—") + "kg × " + (last.fm.reps ?? (last.fm.duration_seconds ? last.fm.duration_seconds + "s" : "—")) : "";
+                    return label + " · " + (item.fm.equipment || "") + history;
+                },
+                exercises,
+                selected.length ? "Add another exercise" : "Choose first exercise"
             );
-            
-            if (!continueChoice) {
-                console.log("Continue choice cancelled");
-                break;
+            if (!choice) break;
+            const sets = Number(await inputPrompt("Sets for " + (choice.fm.exercise || choice.file.basename), "3"));
+            if (!Number.isInteger(sets) || sets < 1) {
+                new Notice("Sets must be a positive whole number");
+                continue;
             }
-            addingExercises = continueChoice === "continue";
+            selected.push({ id: choice.fm.id, name: choice.fm.exercise || choice.file.basename, sets });
+            const action = await suggester(["Add another", "Finish routine"], ["continue", "finish"]);
+            if (action !== "continue") break;
         }
+        if (!selected.length) return;
 
-        // Only proceed if we have exercises to save
-        if (selectedExercises.length === 0) {
-            console.log("No exercises were selected, workout not created");
+        const categoriesRaw = await core.app.vault.adapter.read(core.paths.workoutCategoriesPath);
+        const categories = JSON.parse(categoriesRaw);
+        const types = Object.values(categories.workoutTypes || {});
+        const places = Object.values(categories.places || {});
+        const type = await suggester(item => item.name + " — " + (item.description || ""), types, "Workout type");
+        if (!type) return;
+        const place = await suggester(item => item.name + " — " + (item.description || ""), places, "Workout place");
+        if (!place) return;
+
+        const ids = selected.flatMap(item => Array(item.sets).fill(item.id));
+        const folder = core.joinPath(core.paths.workoutTemplatesRoot, "gym");
+        await core.ensureFolder(folder);
+        const filename = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".md";
+        const path = core.joinPath(folder, filename);
+        if (core.app.vault.getAbstractFileByPath(path)) {
+            new Notice("Routine already exists: " + name);
             return;
         }
-        // Select workout type and place
-        const workoutType = await builder.selectWorkoutType();
-        if (!workoutType) {
-            console.log("Workout type selection cancelled");
-            return;
-        }
 
-        const workoutPlace = await builder.selectWorkoutPlace();
-        if (!workoutPlace) {
-            console.log("Workout place selection cancelled");
-            return;
-        }
+        const content = [
+            "---",
+            "schema_version: 2",
+            "workout_title: " + core.yaml(name),
+            "exercises: " + JSON.stringify(ids),
+            "workout_order: " + JSON.stringify(ids),
+            "workout_type: " + core.yaml(type.name),
+            "workout_place: " + core.yaml(place.name),
+            "tags:",
+            "  - workout",
+            "---",
+            "",
+            "# " + name,
+            "",
+            selected.map(item => "- " + item.name + " × " + item.sets + " sets").join("\n")
+        ].join("\n");
 
-        // Generate and save workout
-        const content = builder.generateWorkoutContent(workoutName, selectedExercises, workoutType, workoutPlace);
-        const file = await builder.saveWorkout(workoutName, content);// Show success message
-        const summary = selectedExercises.map(e => `${e.name} (${e.sets} sets)`).join('\n- ');
-        new Notice(`Workout '${workoutName}' created successfully!\n\nExercises:\n- ${summary}`);
-
-        // Return the path without opening the file
+        const file = await core.app.vault.create(path, content);
         params.variables = { workoutPath: file.path };
-
+        new Notice("Routine created: " + name);
     } catch (error) {
-        if (error.message.includes('already exists')) {
-            new Notice(error.message);
-        } else {
-            console.error("Unexpected error:", error);
-            new Notice("An unexpected error occurred");
-        }
+        console.error("Routine creation failed", error);
+        new Notice("Could not create routine: " + error.message);
     }
-}
+};

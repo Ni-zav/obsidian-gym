@@ -1,73 +1,14 @@
 ---
-workout_title: abc
-date: <% tp.date.now("YYYY-MM-DD") %>
-time: <% tp.date.now("HH:mm") %>
-exercises: [286289, 286289, 286289, 858572, 858572, 858572, 527062, 527062, 527062]
-workout_order: [286289, 286289, 286289, 858572, 858572, 858572, 527062, 527062, 527062]
-workout_type: Weight Training
-workout_place: Home
+schema_version: 2
+workout_title: "abc.md"
+exercises: []
+workout_order: []
+workout_type: ""
+workout_place: ""
 tags:
- - workout
+  - workout
 ---
 
-```dataviewjs
-const {workout} = customJS;
-const note = {dv: dv, container: this.container, window: window};
-workout.renderHeader(note);
-```
+# abc.md
 
-## Rest Timer
----
-```meta-bind-button
-label: Start Timer
-icon: ""
-style: default
-class: ""
-cssStyle: ""
-backgroundImage: ""
-tooltip: ""
-id: ""
-hidden: false
-actions:
-  - type: command
-    command: quickadd:choice:a9b81cef-90e8-4dce-a426-791f54e2a43d
-```
-
-```dataviewjs
-const {timer} = customJS;
-await timer.renderTimerControls(this);
-```
-
-## Log Exercise
----
-```meta-bind-button
-label: Log Exercise
-icon: ""
-style: primary
-class: ""
-cssStyle: ""
-backgroundImage: ""
-tooltip: ""
-id: ""
-hidden: false
-actions:
-  - type: command
-    command: quickadd:choice:d5df32b0-6a04-481d-9a8d-b9bd1b2f0ea7
-```
-
-## Remaining Exercises
----
-```dataviewjs
-const {workout} = customJS;
-const note = {dv: dv, container: this.container, window: window};
-workout.renderRemaining(note);
-```
-
-## Performed Exercises
----
-```dataviewjs
-const {workout} = customJS;
-const note = {dv: dv, container: this.container, window: window};
-workout.renderPerformed(note);
-workout.renderEffortChart(note);
-```
+This is a routine definition. Start it from [[Home]] to create a workout session.

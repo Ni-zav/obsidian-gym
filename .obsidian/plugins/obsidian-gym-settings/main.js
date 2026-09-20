@@ -1,90 +1,120 @@
-const { Plugin, PluginSettingTab, Setting, Notice, TFolder, TFile } = require("obsidian");
+const { Plugin, PluginSettingTab, Notice, TFolder, TFile } = require("obsidian");
 
 const DEFAULT_PATHS = {
     exercisesRoot: "Templates/exercises",
-    templateNotesRoot: "Templates/exercises",
     workoutTemplatesRoot: "Templates/Workouts",
-    workoutsRoot: "Workouts",
-    programsRoot: "Templates/programs",
-    exerciseCategoriesPath: "Templates/exercises/_library/categories.json",
-    workoutCategoriesPath: "Templates/exercises/_library/workout_categories.json",
-    programTemplatePath: "Templates/programs/program-template.md",
-    programsOutputRoot: "Templates/programs",
-    startTemplatePath: "Templates/exercises/Start.md",
-    endTemplatePath: "Templates/exercises/End.md",
-    customTemplatePath: "Templates/exercises/Custom.md"
+    workoutsRoot: "Workouts"
 };
 
-function normalizeVaultPath(pathValue) {
-    if (!pathValue || typeof pathValue !== "string") return "";
-    return pathValue.replace(/\\/g, "/").trim().replace(/^\/+/, "").replace(/\/+$/, "");
+function normalizeVaultPath(value) {
+    if (!value || typeof value !== "string") return "";
+    let normalized = value.split(String.fromCharCode(92)).join("/").trim();
+    while (normalized.startsWith("/")) normalized = normalized.slice(1);
+    while (normalized.endsWith("/")) normalized = normalized.slice(0, -1);
+    return normalized;
 }
 
 function joinVaultPath(...parts) {
-    return parts
-        .filter(Boolean)
-        .map((part, index) => {
-            const value = String(part);
-            if (index === 0) return value.replace(/\/+$/, "");
-            return value.replace(/^\/+/, "").replace(/\/+$/, "");
-        })
-        .join("/");
+    return parts.filter(Boolean).map((part, index) => {
+        let value = String(part);
+        if (index === 0) {
+            while (value.endsWith("/")) value = value.slice(0, -1);
+        } else {
+            while (value.startsWith("/")) value = value.slice(1);
+            while (value.endsWith("/")) value = value.slice(0, -1);
+        }
+        return value;
+    }).join("/");
 }
 
-function replaceAllLiteral(content, source, target) {
-    if (!source || source === target) return content;
-    return content.split(source).join(target);
-}
-
-function parentPath(pathValue) {
-    const normalized = normalizeVaultPath(pathValue);
-    const idx = normalized.lastIndexOf("/");
-    if (idx === -1) return "";
-    return normalized.slice(0, idx);
+function parentPath(value) {
+    const normalized = normalizeVaultPath(value);
+    const index = normalized.lastIndexOf("/");
+    return index < 0 ? "" : normalized.slice(0, index);
 }
 
 class ObsidianGymSettingsPlugin extends Plugin {
     async onload() {
         await this.loadSettings();
         this.applyPathsGlobal();
-
         this.addSettingTab(new ObsidianGymSettingsTab(this.app, this));
 
         this.addCommand({
             id: "obsidian-gym-reapply-path-settings",
-            name: "Re-apply Obsidian Gym path settings",
+            name: "Re-apply gym path settings",
             callback: async () => {
                 await this.ensurePathDirectories(this.settings.paths);
                 this.applyPathsGlobal();
-                new Notice("Obsidian Gym paths applied to runtime");
+                new Notice("Gym paths applied");
+            }
+        });
+
+        this.addCommand({
+            id: "obsidian-gym-preview-path-migration",
+            name: "Preview gym path migration",
+            callback: async () => {
+                const plan = await this.planMigration(this.settings.previousPaths, this.settings.paths);
+                new Notice("Gym migration preview: " + plan.movable + " files movable, " + plan.conflicts + " conflicts, " + plan.missing + " sources missing", 10000);
             }
         });
 
         this.addCommand({
             id: "obsidian-gym-migrate-from-previous",
-            name: "Migrate Obsidian Gym data from previous paths",
+            name: "Migrate gym data from previous paths",
+            callback: async () => this.migratePaths(this.settings.previousPaths, this.settings.paths)
+        });
+
+        this.addCommand({
+            id: "obsidian-gym-audit-data",
+            name: "Audit gym data",
+            callback: async () => this.auditGymData()
+        });
+
+        this.addCommand({
+            id: "obsidian-gym-recalculate-all",
+            name: "Recalculate all workout metrics",
             callback: async () => {
-                const previous = this.settings.previousPaths || DEFAULT_PATHS;
-                const current = this.settings.paths;
-                const changed = JSON.stringify(previous) !== JSON.stringify(current);
-                if (!changed) {
-                    new Notice("No path changes to migrate");
+                const core = globalThis.customJS?.gymCore;
+                if (!core) {
+                    new Notice("Gym core is not loaded. Reload Obsidian first.");
                     return;
                 }
-
-                await this.migratePaths(previous, current);
+                const root = core.paths.workoutsRoot + "/";
+                const sessions = this.app.vault.getMarkdownFiles().filter(file => {
+                    const data = this.app.metadataCache.getFileCache(file)?.frontmatter || {};
+                    const tags = Array.isArray(data.tags) ? data.tags : [data.tags].filter(Boolean);
+                    return file.path.startsWith(root) && !file.path.includes("/Log/") && tags.includes("workout");
+                });
+                for (const file of sessions) await core.recalculateWorkoutMetrics(file);
+                new Notice("Recalculated " + sessions.length + " workout sessions");
             }
         });
     }
 
-    async loadSettings() {
-        const raw = await this.loadData();
-        const savedPaths = raw?.paths || raw || {};
-        const previousPaths = raw?.previousPaths || DEFAULT_PATHS;
+    normalizePaths(paths = {}) {
+        const exercisesRoot = normalizeVaultPath(paths.exercisesRoot) || DEFAULT_PATHS.exercisesRoot;
+        return {
+            exercisesRoot,
+            workoutTemplatesRoot: normalizeVaultPath(paths.workoutTemplatesRoot) || DEFAULT_PATHS.workoutTemplatesRoot,
+            workoutsRoot: normalizeVaultPath(paths.workoutsRoot) || DEFAULT_PATHS.workoutsRoot
+        };
+    }
 
+    derived(pathsRaw) {
+        const paths = this.normalizePaths(pathsRaw);
+        return {
+            ...paths,
+            exerciseCategoriesPath: joinVaultPath(paths.exercisesRoot, "_library/categories.json"),
+            workoutCategoriesPath: joinVaultPath(paths.exercisesRoot, "_library/workout_categories.json"),
+        };
+    }
+
+    async loadSettings() {
+        const raw = await this.loadData() || {};
+        const legacyPaths = raw.paths || raw;
         this.settings = {
-            paths: this.normalizePaths({ ...DEFAULT_PATHS, ...savedPaths }),
-            previousPaths: this.normalizePaths({ ...DEFAULT_PATHS, ...previousPaths })
+            paths: this.normalizePaths({ ...DEFAULT_PATHS, ...legacyPaths }),
+            previousPaths: this.normalizePaths({ ...DEFAULT_PATHS, ...(raw.previousPaths || legacyPaths) })
         };
     }
 
@@ -92,282 +122,277 @@ class ObsidianGymSettingsPlugin extends Plugin {
         await this.saveData(this.settings);
     }
 
-    normalizePaths(paths) {
-        const exercisesRoot = normalizeVaultPath(paths.exercisesRoot) || DEFAULT_PATHS.exercisesRoot;
-        const templateNotesRoot = normalizeVaultPath(paths.templateNotesRoot) || exercisesRoot;
-        const programsRoot = normalizeVaultPath(paths.programsRoot) || DEFAULT_PATHS.programsRoot;
-
-        const legacyTemplatesRoot = normalizeVaultPath(paths.templatesRoot);
-        const legacyTemplateNotesRoot = normalizeVaultPath(paths.templateNotesRoot) || legacyTemplatesRoot;
-        const legacyProgramsRoot = normalizeVaultPath(paths.programsRoot) || (legacyTemplateNotesRoot ? joinVaultPath(legacyTemplateNotesRoot, "programs") : "");
-
-        return {
-            exercisesRoot,
-            templateNotesRoot,
-            workoutTemplatesRoot: normalizeVaultPath(paths.workoutTemplatesRoot) || DEFAULT_PATHS.workoutTemplatesRoot,
-            workoutsRoot: normalizeVaultPath(paths.workoutsRoot) || DEFAULT_PATHS.workoutsRoot,
-            programsRoot,
-            exerciseCategoriesPath: joinVaultPath(exercisesRoot, "_library/categories.json"),
-            workoutCategoriesPath: joinVaultPath(exercisesRoot, "_library/workout_categories.json"),
-            programTemplatePath: normalizeVaultPath(paths.programTemplatePath) || (legacyProgramsRoot ? joinVaultPath(legacyProgramsRoot, "_templates/program-template.md") : joinVaultPath(programsRoot, "program-template.md")),
-            programsOutputRoot: programsRoot,
-            startTemplatePath: joinVaultPath(templateNotesRoot, "Start.md"),
-            endTemplatePath: joinVaultPath(templateNotesRoot, "End.md"),
-            customTemplatePath: joinVaultPath(templateNotesRoot, "Custom.md")
-        };
-    }
-
     applyPathsGlobal(paths = this.settings.paths) {
-        if (typeof globalThis === "undefined") return;
-        globalThis.obsidianGymPaths = this.normalizePaths(paths);
+        globalThis.obsidianGymPaths = this.derived(paths);
     }
 
-    async ensureFolder(folderPath) {
-        const normalized = normalizeVaultPath(folderPath);
+    async ensureFolder(path) {
+        const normalized = normalizeVaultPath(path);
         if (!normalized) return;
-
-        const parts = normalized.split("/");
         let current = "";
-
-        for (const part of parts) {
-            current = current ? `${current}/${part}` : part;
-            const exists = await this.app.vault.adapter.exists(current);
-            if (!exists) {
-                await this.app.vault.createFolder(current);
-            }
+        for (const part of normalized.split("/")) {
+            current = current ? current + "/" + part : part;
+            if (!this.app.vault.getAbstractFileByPath(current)) await this.app.vault.createFolder(current);
         }
     }
 
     async ensurePathDirectories(pathsRaw) {
-        const paths = this.normalizePaths(pathsRaw);
-
-        const folderFields = [
+        const paths = this.derived(pathsRaw);
+        for (const path of [
             paths.exercisesRoot,
-            paths.templateNotesRoot,
             paths.workoutTemplatesRoot,
             paths.workoutsRoot,
-            paths.programsRoot,
             joinVaultPath(paths.exercisesRoot, "_library")
-        ];
-
-        const fileParentFields = [
-            paths.programTemplatePath,
-            paths.startTemplatePath,
-            paths.endTemplatePath,
-            paths.customTemplatePath
-        ].map(parentPath);
-
-        for (const folder of [...folderFields, ...fileParentFields]) {
-            await this.ensureFolder(folder);
-        }
+        ]) await this.ensureFolder(path);
     }
 
-    async savePathChanges(nextPaths, migrateData = false) {
+    isWithin(path, root) {
+        const value = normalizeVaultPath(path);
+        const base = normalizeVaultPath(root);
+        return Boolean(value && base && (value === base || value.startsWith(base + "/")));
+    }
+
+    async savePathChanges(nextRaw, migrate = false) {
         const current = this.normalizePaths(this.settings.paths);
-        const target = this.normalizePaths(nextPaths);
-
-        const changed = JSON.stringify(current) !== JSON.stringify(target);
-        if (!changed) {
-            await this.ensurePathDirectories(target);
-            this.applyPathsGlobal(target);
-            new Notice("No path changes detected");
+        const next = this.normalizePaths(nextRaw);
+        if (JSON.stringify(current) === JSON.stringify(next)) {
+            await this.ensurePathDirectories(next);
+            this.applyPathsGlobal(next);
+            new Notice("No path changes");
             return;
         }
 
-        if (migrateData) {
-            await this.migratePaths(current, target);
+        if (migrate) {
+            await this.migratePaths(current, next);
             return;
         }
 
-        await this.ensurePathDirectories(target);
-        await this.updateBaseViews(current, target);
+        await this.ensurePathDirectories(next);
+        await this.updateBaseViews(current, next);
         this.settings.previousPaths = current;
-        this.settings.paths = target;
+        this.settings.paths = next;
         await this.saveSettings();
-        this.applyPathsGlobal(target);
-        new Notice("Obsidian Gym paths saved");
+        this.applyPathsGlobal(next);
+        new Notice("Gym paths saved");
     }
 
-    isWithin(pathValue, root) {
-        const pathNormalized = normalizeVaultPath(pathValue);
-        const rootNormalized = normalizeVaultPath(root);
-        if (!pathNormalized || !rootNormalized) return false;
-        return pathNormalized === rootNormalized || pathNormalized.startsWith(`${rootNormalized}/`);
-    }
+    async planMigration(oldRaw, nextRaw) {
+        const oldPaths = this.derived(oldRaw);
+        const nextPaths = this.derived(nextRaw);
+        const mappings = this.getMigrationMappings(oldPaths, nextPaths);
+        const result = { movable: 0, conflicts: 0, missing: 0 };
 
-    async migratePathAsset(fromPath, toPath) {
-        const sourcePath = normalizeVaultPath(fromPath);
-        const destinationPath = normalizeVaultPath(toPath);
-
-        if (!sourcePath || !destinationPath || sourcePath === destinationPath) {
-            return { moved: 0, conflicts: 0, missing: 0, errors: 0 };
-        }
-
-        const source = this.app.vault.getAbstractFileByPath(sourcePath);
-        if (!source) {
-            return { moved: 0, conflicts: 0, missing: 0, errors: 0 };
-        }
-
-        if (source instanceof TFolder) {
-            return this.migrateFolder(sourcePath, destinationPath);
-        }
-
-        if (source instanceof TFile) {
-            return this.migrateSingleFile(source, destinationPath);
-        }
-
-        return { moved: 0, conflicts: 0, missing: 0, errors: 1 };
-    }
-
-    async migrateFolder(fromRoot, toRoot) {
-        const sourceRoot = normalizeVaultPath(fromRoot);
-        const targetRoot = normalizeVaultPath(toRoot);
-
-        if (!sourceRoot || !targetRoot || sourceRoot === targetRoot) {
-            return { moved: 0, conflicts: 0, missing: 0, errors: 0 };
-        }
-
-        const exists = await this.app.vault.adapter.exists(sourceRoot);
-        if (!exists) {
-            return { moved: 0, conflicts: 0, missing: 0, errors: 0 };
-        }
-
-        await this.ensureFolder(targetRoot);
-
-        const files = this.app.vault.getFiles()
-            .filter(file => this.isWithin(file.path, sourceRoot))
-            .sort((a, b) => a.path.length - b.path.length);
-
-        const result = { moved: 0, conflicts: 0, missing: 0, errors: 0 };
-
-        for (const file of files) {
-            const rel = file.path.slice(sourceRoot.length).replace(/^\//, "");
-            const destinationPath = joinVaultPath(targetRoot, rel);
-
-            if (this.app.vault.getAbstractFileByPath(destinationPath)) {
-                result.conflicts += 1;
+        for (const mapping of mappings) {
+            if (mapping.from === mapping.to) continue;
+            const source = this.app.vault.getAbstractFileByPath(mapping.from);
+            if (!source) {
+                result.missing += 1;
                 continue;
             }
-
-            try {
-                await this.ensureFolder(parentPath(destinationPath));
-                await this.app.fileManager.renameFile(file, destinationPath);
-                result.moved += 1;
-            } catch (error) {
-                console.error("Failed to migrate file", file.path, error);
-                result.errors += 1;
+            if (source instanceof TFolder) {
+                for (const file of this.app.vault.getFiles().filter(file => this.isWithin(file.path, mapping.from))) {
+                    let rel = file.path.slice(mapping.from.length);
+                    if (rel.startsWith("/")) rel = rel.slice(1);
+                    const target = joinVaultPath(mapping.to, rel);
+                    if (this.app.vault.getAbstractFileByPath(target)) result.conflicts += 1;
+                    else result.movable += 1;
+                }
+            } else if (source instanceof TFile) {
+                if (this.app.vault.getAbstractFileByPath(mapping.to)) result.conflicts += 1;
+                else result.movable += 1;
             }
         }
-
         return result;
     }
 
-    async migrateSingleFile(sourceFile, destinationPathRaw) {
-        const destinationPath = normalizeVaultPath(destinationPathRaw);
-        if (!destinationPath || sourceFile.path === destinationPath) {
-            return { moved: 0, conflicts: 0, missing: 0, errors: 0 };
-        }
-
-        if (this.app.vault.getAbstractFileByPath(destinationPath)) {
-            return { moved: 0, conflicts: 1, missing: 0, errors: 0 };
-        }
-
-        try {
-            await this.ensureFolder(parentPath(destinationPath));
-            await this.app.fileManager.renameFile(sourceFile, destinationPath);
-            return { moved: 1, conflicts: 0, missing: 0, errors: 0 };
-        } catch (error) {
-            console.error("Failed to migrate file", sourceFile.path, error);
-            return { moved: 0, conflicts: 0, missing: 0, errors: 1 };
-        }
+    getMigrationMappings(oldPaths, nextPaths) {
+        return [
+            { from: oldPaths.exercisesRoot, to: nextPaths.exercisesRoot },
+            { from: oldPaths.workoutTemplatesRoot, to: nextPaths.workoutTemplatesRoot },
+            { from: oldPaths.workoutsRoot, to: nextPaths.workoutsRoot }
+        ].filter((entry, index, list) =>
+            entry.from && entry.to && list.findIndex(other => other.from === entry.from && other.to === entry.to) === index
+        ).sort((a, b) => b.from.length - a.from.length);
     }
 
-    async migratePaths(oldPathsRaw, newPathsRaw) {
-        const oldPaths = this.normalizePaths(oldPathsRaw);
-        const newPaths = this.normalizePaths(newPathsRaw);
-
-        const changed = JSON.stringify(oldPaths) !== JSON.stringify(newPaths);
-        if (!changed) {
+    async migratePaths(oldRaw, nextRaw) {
+        const oldPaths = this.derived(oldRaw);
+        const nextPaths = this.derived(nextRaw);
+        if (JSON.stringify(this.normalizePaths(oldPaths)) === JSON.stringify(this.normalizePaths(nextPaths))) {
             new Notice("No path changes to migrate");
             return;
         }
 
-        const summary = { moved: 0, conflicts: 0, missing: 0, errors: 0 };
-
-        const folderEntries = [
-            { from: oldPaths.exercisesRoot, to: newPaths.exercisesRoot },
-            { from: oldPaths.workoutTemplatesRoot, to: newPaths.workoutTemplatesRoot },
-            { from: oldPaths.workoutsRoot, to: newPaths.workoutsRoot },
-            { from: oldPaths.programsRoot || oldPaths.programsOutputRoot, to: newPaths.programsRoot }
-        ];
-
-        for (const entry of folderEntries) {
-            const result = await this.migrateFolder(entry.from, entry.to);
-            summary.moved += result.moved;
-            summary.conflicts += result.conflicts;
-            summary.missing += result.missing;
-            summary.errors += result.errors;
+        const summary = { moved: 0, conflicts: 0, errors: 0 };
+        const mappings = this.getMigrationMappings(oldPaths, nextPaths);
+        for (const mapping of mappings) {
+            if (mapping.from === mapping.to) continue;
+            const source = this.app.vault.getAbstractFileByPath(mapping.from);
+            if (!source) continue;
+            if (source instanceof TFolder) {
+                const files = this.app.vault.getFiles()
+                    .filter(file => this.isWithin(file.path, mapping.from))
+                    .sort((a, b) => a.path.length - b.path.length);
+                for (const file of files) {
+                    let rel = file.path.slice(mapping.from.length);
+                    if (rel.startsWith("/")) rel = rel.slice(1);
+                    const target = joinVaultPath(mapping.to, rel);
+                    if (this.app.vault.getAbstractFileByPath(target)) {
+                        summary.conflicts += 1;
+                        continue;
+                    }
+                    try {
+                        await this.ensureFolder(parentPath(target));
+                        await this.app.fileManager.renameFile(file, target);
+                        summary.moved += 1;
+                    } catch (error) {
+                        console.error("Gym migration failed for", file.path, error);
+                        summary.errors += 1;
+                    }
+                }
+            } else if (source instanceof TFile) {
+                if (this.app.vault.getAbstractFileByPath(mapping.to)) {
+                    summary.conflicts += 1;
+                } else {
+                    try {
+                        await this.ensureFolder(parentPath(mapping.to));
+                        await this.app.fileManager.renameFile(source, mapping.to);
+                        summary.moved += 1;
+                    } catch (error) {
+                        summary.errors += 1;
+                    }
+                }
+            }
         }
 
-        const fileEntries = [
-            { from: oldPaths.exerciseCategoriesPath, to: newPaths.exerciseCategoriesPath },
-            { from: oldPaths.workoutCategoriesPath, to: newPaths.workoutCategoriesPath },
-            { from: oldPaths.programTemplatePath, to: newPaths.programTemplatePath },
-            { from: oldPaths.startTemplatePath, to: newPaths.startTemplatePath },
-            { from: oldPaths.endTemplatePath, to: newPaths.endTemplatePath },
-            { from: oldPaths.customTemplatePath, to: newPaths.customTemplatePath }
-        ];
-
-        for (const entry of fileEntries) {
-            const result = await this.migratePathAsset(entry.from, entry.to);
-            summary.moved += result.moved;
-            summary.conflicts += result.conflicts;
-            summary.missing += result.missing;
-            summary.errors += result.errors;
-        }
-
-        await this.ensurePathDirectories(newPaths);
-        await this.updateBaseViews(oldPaths, newPaths);
-
-        this.settings.previousPaths = oldPaths;
-        this.settings.paths = newPaths;
+        await this.ensurePathDirectories(nextPaths);
+        await this.updateBaseViews(oldPaths, nextPaths);
+        this.settings.previousPaths = this.normalizePaths(oldPaths);
+        this.settings.paths = this.normalizePaths(nextPaths);
         await this.saveSettings();
-        this.applyPathsGlobal(newPaths);
-
-        new Notice(
-            `Gym migration complete: moved ${summary.moved}, conflicts ${summary.conflicts}, errors ${summary.errors}`,
-            10000
-        );
+        this.applyPathsGlobal(nextPaths);
+        new Notice("Gym migration complete: moved " + summary.moved + ", conflicts " + summary.conflicts + ", errors " + summary.errors, 10000);
     }
 
-    async updateBaseViews(oldPathsRaw, newPathsRaw) {
-        const oldPaths = this.normalizePaths(oldPathsRaw);
-        const newPaths = this.normalizePaths(newPathsRaw);
 
-        const filesToUpdate = [
-            "Exercises List.base",
-            "Workouts List.base",
-            "Workouts History.base",
-            "Program List.base",
-            "Program History.base"
+    async auditGymData() {
+        const paths = this.derived(this.settings.paths);
+        const markdown = this.app.vault.getMarkdownFiles();
+        const fm = file => this.app.metadataCache.getFileCache(file)?.frontmatter || {};
+        const tags = file => {
+            const value = fm(file).tags || [];
+            return Array.isArray(value) ? value : [value];
+        };
+
+        const exercises = markdown.filter(file =>
+            file.path.startsWith(paths.exercisesRoot + "/") &&
+            tags(file).includes("exercise") &&
+            !fm(file).workout_id
+        );
+        const exerciseIds = new Map();
+        const missingExerciseIds = [];
+        for (const file of exercises) {
+            const id = fm(file).id;
+            if (id === null || id === undefined || id === "") missingExerciseIds.push(file.path);
+            else {
+                const key = String(id);
+                if (!exerciseIds.has(key)) exerciseIds.set(key, []);
+                exerciseIds.get(key).push(file.path);
+            }
+        }
+        const duplicateIds = [...exerciseIds.entries()].filter(([, files]) => files.length > 1);
+
+        const routines = markdown.filter(file =>
+            file.path.startsWith(paths.workoutTemplatesRoot + "/") && tags(file).includes("workout")
+        );
+        const brokenRoutineRefs = [];
+        for (const file of routines) {
+            const ids = Array.isArray(fm(file).exercises) ? fm(file).exercises : [];
+            for (const id of [...new Set(ids.map(String))]) {
+                if (!exerciseIds.has(id)) brokenRoutineRefs.push({ routine: file.path, id });
+            }
+        }
+
+        const sessions = markdown.filter(file =>
+            file.path.startsWith(paths.workoutsRoot + "/") &&
+            !file.path.includes("/Log/") &&
+            tags(file).includes("workout")
+        );
+        const sessionIds = new Set();
+        const missingSessionIds = [];
+        for (const file of sessions) {
+            const id = fm(file).id;
+            if (!id) missingSessionIds.push(file.path);
+            else sessionIds.add(String(id));
+        }
+
+        const logs = markdown.filter(file =>
+            file.path.startsWith(paths.workoutsRoot + "/") && file.path.includes("/Log/")
+        );
+        const orphanLogs = logs.filter(file => {
+            const workoutId = fm(file).workout_id;
+            return workoutId && !sessionIds.has(String(workoutId));
+        });
+
+        const lines = [
+            "# Obsidian Gym Audit",
+            "",
+            "Generated: " + new Date().toLocaleString(),
+            "",
+            "## Summary",
+            "",
+            "- Exercise definitions: " + exercises.length,
+            "- Routines: " + routines.length,
+            "- Workout sessions: " + sessions.length,
+            "- Log files: " + logs.length,
+            "- Missing exercise IDs: " + missingExerciseIds.length,
+            "- Duplicate exercise IDs: " + duplicateIds.length,
+            "- Broken routine references: " + brokenRoutineRefs.length,
+            "- Missing workout IDs: " + missingSessionIds.length,
+            "- Orphan logs: " + orphanLogs.length,
+            "",
+            "## Missing exercise IDs",
+            ...(missingExerciseIds.length ? missingExerciseIds.map(value => "- [[" + value + "]]") : ["- None"]),
+            "",
+            "## Duplicate exercise IDs",
+            ...(duplicateIds.length ? duplicateIds.flatMap(([id, files]) => ["- " + id, ...files.map(value => "  - [[" + value + "]]")]) : ["- None"]),
+            "",
+            "## Broken routine references",
+            ...(brokenRoutineRefs.length ? brokenRoutineRefs.map(item => "- [[" + item.routine + "]] -> missing exercise id " + item.id) : ["- None"]),
+            "",
+            "## Missing workout IDs",
+            ...(missingSessionIds.length ? missingSessionIds.map(value => "- [[" + value + "]]") : ["- None"]),
+            "",
+            "## Orphan logs",
+            ...(orphanLogs.length ? orphanLogs.map(file => "- [[" + file.path + "]]") : ["- None"])
         ];
 
-        for (const filePath of filesToUpdate) {
-            const exists = await this.app.vault.adapter.exists(filePath);
-            if (!exists) continue;
+        const reportPath = "Obsidian Gym Audit.md";
+        const existing = this.app.vault.getAbstractFileByPath(reportPath);
+        if (existing instanceof TFile) await this.app.vault.modify(existing, lines.join("\n"));
+        else await this.app.vault.create(reportPath, lines.join("\n"));
 
-            let content = await this.app.vault.adapter.read(filePath);
-            const original = content;
+        const issues = missingExerciseIds.length + duplicateIds.length + brokenRoutineRefs.length + missingSessionIds.length + orphanLogs.length;
+        new Notice("Gym audit complete: " + issues + " issue(s). See Obsidian Gym Audit.", 10000);
+    }
 
-            content = replaceAllLiteral(content, oldPaths.exercisesRoot, newPaths.exercisesRoot);
-            content = replaceAllLiteral(content, oldPaths.workoutTemplatesRoot, newPaths.workoutTemplatesRoot);
-            content = replaceAllLiteral(content, oldPaths.workoutsRoot, newPaths.workoutsRoot);
-            content = replaceAllLiteral(content, oldPaths.programsOutputRoot, newPaths.programsRoot);
-            content = replaceAllLiteral(content, oldPaths.programsRoot, newPaths.programsRoot);
+    async updateBaseViews(oldRaw, nextRaw) {
+        const oldPaths = this.derived(oldRaw);
+        const nextPaths = this.derived(nextRaw);
+        const replacements = [
+            [oldPaths.exercisesRoot, nextPaths.exercisesRoot],
+            [oldPaths.workoutTemplatesRoot, nextPaths.workoutTemplatesRoot],
+            [oldPaths.workoutsRoot, nextPaths.workoutsRoot]
+        ].filter(([from, to]) => from && to && from !== to);
 
-            if (content !== original) {
-                await this.app.vault.adapter.write(filePath, content);
-            }
+        for (const path of ["Exercises List.base", "Workouts List.base", "Workouts History.base"]) {
+            const file = this.app.vault.getAbstractFileByPath(path);
+            if (!(file instanceof TFile)) continue;
+            let content = await this.app.vault.read(file);
+            const tokens = replacements.map((_, index) => "__GYM_PATH_" + index + "__");
+            replacements.forEach(([from], index) => { content = content.split(from).join(tokens[index]); });
+            replacements.forEach(([, to], index) => { content = content.split(tokens[index]).join(to); });
+            await this.app.vault.modify(file, content);
         }
     }
 }
@@ -376,80 +401,48 @@ class ObsidianGymSettingsTab extends PluginSettingTab {
     constructor(app, plugin) {
         super(app, plugin);
         this.plugin = plugin;
+        this.draft = { ...plugin.settings.paths };
     }
 
-    display() {
-        const { containerEl } = this;
-        containerEl.empty();
+    pathDefinition(name, desc, key, placeholder) {
+        return {
+            name,
+            desc,
+            render: setting => setting.addText(text => text
+                .setPlaceholder(placeholder)
+                .setValue(this.draft[key] || "")
+                .onChange(value => { this.draft[key] = normalizeVaultPath(value); }))
+        };
+    }
 
-        const draft = { ...this.plugin.settings.paths };
-
-        containerEl.createEl("h2", { text: "Obsidian Gym Paths" });
-        containerEl.createEl("p", {
-            text: "All fields are independent. Use vault-relative paths and mix any structure you want."
-        });
-
-        new Setting(containerEl)
-            .setName("Exercises root")
-            .setDesc("Folder where exercise templates are saved and loaded")
-            .addText(text => text
-                .setPlaceholder("Templates/exercises")
-                .setValue(draft.exercisesRoot)
-                .onChange(value => draft.exercisesRoot = normalizeVaultPath(value)));
-
-        new Setting(containerEl)
-            .setName("Template notes folder")
-            .setDesc("Single folder for Start.md, End.md, and Custom.md")
-            .addText(text => text
-                .setPlaceholder("Templates/exercises")
-                .setValue(draft.templateNotesRoot || draft.exercisesRoot)
-                .onChange(value => draft.templateNotesRoot = normalizeVaultPath(value)));
-
-        new Setting(containerEl)
-            .setName("Workout templates root")
-            .setDesc("Folder where workout routine templates are saved and selected")
-            .addText(text => text
-                .setPlaceholder("Templates/Workouts")
-                .setValue(draft.workoutTemplatesRoot)
-                .onChange(value => draft.workoutTemplatesRoot = normalizeVaultPath(value)));
-
-        new Setting(containerEl)
-            .setName("Workouts root")
-            .setDesc("Folder where generated daily workouts are created")
-            .addText(text => text
-                .setPlaceholder("Workouts")
-                .setValue(draft.workoutsRoot)
-                .onChange(value => draft.workoutsRoot = normalizeVaultPath(value)));
-
-        new Setting(containerEl)
-            .setName("Programs folder")
-            .setDesc("Single folder for program-template.md and created program notes")
-            .addText(text => text
-                .setPlaceholder("Templates/programs")
-                .setValue(draft.programsRoot || draft.programsOutputRoot)
-                .onChange(value => draft.programsRoot = normalizeVaultPath(value)));
-
-        new Setting(containerEl)
-            .setName("Save path settings")
-            .setDesc("Applies new paths and auto-creates missing folders for writable targets")
-            .addButton(button => button
-                .setButtonText("Save")
-                .setCta()
-                .onClick(async () => {
-                    await this.plugin.savePathChanges(draft, false);
-                }));
-
-        new Setting(containerEl)
-            .setName("Save and migrate existing data")
-            .setDesc("Moves files/folders to new configured paths when possible")
-            .addButton(button => button
-                .setButtonText("Save + Migrate")
-                .setWarning()
-                .onClick(async () => {
-                    const confirmed = window.confirm("This moves existing gym files to the new configured paths. Continue?");
-                    if (!confirmed) return;
-                    await this.plugin.savePathChanges(draft, true);
-                }));
+    getSettingDefinitions() {
+        return [
+            this.pathDefinition("Exercises root", "Exercise definitions and category library.", "exercisesRoot", DEFAULT_PATHS.exercisesRoot),
+            this.pathDefinition("Workout templates root", "Saved workout routines.", "workoutTemplatesRoot", DEFAULT_PATHS.workoutTemplatesRoot),
+            this.pathDefinition("Workouts root", "Generated workout sessions and logs.", "workoutsRoot", DEFAULT_PATHS.workoutsRoot),
+            {
+                name: "Save paths",
+                desc: "Apply path changes to new operations and update Base views.",
+                render: setting => setting.addButton(button => button
+                    .setButtonText("Save")
+                    .setCta()
+                    .onClick(async () => {
+                        await this.plugin.savePathChanges(this.draft, false);
+                        this.draft = { ...this.plugin.settings.paths };
+                    }))
+            },
+            {
+                name: "Save + migrate",
+                desc: "Move existing gym files to the new paths. Run the preview command first if you want a conflict count.",
+                render: setting => setting.addButton(button => button
+                    .setButtonText("Migrate")
+                    .setWarning()
+                    .onClick(async () => {
+                        await this.plugin.savePathChanges(this.draft, true);
+                        this.draft = { ...this.plugin.settings.paths };
+                    }))
+            }
+        ];
     }
 }
 

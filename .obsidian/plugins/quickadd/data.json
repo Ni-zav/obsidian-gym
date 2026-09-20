@@ -21,26 +21,6 @@
       "runOnStartup": false
     },
     {
-      "id": "a6ab3055-95f7-446f-a841-31bbb1b49e8e",
-      "name": "Create Program",
-      "type": "Macro",
-      "command": true,
-      "macro": {
-        "id": "ec05695f-d656-46f1-b8c5-90cb1aba06b3",
-        "name": "Create Program",
-        "commands": [
-          {
-            "name": "createProgram",
-            "type": "UserScript",
-            "id": "30d8fe05-a29c-4d8e-9e52-5287494f5d45",
-            "path": "_js/scripts/createProgram.js",
-            "settings": {}
-          }
-        ]
-      },
-      "runOnStartup": false
-    },
-    {
       "id": "aeaf28e2-ba08-4988-948d-79b10bde8deb",
       "name": "Add Exercise to Library",
       "type": "Macro",
@@ -242,20 +222,6 @@
           "type": "UserScript",
           "id": "70fd2b57-314d-4f9a-b7a1-90019a6a0869",
           "path": "_js/scripts/log-exercise.js",
-          "settings": {}
-        }
-      ],
-      "runOnStartup": false
-    },
-    {
-      "name": "Create Program",
-      "id": "ec05695f-d656-46f1-b8c5-90cb1aba06b3",
-      "commands": [
-        {
-          "name": "createProgram",
-          "type": "UserScript",
-          "id": "30d8fe05-a29c-4d8e-9e52-5287494f5d45",
-          "path": "_js/scripts/createProgram.js",
           "settings": {}
         }
       ],

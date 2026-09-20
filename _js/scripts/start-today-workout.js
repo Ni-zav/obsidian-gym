@@ -1,149 +1,34 @@
-function normalizePath(pathValue) {
-    if (!pathValue || typeof pathValue !== "string") return "";
-    return pathValue.replace(/\\/g, '/').trim().replace(/^\/+/, '').replace(/\/+$/, '');
-}
-
-function joinVaultPath(...segments) {
-    return segments
-        .filter(Boolean)
-        .map((segment, index) => {
-            const value = String(segment);
-            if (index === 0) return value.replace(/\/+$/, '');
-            return value.replace(/^\/+/, '').replace(/\/+$/, '');
-        })
-        .join('/');
-}
-
-function getPathConfig() {
-    const overrides = globalThis?.obsidianGymPaths || {};
-    return {
-        workoutTemplatesRoot: normalizePath(overrides.workoutTemplatesRoot) || "Templates/Workouts",
-        workoutsRoot: normalizePath(overrides.workoutsRoot) || "Workouts"
-    };
-}
-
 module.exports = async function startTodaysWorkout(params) {
+    const core = globalThis.customJS?.gymCore;
+    if (!core) throw new Error("Gym core is not loaded. Reload Obsidian.");
+
     try {
-        // Validate required parameters
-        if (!params || !params.obsidian || !params.quickAddApi || !app.plugins.plugins["templater-obsidian"]) {
-            throw new Error("Missing required dependencies");
-        }
-
-        console.log("Script: Starting today's workout.");
-
-        const obsidian = params.obsidian;
-        const pathConfig = getPathConfig();
-        const templater = app.plugins.plugins["templater-obsidian"].templater;
-        const cache = app.metadataCache;
-        const files = app.vault.getMarkdownFiles();
-        let workouts = [];
-
-        // Only collect workout templates from configured workout templates root
-        for(const file of files) {
-            if (!file.path.startsWith(`${pathConfig.workoutTemplatesRoot}/`)) continue;
-            
-            const file_cache = cache.getFileCache(file);
-            if (!file_cache) continue;
-            
-            const tags = obsidian.getAllTags(file_cache);
-            if (!tags) continue;
-            
-            let metadata = cache.getFileCache(file);
-            if (!metadata || !metadata.frontmatter) continue;
-
-            if (tags.includes("#workout")) {
-                workouts.push(file);
-            }
-        }
-
-        if (workouts.length === 0) {
-            throw new Error(`No workout templates found in ${pathConfig.workoutTemplatesRoot}/`);
-        }
-
-        function sortworkout(a, b) {
-            return a.basename.localeCompare(b.basename, undefined, {numeric: true, sensitivity: 'base'});
-        }
-
-        const hemmagym = workouts.filter(w => w.basename.includes('Hemmagym')).sort(sortworkout);
-        const gym = workouts.filter(w => !w.basename.includes('Hemmagym')).sort(sortworkout);
-        workouts = [].concat(gym, hemmagym);
-
-        // Display files to select
-        const notesDisplay = await params.quickAddApi.suggester(
-            (file) => file.basename,
-            workouts
+        const workouts = core.getWorkoutTemplates().sort((a, b) =>
+            a.basename.localeCompare(b.basename, undefined, { numeric: true, sensitivity: "base" })
         );
-
-        if (!notesDisplay) {
-            console.log("User cancelled workout selection");
-            new Notice("Workout selection cancelled");
-            params.variables = { notePath: "" };
+        if (!workouts.length) {
+            new Notice("No workout routines found in " + core.paths.workoutTemplatesRoot);
             return;
         }
 
-        // Expand template
-        console.log("Creating note from template: " + notesDisplay.path);
-        let templateFile = app.vault.getAbstractFileByPath(notesDisplay.path);
-        if (!templateFile) {
-            throw new Error("Template file not found: " + notesDisplay.path);
-        }
+        const selected = await params.quickAddApi.suggester(
+            file => {
+                const fm = core.frontmatter(file);
+                const detail = [fm.workout_type, fm.workout_place].filter(Boolean).join(" · ");
+                return file.basename + (detail ? " — " + detail : "");
+            },
+            workouts,
+            "Start workout"
+        );
+        if (!selected) return;
 
-        let now = moment(new Date());
-        // Strip all extensions and ensure we only add one .md
-        let nameWoExt = templateFile.name.split('.')[0];
-        let targetPath = joinVaultPath(pathConfig.workoutsRoot, `${now.format("YYYY-MM-DD")} - ${nameWoExt}`);
-        
-        // Create folders if they don't exist
-        if (!await app.vault.exists(targetPath)) {
-            await app.vault.createFolder(targetPath);
-            await app.vault.createFolder(targetPath + '/Log');
-        }
-
-        let targetFolder = app.vault.getAbstractFileByPath(targetPath);
-        if (!targetFolder) {
-            throw new Error("Failed to create or access target folder: " + targetPath);
-        }
-
-        // Create new file from template
-        let fileName = nameWoExt;  // nameWoExt is already clean, just add one .md
-        let newNote;
-
-        if (!await app.vault.exists(targetPath + '/' + fileName)) {
-            newNote = await templater.create_new_note_from_template(templateFile, targetFolder, fileName, false);
-            if (!newNote) {
-                throw new Error("Failed to create new note from template");
-            }
-
-            // Add id to FrontMatter
-            let content = await app.vault.read(newNote);
-            const regex = /---\r?\n+/m;
-            const subst = '---\nid: ' + generateGuid() + '\n';
-            content = content.replace(regex, subst);
-            await app.vault.modify(newNote, content);
-        } else {
-            params.variables = { notePath: "" };
-            return;
-        }
-
-        // Pass selected note's path to notes variable
-        params.variables = { notePath: newNote.path };
-        console.log("Successfully created workout: " + newNote.path);
-
-        // Open the new note
-        const leaf = app.workspace.getLeaf(false);
-        await leaf.openFile(newNote);
-
+        const session = await core.createWorkoutSession(selected);
+        await core.app.workspace.getLeaf(false).openFile(session);
+        params.variables = { notePath: session.path };
+        new Notice("Workout started");
     } catch (error) {
-        console.error("Error creating workout:", error);
-        // Re-throw the error to be handled by the calling function
-        throw error;
+        console.error("Failed to start workout", error);
+        new Notice("Could not start workout: " + error.message);
+        params.variables = { notePath: "" };
     }
-}
-
-function generateGuid() {
-    let result = '';
-    for(let j = 0; j < 6; j++) {
-        result += Math.floor(Math.random() * 16).toString(16).toLowerCase();
-    }
-    return result;
-}
+};

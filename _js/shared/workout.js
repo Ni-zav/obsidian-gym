@@ -1,1135 +1,326 @@
 class workout {
-    constructor() {
-        // Get utils and exercise-library from customJS if available
-        this.utils = window.customJS?.utils || new utils();
-        this.exerciseLibrary = window.customJS?.exerciseLibrary || new exerciseLibrary();
+    get app() {
+        return globalThis.customJS?.app || globalThis.app;
+    }
+
+    get core() {
+        return globalThis.customJS?.gymCore;
     }
 
     renderHeader(context) {
-        if (!context?.dv) return;
+        if (!context?.dv || !this.core) return;
         const current = context.dv.current();
-        
-        // Get the workout metadata
-        const metadata = app.metadataCache.getFileCache(current.file);
-        const workoutTitle = metadata?.frontmatter?.workout_title || '';
-        const workoutType = metadata?.frontmatter?.workout_type;
-        const workoutPlace = metadata?.frontmatter?.workout_place;
-        
-        // If we have a date, show it with relative formatting
-        let headerText = workoutTitle;
-        if (current.date) {
-            const timeStamp = moment(new Date(current.date));
-            const diff_days = timeStamp.diff(new Date(), "days");
-            
-            headerText += ' - ' + timeStamp.format('YYYY-MM-DD');
-            if (diff_days === 0) headerText += " (today)";
-            else if (diff_days === -1) headerText += " (yesterday)";
-            else if (diff_days === -2) headerText += " (day before yesterday)";
+        const file = this.app.vault.getAbstractFileByPath(current.file.path || current.file);
+        const fm = this.core.frontmatter(file);
+        const title = fm.workout_title || file?.basename || "Workout";
+        const date = fm.date || "";
+        context.dv.header(1, date ? title + " · " + date : title);
+
+        const details = [];
+        if (fm.workout_type) details.push(fm.workout_type);
+        if (fm.workout_place) details.push(fm.workout_place);
+        if (fm.duration) details.push(fm.duration);
+        if (details.length) context.dv.paragraph(details.join(" · "));
+
+        const remaining = this.core.getRemainingExerciseIds(file).length;
+        const completed = (Array.isArray(fm.exercises) ? fm.exercises.length : 0) - remaining;
+        if (Array.isArray(fm.exercises) && fm.exercises.length) {
+            context.dv.paragraph("Progress: " + completed + "/" + fm.exercises.length + " sets");
         }
 
-        // Render the main header
-        context.dv.header(1, headerText);
-        
-        // Add workout type and place info if available
-        if (workoutType || workoutPlace) {
-            const details = [];
-            if (workoutType) details.push(`Type: ${workoutType}`);
-            if (workoutPlace) details.push(`Location: ${workoutPlace}`);
-            context.dv.paragraph(details.join(' | '));
+        if (context.container) {
+            const actions = context.container.createEl("div", { cls: "workout-actions-row" });
+            if (fm.status !== "completed") {
+                const finish = actions.createEl("button", { text: "Finish workout", cls: "mod-cta" });
+                finish.addEventListener("click", async () => {
+                    await this.core.finishWorkout(file);
+                    new Notice("Workout finished");
+                });
+                const undo = actions.createEl("button", { text: "Undo last set" });
+                undo.addEventListener("click", async () => {
+                    const removed = await this.core.deleteLastSet(file);
+                    new Notice(removed ? "Last set removed" : "No set to undo");
+                });
+            } else {
+                actions.createEl("span", { text: "Completed", cls: "gym-status-complete" });
+            }
+        }
+    }
+
+    renderHomeActions(context) {
+        if (!context?.container || !this.core) return;
+        const container = context.container;
+        const active = this.core.getActiveWorkouts();
+        const actions = container.createEl("div", { cls: "gym-home-actions" });
+
+        if (active.length) {
+            const latest = active[0];
+            const fm = this.core.frontmatter(latest);
+            const resume = actions.createEl("button", {
+                text: "▶ Resume " + (fm.workout_title || latest.basename),
+                cls: "mod-cta gym-primary-action"
+            });
+            resume.addEventListener("click", () => this.app.workspace.getLeaf(false).openFile(latest));
+            if (active.length > 1) {
+                actions.createEl("span", { text: active.length + " active workouts", cls: "gym-muted" });
+            }
+        } else {
+            const start = actions.createEl("button", { text: "▶ Start workout", cls: "mod-cta gym-primary-action" });
+            start.addEventListener("click", () => this.app.commands.executeCommandById("quickadd:choice:c547bcae-f9e1-462e-be41-5c729807d8ac"));
+        }
+
+        const free = actions.createEl("button", { text: "＋ Free workout" });
+        free.addEventListener("click", () => this.app.commands.executeCommandById("quickadd:choice:f7e2c8d1-8a9c-4b5d-9e7f-3c1a2b4d6e8f"));
+        this.renderHomeSummary(context);
+    }
+
+    renderHomeSummary(context) {
+        const root = this.core.paths.workoutsRoot + "/";
+        const sessions = this.app.vault.getMarkdownFiles()
+            .filter(file => file.path.startsWith(root) && !file.path.includes("/Log/"))
+            .map(file => ({ file, fm: this.core.frontmatter(file) }))
+            .filter(item => this.core.tags(item.fm).includes("workout"))
+            .sort((a, b) => new Date(b.fm.started_at || b.fm.date || 0) - new Date(a.fm.started_at || a.fm.date || 0));
+
+        const weekAgo = Date.now() - 7 * 86400000;
+        const week = sessions.filter(item => new Date(item.fm.started_at || item.fm.date || 0).getTime() >= weekAgo);
+        const totalSets = week.reduce((sum, item) => sum + Object.values(item.fm.ExerciseCounts || {}).reduce((a, b) => a + Number(b || 0), 0), 0);
+        const totalVolume = week.reduce((sum, item) => sum + Number(item.fm["Total Volume"] || 0), 0);
+        const totalMinutes = week.reduce((sum, item) => sum + Number(item.fm.duration_minutes || 0), 0);
+
+        context.dv.header(3, "This week");
+        context.dv.table(["Sessions", "Sets", "Volume", "Time"], [[
+            week.length,
+            totalSets,
+            Math.round(totalVolume) + " kg×reps",
+            totalMinutes + " min"
+        ]]);
+
+        if (sessions.length) {
+            context.dv.header(3, "Recent");
+            context.dv.table(["Workout", "Date", "Duration", "Volume"], sessions.slice(0, 5).map(item => [
+                context.dv.fileLink(item.file.path),
+                item.fm.date || "",
+                item.fm.duration || "",
+                Math.round(Number(item.fm["Total Volume"] || 0))
+            ]));
         }
     }
 
     renderRemaining(context) {
-        if (!context?.dv) return;
+        if (!context?.dv || !this.core) return;
         const current = context.dv.current();
-        const metadata = app.metadataCache.getFileCache(current.file);
-        if (!metadata?.frontmatter) return;
-
-        const exerciseIds = metadata.frontmatter.exercises || [];
-        const workoutId = metadata.frontmatter.id;
-
-        // Debug: Log all #exercise pages for this workout
-        const allExercisePages = context.dv.pages("#exercise").where(e => e.workout_id === workoutId).array();
-        console.log('All #exercise pages for workoutId', workoutId, allExercisePages);
-        // Hide remaining exercises if workout has ended
-        const hasEndedArr = context.dv.pages("#exercise")
-            .where(e => e.workout_id === workoutId && e.exercise === 'Workout end').array();
-        console.log('Workout end entries found:', hasEndedArr);
-        const hasEnded = hasEndedArr.length > 0;
-        if (hasEnded) {
-            context.container.createEl("p", { text: "Workout ended. No exercises remaining!" });
+        const file = this.app.vault.getAbstractFileByPath(current.file.path || current.file);
+        const fm = this.core.frontmatter(file);
+        if (fm.status === "completed") {
+            context.dv.paragraph("Workout completed.");
             return;
         }
 
-        // Count how many times each exercise ID appears in the planned workout
-        const plannedCounts = {};
-        exerciseIds.forEach(id => {
-            plannedCounts[id] = (plannedCounts[id] || 0) + 1;
+        const remaining = this.core.getRemainingExerciseIds(file);
+        if (!remaining.length) {
+            context.dv.paragraph(Array.isArray(fm.exercises) && fm.exercises.length ? "All planned sets completed." : "Free workout: choose any exercise.");
+            return;
+        }
+
+        const counts = {};
+        for (const id of remaining) counts[id] = (counts[id] || 0) + 1;
+        const orderedUnique = [...new Set(remaining)];
+        const rows = orderedUnique.map(id => {
+            const item = this.core.getExerciseById(id);
+            const ex = item?.fm || {};
+            const timed = ex.timed === true || ex.timed === "true";
+            const target = timed
+                ? (this.core.numberOrNull(ex.default_duration_seconds ?? ex.duration) ? this.core.numberOrNull(ex.default_duration_seconds ?? ex.duration) + " sec" : "—")
+                : (this.core.numberOrNull(ex.default_reps ?? ex.reps) ?? "—");
+            const weight = this.core.numberOrNull(ex.default_weight_kg ?? ex.weight);
+            return [
+                item?.file ? context.dv.fileLink(item.file.path) : (ex.exercise || id),
+                ex.muscle_group || "",
+                ex.equipment || "",
+                target,
+                weight != null ? weight + " kg" : "—",
+                counts[id]
+            ];
         });
-
-        // Get performed exercises and calculate volumes
-        const performedCounts = {};
-        const exerciseVolumes = {};
-        
-        context.dv.pages("#exercise")
-            .where(e => e.workout_id === workoutId)
-            .forEach(e => {
-                const id = app.metadataCache.getFileCache(e.file)?.frontmatter?.id;
-                if (id) {
-                    performedCounts[id] = (performedCounts[id] || 0) + 1;
-                    // Calculate volume if we have both weight and reps
-                    if (e.weight && e.reps) {
-                        exerciseVolumes[id] = (exerciseVolumes[id] || 0) + (Number(e.weight) * Number(e.reps));
-                    }
-                }
-            });
-
-        // Create one entry per unique exercise that still has remaining sets
-        const remainingExercises = [];
-        
-        // Get unique exercise IDs
-        const uniqueIds = [...new Set(exerciseIds)];
-        
-        for (const id of uniqueIds) {
-            const performedCount = performedCounts[id] || 0;
-            const plannedCount = plannedCounts[id] || 0;
-            const remainingCount = Math.max(0, plannedCount - performedCount);
-            
-            if (remainingCount === 0) continue; // Skip if all sets are done
-
-            // Find exercise template
-            const exerciseFile = app.vault.getMarkdownFiles()
-                .find(file => {
-                    const cache = app.metadataCache.getFileCache(file);
-                    return cache?.frontmatter?.id === id;
-                });
-
-            if (!exerciseFile) continue;
-
-            const cache = app.metadataCache.getFileCache(exerciseFile);
-            if (!cache?.frontmatter) continue;
-
-            const volume = exerciseVolumes[id] || 0;
-
-            // Get exercise info (timed or not)
-            const exInfo = this.getExerciseInfo(id);
-            const isTimed = exInfo && (exInfo.timed === true || exInfo.timed === 'true');
-
-            remainingExercises.push({
-                name: exInfo ? exInfo.name : id,
-                muscleGroup: exInfo ? exInfo.muscleGroup : '',
-                equipment: exInfo ? exInfo.equipment : '',
-                repsOrDuration: isTimed ? (exInfo.duration ? `${exInfo.duration} sec` : "~") : (exInfo.reps || "~"),
-                weight: exInfo && exInfo.weight ? `${exInfo.weight} kg` : "~",
-                remainingSets: plannedCounts[id] - (performedCounts[id] || 0)
-            });
-        }
-
-        if (remainingExercises.length === 0) {
-            context.container.createEl("p", { text: "No exercises remaining!" });
-            return;
-        }
-
-        const tableData = remainingExercises.map(ex => [
-            ex.name === "Workout start" ? ex.name : `[[${ex.name}]]`,
-            ex.muscleGroup,
-            ex.equipment,
-            ex.repsOrDuration,
-            ex.weight,
-            ex.remainingSets
-        ]);
-
-        context.dv.table(
-            ["Exercise", "💪🏻-group", "🏋🏼", "Reps/Sec", "Weight", "Sets"],
-            tableData
-        );
+        context.dv.table(["Exercise", "Group", "Equipment", "Target", "Weight", "Sets left"], rows);
     }
 
     renderPerformed(context) {
-        if (!context?.dv) return;
+        if (!context?.dv || !this.core) return;
         const current = context.dv.current();
-        const metadata = app.metadataCache.getFileCache(current.file);
-        if (!metadata?.frontmatter?.id) return;
+        const workoutFile = this.app.vault.getAbstractFileByPath(current.file.path || current.file);
+        const logs = this.core.getWorkoutLogs(workoutFile)
+            .map(file => ({ file, fm: this.core.logFrontmatter(file) }))
+            .filter(item => item.fm.exercise !== "Workout start" && item.fm.exercise !== "Workout end");
 
-        const performed = context.dv.pages("#exercise")
-            .where(e => e.workout_id === metadata.frontmatter.id)
-            .sort(e => e.date);
-
-        // Debug: Log all performed exercises
-        console.log('Performed exercises for workout', metadata.frontmatter.id, performed.array ? performed.array() : performed);
-
-        if (performed.length === 0) {
-            context.container.createEl("p", { text: "No exercises performed yet" });
+        if (!logs.length) {
+            context.dv.paragraph("No sets logged yet.");
             return;
         }
-        // Table: for timed exercises, show duration and volume is duration*weight
-        const tableData = performed.map(e => {
-            const isTimed = e.timed === true || e.timed === 'true';
-            const duration = isTimed ? (Number(e.duration) || 0) : null;
-            const reps = !isTimed ? (e.reps || "~") : null;
-            const weight = e.weight ? `${e.weight} kg` : "~";
-            const volume = isTimed
-                ? (e.weight && duration ? `${e.weight * duration} sec×kg` : "~")
-                : (e.weight && e.reps ? `${e.weight * e.reps} kg×reps` : "~");
-            
+
+        const rows = logs.map(item => {
+            const fm = item.fm;
+            const timed = fm.timed === true || fm.timed === "true";
+            const metric = timed ? ((fm.duration_seconds ?? "—") + " sec") : (fm.reps ?? "—");
+            const volume = timed ? "—" : Math.round((fm.weight_kg || 0) * (fm.reps || 0) * 100) / 100;
+            const when = fm.performed_at || fm.date;
             return [
-                (e.exercise === "Workout start" || e.exercise === "Workout end") ? e.exercise : `[[${e.exercise}]]`,
-                weight,
-                isTimed ? (duration ? duration + ' sec' : '~') : reps,
-                e.effort || "~",
-                moment(e.date).format("HH:mm"),
-                volume
+                fm.exercise || item.file.basename,
+                fm.weight_kg != null ? fm.weight_kg + " kg" : "—",
+                metric,
+                fm.effort ?? "—",
+                when && typeof moment !== "undefined" ? moment(when).format("HH:mm") : "",
+                volume || "—",
+                ""
             ];
         });
+        context.dv.table(["Exercise", "Weight", "Reps / Time", "Effort", "Time", "Volume", "Actions"], rows);
 
-        context.dv.table(
-            ["Exercise", "Weight", "Reps/Sec", "Effort", "Time", "Volume"],
-            tableData
-        );
-        
-        // Add inline icon buttons using event delegation
-        const table = context.container.querySelector('table');
-        if (table) {
-            const tbody = table.querySelector('tbody');
-            if (tbody) {
-                const rows = tbody.querySelectorAll('tr');
-                
-                rows.forEach((row, index) => {
-                    const exercise = performed.array()[index];
-                    if (!exercise) return;
-                    
-                    const isStartOrEnd = exercise.exercise === "Workout start" || exercise.exercise === "Workout end";
-                    
-                    // Create button cell
-                    const buttonCell = document.createElement('td');
-                    buttonCell.style.cssText = `
-                        display: flex;
-                        gap: 6px;
-                        align-items: center;
-                        white-space: nowrap;
-                    `;
-                    
-                    // Edit button (only for regular exercises)
-                    if (!isStartOrEnd) {
-                        const editBtn = document.createElement('button');
-                        editBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/><path d="M20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
-                        editBtn.setAttribute('data-file', exercise.file.path);
-                        editBtn.setAttribute('data-action', 'edit');
-                        editBtn.style.cssText = `
-                            background: none;
-                            border: none;
-                            cursor: pointer;
-                            padding: 4px;
-                            display: flex;
-                            align-items: center;
-                            color: var(--text-normal);
-                            opacity: 0.7;
-                            transition: opacity 0.2s;
-                        `;
-                        editBtn.onmouseover = () => editBtn.style.opacity = '1';
-                        editBtn.onmouseout = () => editBtn.style.opacity = '0.7';
-                        editBtn.onclick = async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            await this.editLogFile(editBtn.getAttribute('data-file'), current.file);
-                        };
-                        buttonCell.appendChild(editBtn);
-                    }
-                    
-                    // Delete button (for all)
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-9l-1 1H5v2h14V4z"/></svg>';
-                    deleteBtn.setAttribute('data-file', exercise.file.path);
-                    deleteBtn.setAttribute('data-action', 'delete');
-                    deleteBtn.style.cssText = `
-                        background: none;
-                        border: none;
-                        cursor: pointer;
-                        padding: 4px;
-                        display: flex;
-                        align-items: center;
-                        color: var(--text-normal);
-                        opacity: 0.7;
-                        transition: opacity 0.2s;
-                    `;
-                    deleteBtn.onmouseover = () => deleteBtn.style.opacity = '1';
-                    deleteBtn.onmouseout = () => deleteBtn.style.opacity = '0.7';
-                    deleteBtn.onclick = async (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        await this.deleteLogFile(deleteBtn.getAttribute('data-file'), current.file);
-                    };
-                    buttonCell.appendChild(deleteBtn);
-                    
-                    // Append button cell to row
-                    row.appendChild(buttonCell);
-                });
-            }
-        }
-    }
-    
-    async editLogFile(logFilePath, workoutFile) {
-        try {
-            const file = app.vault.getAbstractFileByPath(logFilePath);
-            if (!file) return;
-            
-            // Read the current log file
-            const content = await app.vault.read(file);
-            
-            // Extract current values from frontmatter
-            const weightMatch = content.match(/^weight:\s*(\d+(?:\.\d+)?)/m);
-            const repsMatch = content.match(/^reps:\s*(\d+)/m);
-            const effortMatch = content.match(/^effort:\s*(\d+)/m);
-            
-            const currentWeight = weightMatch ? weightMatch[1] : '';
-            const currentReps = repsMatch ? repsMatch[1] : '';
-            const currentEffort = effortMatch ? effortMatch[1] : '';
-            
-            // Create a custom modal dialog using Obsidian's native styles
-            const modalBackdrop = document.createElement('div');
-            modalBackdrop.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background-color: rgba(0, 0, 0, 0.5);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 1000;
-            `;
-            
-            const modalBox = document.createElement('div');
-            modalBox.style.cssText = `
-                background-color: var(--background-secondary);
-                border: 1px solid var(--background-modifier-border);
-                border-radius: 8px;
-                padding: 16px;
-                max-width: 300px;
-                width: 100%;
-                max-height: 80vh;
-                overflow-y: auto;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            `;
-            
-            const title = document.createElement('h2');
-            title.textContent = 'Edit Exercise';
-            title.style.marginTop = '0';
-            title.style.marginBottom = '16px';
-            modalBox.appendChild(title);
-            
-            const form = document.createElement('form');
-            form.style.display = 'flex';
-            form.style.flexDirection = 'column';
-            form.style.gap = '12px';
-            
-            // Weight input
-            const weightLabel = document.createElement('label');
-            weightLabel.addClass('setting-item');
-            const weightLabelText = document.createElement('span');
-            weightLabelText.textContent = 'Weight (kg):';
-            weightLabelText.style.fontWeight = '600';
-            weightLabelText.style.display = 'block';
-            weightLabelText.style.marginBottom = '4px';
-            weightLabel.appendChild(weightLabelText);
-            const weightInput = document.createElement('input');
-            weightInput.type = 'number';
-            weightInput.value = currentWeight;
-            weightInput.step = '0.5';
-            weightInput.placeholder = 'Enter weight';
-            weightInput.addClass('setting-item-control');
-            weightLabel.appendChild(weightInput);
-            form.appendChild(weightLabel);
-            
-            // Reps input
-            const repsLabel = document.createElement('label');
-            repsLabel.addClass('setting-item');
-            const repsLabelText = document.createElement('span');
-            repsLabelText.textContent = 'Reps:';
-            repsLabelText.style.fontWeight = '600';
-            repsLabelText.style.display = 'block';
-            repsLabelText.style.marginBottom = '4px';
-            repsLabel.appendChild(repsLabelText);
-            const repsInput = document.createElement('input');
-            repsInput.type = 'number';
-            repsInput.value = currentReps;
-            repsInput.placeholder = 'Enter reps';
-            repsInput.addClass('setting-item-control');
-            repsLabel.appendChild(repsInput);
-            form.appendChild(repsLabel);
-            
-            // Effort input
-            const effortLabel = document.createElement('label');
-            effortLabel.addClass('setting-item');
-            const effortLabelText = document.createElement('span');
-            effortLabelText.textContent = 'Effort (1-5):';
-            effortLabelText.style.fontWeight = '600';
-            effortLabelText.style.display = 'block';
-            effortLabelText.style.marginBottom = '4px';
-            effortLabel.appendChild(effortLabelText);
-            const effortInput = document.createElement('input');
-            effortInput.type = 'number';
-            effortInput.value = currentEffort;
-            effortInput.min = '1';
-            effortInput.max = '5';
-            effortInput.placeholder = 'Enter effort';
-            effortInput.addClass('setting-item-control');
-            effortLabel.appendChild(effortInput);
-            form.appendChild(effortLabel);
-            
-            // Notes input
-            const notesMatch = content.match(/^note:\s*(.*)$/m);
-            const currentNotes = notesMatch ? notesMatch[1].trim() : '';
-            
-            const notesLabel = document.createElement('label');
-            notesLabel.addClass('setting-item');
-            const notesLabelText = document.createElement('span');
-            notesLabelText.textContent = 'Notes:';
-            notesLabelText.style.fontWeight = '600';
-            notesLabelText.style.display = 'block';
-            notesLabelText.style.marginBottom = '4px';
-            notesLabel.appendChild(notesLabelText);
-            const notesInput = document.createElement('textarea');
-            notesInput.value = currentNotes;
-            notesInput.placeholder = 'Add notes...';
-            notesInput.rows = '2';
-            notesInput.style.cssText = `
-                padding: 8px;
-                background-color: var(--background-primary-alt);
-                border: 1px solid var(--background-modifier-border);
-                border-radius: 4px;
-                color: var(--text-normal);
-                width: 100%;
-                box-sizing: border-box;
-                font-family: inherit;
-                resize: vertical;
-            `;
-            notesLabel.appendChild(notesInput);
-            form.appendChild(notesLabel);
-            
-            // Buttons
-            const buttonContainer = document.createElement('div');
-            buttonContainer.style.cssText = `
-                display: flex;
-                gap: 8px;
-                margin-top: 16px;
-                justify-content: flex-end;
-            `;
-            
-            const saveBtn = document.createElement('button');
-            saveBtn.textContent = 'Save';
-            saveBtn.type = 'button';
-            saveBtn.addClass('mod-cta');
-            saveBtn.addClass('button');
-            
-            const cancelBtn = document.createElement('button');
-            cancelBtn.textContent = 'Cancel';
-            cancelBtn.type = 'button';
-            cancelBtn.addClass('button');
-            
-            buttonContainer.appendChild(saveBtn);
-            buttonContainer.appendChild(cancelBtn);
-            form.appendChild(buttonContainer);
-            
-            modalBox.appendChild(form);
-            modalBackdrop.appendChild(modalBox);
-            
-            // Close modal when clicking outside
-            modalBackdrop.onclick = (e) => {
-                if (e.target === modalBackdrop) {
-                    document.body.removeChild(modalBackdrop);
-                }
-            };
-            
-            saveBtn.onclick = async (e) => {
-                e.preventDefault();
-                
-                // Update the log file with new values
-                const newWeight = weightInput.value || '';
-                const newReps = repsInput.value || '';
-                const newEffort = effortInput.value || '';
-                
-                let updatedContent = content;
-                
-                // Update or add weight
-                if (updatedContent.includes('weight:')) {
-                    updatedContent = updatedContent.replace(/^weight:\s*.+$/m, `weight: ${newWeight}`);
-                } else if (newWeight) {
-                    updatedContent = updatedContent.replace(/^reps:/m, `weight: ${newWeight}\nreps:`);
-                }
-                
-                // Update or add reps
-                if (updatedContent.includes('reps:')) {
-                    updatedContent = updatedContent.replace(/^reps:\s*.+$/m, `reps: ${newReps}`);
-                } else if (newReps) {
-                    updatedContent = updatedContent.replace(/^effort:/m, `reps: ${newReps}\neffort:`);
-                }
-                
-                // Update or add effort
-                if (updatedContent.includes('effort:')) {
-                    updatedContent = updatedContent.replace(/^effort:\s*.+$/m, `effort: ${newEffort}`);
-                }
-                
-                // Update or add notes
-                const newNotes = notesInput.value || '';
-                if (updatedContent.includes('note:')) {
-                    updatedContent = updatedContent.replace(/^note:\s*.*/m, `note: ${newNotes}`);
-                } else if (newNotes) {
-                    updatedContent = updatedContent.replace(/^effort:/m, `note: ${newNotes}\neffort:`);
-                }
-                
-                // Calculate volume
-                if (newWeight && newReps) {
-                    const volume = parseFloat(newWeight) * parseInt(newReps);
-                    if (updatedContent.includes('volume:')) {
-                        updatedContent = updatedContent.replace(/^volume:\s*.+$/m, `volume: ${volume}`);
-                    } else {
-                        updatedContent = updatedContent.replace(/^weight:/m, `volume: ${volume}\nweight:`);
-                    }
-                }
-                
-                await app.vault.modify(file, updatedContent);
-                
-                // Recalculate all metrics
-                await this.recalculateWorkoutMetrics(workoutFile);
-                
-                document.body.removeChild(modalBackdrop);
-                
-                // Reload the active view
-                await this.reloadActiveView();
-            };
-            
-            cancelBtn.onclick = (e) => {
-                e.preventDefault();
-                document.body.removeChild(modalBackdrop);
-            };
-            
-            document.body.appendChild(modalBackdrop);
-            
-            // Focus on weight input
-            weightInput.focus();
-            
-        } catch (error) {
-            console.error('Error editing log file:', error);
-            new Notice('Error editing exercise: ' + error.message);
-        }
-    }
-    
-    async deleteLogFile(logFilePath, workoutFile) {
-        try {
-            const file = app.vault.getAbstractFileByPath(logFilePath);
-            if (!file) return;
-            
-            // Validate and resolve workoutFile
-            let resolvedWorkoutFile = workoutFile;
-            
-            // If workoutFile doesn't have proper structure, try to find it from log path
-            if (!resolvedWorkoutFile || !resolvedWorkoutFile.parent) {
-                // Log file is at: Workouts/DATE - NAME/Log/N.md
-                // Workout file is at: Workouts/DATE - NAME/NAME.md
-                const logFolder = file.parent;
-                const workoutFolder = logFolder.parent;
-                
-                if (workoutFolder) {
-                    // Find the markdown file in the workout folder (not in Log subfolder)
-                    const workoutFiles = workoutFolder.children
-                        .filter(f => f.extension === 'md' && f.name !== 'Log');
-                    
-                    if (workoutFiles.length > 0) {
-                        resolvedWorkoutFile = workoutFiles[0];
-                    }
-                }
-            }
-            
-            if (!resolvedWorkoutFile) {
-                new Notice('Error: Could not identify workout file');
-                return;
-            }
-            
-            // Read the file to check if it's a start log
-            const content = await app.vault.read(file);
-            const isStartLog = content.includes('Workout start');
-            
-            if (isStartLog) {
-                // If deleting start, ask for confirmation and delete only this workout session
-                if (!confirm('Delete this workout session? This will delete all exercise logs for THIS workout only.')) {
-                    return;
-                }
-                
-                const logFolder = file.parent;
-                const allFiles = logFolder.children
-                    .filter(f => f.extension === 'md')
-                    .sort((a, b) => parseInt(a.basename) - parseInt(b.basename));
-                
-                // Find the index of this start log
-                const startFileIndex = allFiles.findIndex(f => f.path === logFilePath);
-                if (startFileIndex === -1) return;
-                
-                // Find the corresponding end log (search forward from this start)
-                let endFileIndex = -1;
-                for (let i = startFileIndex + 1; i < allFiles.length; i++) {
-                    const logContent = await app.vault.read(allFiles[i]);
-                    if (logContent.includes('Workout end')) {
-                        endFileIndex = i;
-                        break;
-                    }
-                }
-                
-                // If no end found, delete from start to end of all files
-                if (endFileIndex === -1) {
-                    endFileIndex = allFiles.length - 1;
-                }
-                
-                // Delete only files from start to end (inclusive)
-                for (let i = startFileIndex; i <= endFileIndex; i++) {
-                    await app.vault.delete(allFiles[i]);
-                }
-                
-                // Recalculate metrics based on remaining logs
-                await this.recalculateWorkoutMetrics(resolvedWorkoutFile);
-                
-                // Reload the active view
-                await this.reloadActiveView();
-                
-                new Notice('Workout session deleted - metrics recalculated');
-            } else {
-                // Normal delete for regular exercises
-                if (!confirm('Delete this exercise log?')) {
-                    return;
-                }
-                
-                await app.vault.delete(file);
-                
-                // Recalculate metrics
-                await this.recalculateWorkoutMetrics(resolvedWorkoutFile);
-                
-                // Reload the active view
-                await this.reloadActiveView();
-                
-                new Notice('Exercise log deleted and metrics recalculated');
-            }
-            
-        } catch (error) {
-            console.error('Error deleting log file:', error);
-            new Notice('Error deleting exercise');
-        }
-    }
-    
-    async reloadActiveView() {
-        try {
-            const activeView = app.workspace.getActiveFileView();
-            if (activeView && activeView.previewMode) {
-                activeView.previewMode.rerender(true);
-            }
-        } catch (e) {
-            // Silently fail if reload doesn't work
-            console.debug('Could not reload view:', e);
-        }
-    }
-    
-    async recalculateWorkoutMetrics(workoutFile) {
-        try {
-            // Validate workoutFile
-            if (!workoutFile) {
-                console.error('workoutFile is null or undefined');
-                return;
-            }
-            
-            if (!workoutFile.path) {
-                console.error('workoutFile.path is missing');
-                return;
-            }
-            
-            if (!workoutFile.parent) {
-                console.error('workoutFile.parent is missing');
-                return;
-            }
-            
-            const logFolderPath = workoutFile.parent.path + "/Log";
-            const logFolder = app.vault.getAbstractFileByPath(logFolderPath);
-            
-            if (!logFolder || !logFolder.children) {
-                return;
-            }
-            
-            // Get all log files sorted by name
-            const logFiles = logFolder.children
-                .filter(f => f.extension === 'md')
-                .sort((a, b) => parseInt(a.basename) - parseInt(b.basename));
-            
-            // Update Logs property in frontmatter
-            const logPaths = logFiles.map(f => f.path);
-            
-            // Find start and end files
-            let hasWorkoutStart = false;
-            let hasWorkoutEnd = false;
-            let startContent = null;
-            let endContent = null;
-            
-            for (const logFile of logFiles) {
-                const content = await app.vault.read(logFile);
-                const exerciseMatch = content.match(/^exercise:\s*(.+)$/m);
-                const exerciseName = exerciseMatch ? exerciseMatch[1].trim() : '';
-                
-                if (exerciseName === 'Workout start') {
-                    hasWorkoutStart = true;
-                    startContent = content;
-                }
-                if (exerciseName === 'Workout end') {
-                    hasWorkoutEnd = true;
-                    endContent = content;
-                }
-            }
-            
-            // SPECIAL CASE: If workout start is deleted, reset everything
-            if (!hasWorkoutStart) {
-                await app.fileManager.processFrontMatter(workoutFile, (fm) => {
-                    fm['Logs'] = [];
-                    fm['ExerciseCounts'] = {};
-                    fm['ExercisesSummary'] = '';
-                    fm['Total Volume'] = 0;
-                    fm['duration'] = '';
-                });
-                new Notice('Workout start deleted - all metrics reset');
-                return;
-            }
-            
-            // Recalculate exercise counts and volume
-            let exerciseCounts = {};
-            let totalVolume = 0;
-            
-            for (const logFile of logFiles) {
-                const content = await app.vault.read(logFile);
-                
-                // Extract exercise name
-                const exerciseMatch = content.match(/^exercise:\s*(.+)$/m);
-                const exerciseName = exerciseMatch ? exerciseMatch[1].trim() : '';
-                
-                // Skip start and end markers
-                if (exerciseName.includes('Workout')) {
-                    continue;
-                }
-                
-                // Extract weight and reps for volume calculation
-                const weightMatch = content.match(/^weight:\s*(\d+(?:\.\d+)?)/m);
-                const repsMatch = content.match(/^reps:\s*(\d+)/m);
-                const weight = weightMatch ? parseFloat(weightMatch[1]) : 0;
-                const reps = repsMatch ? parseInt(repsMatch[1]) : 0;
-                
-                // Update exercise counts
-                if (exerciseName) {
-                    exerciseCounts[exerciseName] = (exerciseCounts[exerciseName] || 0) + 1;
-                }
-                
-                // Update total volume
-                if (weight && reps) {
-                    totalVolume += weight * reps;
-                }
-            }
-            
-            // Create exercise summary
-            const exercisesSummary = Object.entries(exerciseCounts)
-                .map(([name, count]) => `${name} x${count}`)
-                .join(", ");
-            
-            // Calculate duration intelligently
-            let duration = '';
-            
-            if (hasWorkoutStart && hasWorkoutEnd) {
-                // Both start and end exist - calculate full duration
-                const startMatch = startContent.match(/^date:\s*(.+)$/m);
-                const endMatch = endContent.match(/^date:\s*(.+)$/m);
-                
-                if (startMatch && endMatch) {
-                    const startDate = new Date(startMatch[1]);
-                    const endDate = new Date(endMatch[1]);
-                    const durationMs = endDate - startDate;
-                    const totalMinutes = Math.floor(durationMs / 60000);
-                    const hours = Math.floor(totalMinutes / 60);
-                    const minutes = totalMinutes % 60;
-                    
-                    if (hours > 0) {
-                        const hourStr = hours === 1 ? 'Hour' : 'Hours';
-                        const minuteStr = minutes === 1 ? 'Minute' : 'Minutes';
-                        duration = `${hours} ${hourStr} ${minutes} ${minuteStr}`;
-                    } else {
-                        const minuteStr = minutes === 1 ? 'Minute' : 'Minutes';
-                        duration = `${minutes} ${minuteStr}`;
-                    }
-                }
-            } else if (hasWorkoutStart && !hasWorkoutEnd) {
-                // Only start exists - show "Ongoing" status
-                duration = 'Ongoing';
-            }
-            
-            // Update the workout file with recalculated metrics
-            await app.fileManager.processFrontMatter(workoutFile, (fm) => {
-                fm['Logs'] = logPaths;
-                fm['ExerciseCounts'] = exerciseCounts;
-                fm['ExercisesSummary'] = exercisesSummary;
-                fm['Total Volume'] = totalVolume;
-                fm['duration'] = duration;
+        const table = context.container.querySelector("table:last-of-type");
+        const bodyRows = table?.querySelectorAll("tbody tr") || [];
+        bodyRows.forEach((row, index) => {
+            const item = logs[index];
+            if (!item) return;
+            const cell = row.lastElementChild;
+            cell?.addClass("gym-row-actions");
+
+            const repeat = document.createElement("button");
+            repeat.textContent = "↻";
+            repeat.setAttribute("aria-label", "Repeat set");
+            repeat.title = "Repeat set";
+            repeat.addEventListener("click", async event => {
+                event.preventDefault();
+                await this.core.repeatSet(workoutFile, item.file);
+                const rest = this.getRestSeconds(item.fm.exercise_id, item.fm.exercise);
+                if (rest > 0) globalThis.customJS?.timer?.start(rest);
+                new Notice("Set repeated");
             });
-            
-        } catch (error) {
-            console.error('Error recalculating workout metrics:', error);
-        }
+            cell?.appendChild(repeat);
+
+            const edit = document.createElement("button");
+            edit.textContent = "✎";
+            edit.setAttribute("aria-label", "Edit set");
+            edit.title = "Edit set";
+            edit.addEventListener("click", event => {
+                event.preventDefault();
+                this.editLogFile(item.file, workoutFile);
+            });
+            cell?.appendChild(edit);
+
+            const remove = document.createElement("button");
+            remove.textContent = "×";
+            remove.setAttribute("aria-label", "Delete set");
+            remove.title = "Delete set";
+            remove.addEventListener("click", async event => {
+                event.preventDefault();
+                await this.app.vault.delete(item.file);
+                await this.core.recalculateWorkoutMetrics(workoutFile);
+                new Notice("Set deleted");
+            });
+            cell?.appendChild(remove);
+        });
     }
 
-    async renderWorkoutSummary(context) {
-        if (!context?.dv) return;
-
-        const current = context.dv.current();
-        const metadata = app.metadataCache.getFileCache(current.file);
-
-        if (!metadata?.frontmatter) return;
-
-        const date = metadata.frontmatter.date;
-        const duration = metadata.frontmatter.duration;
-        const exercises = metadata.frontmatter.exercises || [];
-
-        context.dv.header(2, "Workout Summary");
-
-        if (date) {
-            context.dv.el('b', 'Date: ');
-            context.dv.span(this.utils.formatDate(date));
-            context.dv.el('br', '');
-        }
-
-        if (duration) {
-            context.dv.el('b', 'Duration: ');
-            context.dv.span(`${duration} minutes`);
-            context.dv.el('br', '');
-        }
-
-        if (exercises.length > 0) {
-            context.dv.header(3, "Exercises");
-            const table = context.dv.table(
-                ["Exercise", "Sets", "Weight", "Reps", "Volume"],
-                exercises.map(e => [
-                    e.name,
-                    e.sets || '~',
-                    e.weight || '~',
-                    e.reps || '~',
-                    this.utils.calculateVolume(e.weight, e.reps) || '~'
-                ])
-            );
-        }
+    getRestSeconds(exerciseId, exerciseName) {
+        const ex = exerciseId ? this.core.getExerciseById(exerciseId) : this.core.getExerciseByName(exerciseName);
+        const value = this.core.numberOrNull(ex?.fm?.default_rest_seconds);
+        return value == null ? 60 : Math.max(0, value);
     }
 
-    async renderExerciseProgress(context, exerciseName) {
-        if (!context?.dv || !exerciseName) return;
+    editLogFile(logFile, workoutFile) {
+        const fm = this.core.logFrontmatter(logFile);
+        const timed = fm.timed === true || fm.timed === "true";
+        const backdrop = document.body.createDiv({ cls: "gym-modal-backdrop" });
+        backdrop.setAttribute("role", "presentation");
+        const dialog = backdrop.createDiv({ cls: "gym-modal" });
+        dialog.setAttribute("role", "dialog");
+        dialog.setAttribute("aria-modal", "true");
+        dialog.setAttribute("aria-label", "Edit exercise set");
+        dialog.createEl("h3", { text: "Edit " + (fm.exercise || "set") });
 
-        const history = await this.utils.getExerciseHistory(exerciseName);
-        if (history.length === 0) return;
+        const makeField = (label, value, type = "number") => {
+            const wrapper = dialog.createDiv({ cls: "gym-field" });
+            wrapper.createEl("label", { text: label });
+            const input = type === "textarea" ? wrapper.createEl("textarea") : wrapper.createEl("input", { attr: { type } });
+            input.value = value ?? "";
+            return input;
+        };
 
-        context.dv.header(3, "Progress Chart");
+        const weight = makeField("Weight (kg)", fm.weight_kg ?? "");
+        const reps = timed ? null : makeField("Reps", fm.reps ?? "");
+        const duration = timed ? makeField("Duration (seconds)", fm.duration_seconds ?? "") : null;
+        const effort = makeField("Effort (1–5)", fm.effort ?? "");
+        effort.min = "1"; effort.max = "5";
+        const note = makeField("Notes", fm.note || "", "textarea");
 
-        // Create progress chart using dv.execute
-        context.dv.execute('```chart\ntype: line\ndata:\n  labels: ' + 
-            JSON.stringify(history.map(h => this.utils.formatDate(h.date))) + '\n  datasets:\n    - label: Weight\n      data: ' + 
-            JSON.stringify(history.map(h => h.weight)) + '\n```');
+        const actions = dialog.createDiv({ cls: "gym-modal-actions" });
+        const cancel = actions.createEl("button", { text: "Cancel" });
+        const save = actions.createEl("button", { text: "Save", cls: "mod-cta" });
+        const close = () => backdrop.remove();
+        cancel.addEventListener("click", close);
+        backdrop.addEventListener("click", event => { if (event.target === backdrop) close(); });
+        dialog.addEventListener("keydown", event => { if (event.key === "Escape") close(); });
+
+        save.addEventListener("click", async () => {
+            await this.core.updateFrontmatter(logFile, {
+                weight_kg: this.core.numberOrNull(weight.value),
+                weight: this.core.numberOrNull(weight.value),
+                reps: reps ? this.core.numberOrNull(reps.value) : undefined,
+                duration_seconds: duration ? this.core.numberOrNull(duration.value) : undefined,
+                duration: duration ? this.core.numberOrNull(duration.value) : undefined,
+                effort: this.core.numberOrNull(effort.value),
+                note: note.value.trim()
+            });
+            await this.core.recalculateWorkoutMetrics(workoutFile);
+            close();
+            new Notice("Set updated");
+        });
+        weight.focus();
     }
 
     renderEffortChart(context) {
-        if (!context?.dv) return;
+        if (!context?.dv || !this.core || typeof context.window?.renderChart !== "function") return;
         const current = context.dv.current();
-        const metadata = app.metadataCache.getFileCache(current.file);
-        if (!metadata?.frontmatter?.id) return;
+        const workoutFile = this.app.vault.getAbstractFileByPath(current.file.path || current.file);
+        const logs = this.core.getWorkoutLogs(workoutFile)
+            .map(file => this.core.logFrontmatter(file))
+            .filter(fm => fm.exercise !== "Workout start" && fm.exercise !== "Workout end" && fm.effort != null);
+        if (logs.length < 2) return;
 
-        // Get all performed exercises for this workout
-        const performed = context.dv.pages("#exercise")
-            .where(e => e.workout_id === metadata.frontmatter.id)
-            .sort(e => e.time || e.date);
-
-        // Debug: Log all performed exercises and workout end time
-        console.log('EffortChart performed:', performed.array ? performed.array() : performed);
-
-        if (performed.length === 0) return;
-
-        // Find workout start and end times
-        const startLog = performed.find(e => e.exercise === "Workout start");
-        const endLog = performed.find(e => e.exercise === "Workout end");
-        const workoutStartTime = startLog ? (startLog.time ? `${metadata.frontmatter.date}T${startLog.time}` : startLog.date) : null;
-        const workoutEndTime = endLog ? (endLog.time ? `${metadata.frontmatter.date}T${endLog.time}` : endLog.date) : null;
-        console.log('workoutStartTime:', workoutStartTime, 'workoutEndTime:', workoutEndTime);
-
-        // Group exercises by their name/type (excluding start/end)
-        const exerciseGroups = {};
-        performed.forEach(p => {
-            if ((p.time || p.date) && (p.effort || (p.weight && (p.reps || p.duration))) && p.exercise !== "Workout start" && p.exercise !== "Workout end") {
-                if (!exerciseGroups[p.exercise]) {
-                    exerciseGroups[p.exercise] = {
-                        times: [],
-                        efforts: [],
-                        volumes: [],
-                        weights: [],
-                        repsOrDur: []
-                    };
-                }
-                // Use ISO string for x-axis
-                const label = p.time ? `${metadata.frontmatter.date}T${p.time}` : p.date;
-                exerciseGroups[p.exercise].times.push(label);
-                exerciseGroups[p.exercise].efforts.push(Number(p.effort) || 0);
-                exerciseGroups[p.exercise].weights.push(Number(p.weight) || 1);
-                const isTimed = p.timed === true || p.timed === 'true';
-                const repsOrDur = isTimed ? (Number(p.duration) || 0) : (Number(p.reps) || 0);
-                exerciseGroups[p.exercise].repsOrDur.push(repsOrDur);
-                const volume = (Number(p.weight) || 1) * repsOrDur;
-                exerciseGroups[p.exercise].volumes.push(volume);
+        const host = context.container.createEl("div", { cls: "gym-chart gym-session-chart" });
+        context.window.renderChart({
+            type: "line",
+            data: {
+                labels: logs.map((fm, index) => (index + 1) + ". " + fm.exercise),
+                datasets: [{ label: "Effort", data: logs.map(fm => Number(fm.effort || 0)), tension: 0.25 }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { min: 0, max: 5, ticks: { stepSize: 1 } } }
             }
-        });
-
-        // Generate colors for each exercise (unchanged)
-        const colors = {
-            'Triceps - Push up': { base: 'rgb(153, 102, 255)', light: 'rgba(153, 102, 255, 0.6)' }
-        };
-
-        // Create datasets for each exercise
-        const datasets = [];
-        let maxVolume = 0;
-        Object.entries(exerciseGroups).forEach(([exercise, data]) => {
-            const isTimed = performed.find(p => p.exercise === exercise && (p.timed === true || p.timed === 'true'));
-            const color = colors[exercise] || { 
-                base: `hsl(${Math.random() * 360}, 70%, 50%)`,
-                light: `hsla(${Math.random() * 360}, 70%, 50%, 0.6)`
-            };
-            // Volume dataset
-            const volumes = data.volumes;
-            maxVolume = Math.max(maxVolume, ...volumes);
-            datasets.push({
-                label: isTimed ? `${exercise} (Duration×Weight)` : `${exercise} (Volume)`,
-                data: data.times.map((t, i) => ({ x: t, y: volumes[i] })),
-                fill: false,
-                borderColor: color.light,
-                backgroundColor: color.light,
-                borderWidth: 2,
-                borderDash: isTimed ? [] : [5, 5],
-                tension: 0.3,
-                pointRadius: isTimed ? 0 : 4,
-                pointHitRadius: 10,
-                pointHoverRadius: 6,
-                yAxisID: 'y'
-            });
-            // Effort dataset
-            datasets.push({
-                label: `${exercise} (Effort)` ,
-                data: data.times.map((t, i) => ({ x: t, y: data.efforts[i] })),
-                fill: false,
-                borderColor: color.base,
-                backgroundColor: color.base,
-                borderWidth: 2,
-                tension: 0.3,
-                pointRadius: 4,
-                pointHitRadius: 10,
-                pointHoverRadius: 6,
-                yAxisID: 'y1'
-            });
-        });
-
-        // Chart.js annotation for workout start/end
-        const annotations = {};
-        if (workoutStartTime) {
-            annotations.workoutStart = {
-                type: 'line',
-                xMin: workoutStartTime,
-                xMax: workoutStartTime,
-                borderColor: 'red',
-                borderWidth: 2,
-                label: {
-                    content: 'Workout Start',
-                    enabled: true,
-                    position: 'start'
-                }
-            };
-        }
-        if (workoutEndTime) {
-            annotations.workoutEnd = {
-                type: 'line',
-                xMin: workoutEndTime,
-                xMax: workoutEndTime,
-                borderColor: 'red',
-                borderWidth: 2,
-                label: {
-                    content: 'Workout End',
-                    enabled: true,
-                    position: 'end',
-                    color: 'red',
-                    backgroundColor: 'white',
-                    font: { weight: 'bold' }
-                }
-            };
-        }
-
-        try {
-            if (!exerciseGroups || Object.values(exerciseGroups).length === 0) {
-                console.warn('No exercise groups found to render chart');
-                return;
-            }
-            const chartData = {
-                type: 'line',
-                data: {
-                    labels: [], // not used with time scale
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
-                    },
-                    scales: {
-                        x: {
-                            type: 'time',
-                            time: {
-                                unit: 'minute',
-                                displayFormats: {
-                                    minute: 'HH:mm:ss'
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Time'
-                            }
-                        },
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            beginAtZero: true,
-                            suggestedMax: maxVolume * 1.2, // Add 20% space at the top
-                            title: {
-                                display: true,
-                                text: 'Volume (kg×reps) / Duration×Weight (sec×kg)'
-                            },
-                            grid: {
-                                drawOnChartArea: true
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            beginAtZero: true,
-                            min: 0,
-                            max: 5.5, // Add space at the top
-                            title: {
-                                display: true,
-                                text: 'Effort (1-5)'
-                            },
-                            ticks: {
-                                stepSize: 1,
-                                callback: function(value) {
-                                    if (value === 0) return '';
-                                    return value <= 5 ? value : '';
-                                }
-                            },
-                            grid: {
-                                drawOnChartArea: false
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 15
-                            }
-                        },
-                        annotation: {
-                            annotations: annotations
-                        },
-                        tooltip: {
-                            enabled: true,
-                            mode: 'index',
-                            intersect: false,
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.dataset.label || '';
-                                    const value = context.parsed.y;
-                                    if (label.includes('Volume') || label.includes('Duration×Weight')) {
-                                        return `${label}: ${value} (kg×reps/sec×kg)`;
-                                    }
-                                    return `${label}: ${value}`;
-                                }
-                            }
-                            }
-                        }
-                    }
-                };
-            // Create a div for the chart with a fixed height
-            const chartDiv = context.container.createEl('div');
-            chartDiv.style.height = '300px';
-            chartDiv.style.marginBottom = '20px';
-            chartDiv.style.marginTop = '20px';
-
-            context.window.renderChart(chartData, chartDiv);
-        } catch (error) {
-            console.error('Error rendering chart:', error);
-            context.container.createEl('p', { text: 'Error rendering chart' });
-        }
+        }, host);
     }
 
-    async renderTimerOrStopwatch(context) {
-        if (!context?.container) return;
-        // Selector UI
-        const selectorDiv = context.container.createEl("div", { cls: "timer-selector" });
-        selectorDiv.style.marginBottom = "10px";
-        const select = selectorDiv.createEl("select");
-        select.style.marginRight = "10px";
-        select.innerHTML = `<option value="timer">Timer</option><option value="stopwatch">Stopwatch</option>`;
-        // Timer and stopwatch containers
-        const timerDiv = context.container.createEl("div", { cls: "timer-ui" });
-        const stopwatchDiv = context.container.createEl("div", { cls: "stopwatch-ui" });
-        stopwatchDiv.style.display = "none";
-        // Render timer and stopwatch controls
-        if (window.customJS?.timer) {
-            await window.customJS.timer.renderTimerControls({ ...context, container: timerDiv });
-        }
-        if (window.customJS?.stopwatch) {
-            await window.customJS.stopwatch.renderStopwatchControls({ ...context, container: stopwatchDiv });
-        }
-        // Switch UI on selector change
-        select.addEventListener("change", (e) => {
-            if (select.value === "timer") {
-                timerDiv.style.display = "";
-                stopwatchDiv.style.display = "none";
-            } else {
-                timerDiv.style.display = "none";
-                stopwatchDiv.style.display = "";
-            }
-        });
+    async recalculateWorkoutMetrics(workoutFile) {
+        if (!this.core) throw new Error("Gym core is not loaded");
+        return this.core.recalculateWorkoutMetrics(workoutFile);
     }
 
     getExerciseInfo(exerciseId) {
-        const exercise = app.vault.getMarkdownFiles()
-            .map(file => ({
-                file,
-                cache: app.metadataCache.getFileCache(file)
-            }))
-            .find(({ file, cache }) => 
-                cache?.frontmatter?.id === exerciseId || 
-                file.basename === exerciseId
-            );
-
-        if (!exercise) return {
-            name: exerciseId,
-            muscleGroup: "~",
-            lastWeight: "~",
-            lastEffort: "~"
-        };
-
-        const { file, cache } = exercise;
+        const item = this.core?.getExerciseById(exerciseId);
+        if (!item) return null;
+        const fm = item.fm;
         return {
-            name: cache.frontmatter?.exercise || file.basename,
-            muscleGroup: cache.frontmatter?.muscle_group || "~",
-            equipment: cache.frontmatter?.equipment || "~",
-            lastWeight: "~",
-            lastEffort: "~"
+            id: fm.id,
+            name: fm.exercise || item.file.basename,
+            muscleGroup: fm.muscle_group || "",
+            equipment: fm.equipment || "",
+            timed: fm.timed,
+            duration: fm.default_duration_seconds ?? fm.duration,
+            reps: fm.default_reps ?? fm.reps,
+            weight: fm.default_weight_kg ?? fm.weight
         };
     }
 }

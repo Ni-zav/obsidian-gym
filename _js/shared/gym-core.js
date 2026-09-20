@@ -8,16 +8,12 @@ class gymCore {
         if (shared?.getPathConfig) return shared.getPathConfig();
         const overrides = globalThis.obsidianGymPaths || {};
         const exercisesRoot = this.normalizePath(overrides.exercisesRoot) || "Templates/exercises";
-        const templateNotesRoot = this.normalizePath(overrides.templateNotesRoot) || exercisesRoot;
         return {
             exercisesRoot,
-            templateNotesRoot,
             workoutTemplatesRoot: this.normalizePath(overrides.workoutTemplatesRoot) || "Templates/Workouts",
             workoutsRoot: this.normalizePath(overrides.workoutsRoot) || "Workouts",
             exerciseCategoriesPath: this.joinPath(exercisesRoot, "_library/categories.json"),
             workoutCategoriesPath: this.joinPath(exercisesRoot, "_library/workout_categories.json"),
-            startTemplatePath: this.joinPath(templateNotesRoot, "Start.md"),
-            endTemplatePath: this.joinPath(templateNotesRoot, "End.md")
         };
     }
 

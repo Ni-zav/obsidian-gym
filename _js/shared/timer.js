@@ -1,80 +1,134 @@
 class timer {
     constructor() {
+        this.mode = "countdown";
         this.remainingTime = 0;
+        this.elapsedTime = 0;
         this.timerId = null;
         this.isRunning = false;
         this.isPaused = false;
+        this.targetAt = null;
+        this.startedAt = null;
         this.displays = new Set();
-        this.endsAt = null;
     }
 
     async renderTimerControls(context) {
         if (!context?.container) return;
         const root = context.container.createEl("div", { cls: "gym-timer" });
+        const mode = root.createEl("div", { cls: "gym-muted", text: this.mode === "stopwatch" ? "Stopwatch" : "Rest timer" });
         const display = root.createEl("div", { cls: "timer-display" });
         this.displays.add(display);
-        this.updateDisplays();
 
         const presets = root.createEl("div", { cls: "timer-presets" });
         for (const seconds of [30, 60, 90, 120]) {
             const button = presets.createEl("button", { text: seconds + "s" });
-            button.addEventListener("click", () => this.start(seconds));
+            button.addEventListener("click", () => {
+                this.start(seconds);
+                mode.textContent = "Rest timer";
+            });
         }
+        const stopwatch = presets.createEl("button", { text: "Stopwatch" });
+        stopwatch.addEventListener("click", () => {
+            this.startStopwatch();
+            mode.textContent = "Stopwatch";
+        });
 
         const controls = root.createEl("div", { cls: "timer-controls" });
-        const pause = controls.createEl("button", { text: this.isPaused ? "Resume" : "Pause" });
+        const pause = controls.createEl("button", { text: "Pause" });
         pause.addEventListener("click", () => {
             if (this.isPaused) this.resume();
             else this.pause();
             pause.textContent = this.isPaused ? "Resume" : "Pause";
         });
         const reset = controls.createEl("button", { text: "Reset" });
-        reset.addEventListener("click", () => this.stop());
+        reset.addEventListener("click", () => {
+            this.reset();
+            pause.textContent = "Pause";
+        });
+        this.updateDisplays();
     }
 
     start(seconds) {
         const duration = Math.max(0, Math.floor(Number(seconds) || 0));
         if (!duration) return;
         this.clearInterval();
+        this.mode = "countdown";
         this.remainingTime = duration;
+        this.elapsedTime = 0;
         this.isRunning = true;
         this.isPaused = false;
-        this.endsAt = Date.now() + duration * 1000;
+        this.targetAt = Date.now() + duration * 1000;
+        this.startedAt = null;
+        this.tick();
+    }
+
+    startStopwatch() {
+        this.clearInterval();
+        this.mode = "stopwatch";
+        this.elapsedTime = 0;
+        this.remainingTime = 0;
+        this.isRunning = true;
+        this.isPaused = false;
+        this.startedAt = Date.now();
+        this.targetAt = null;
+        this.tick();
+    }
+
+    tick() {
+        this.updateFromClock();
         this.updateDisplays();
         this.timerId = setInterval(() => {
-            this.remainingTime = Math.max(0, Math.ceil((this.endsAt - Date.now()) / 1000));
+            this.updateFromClock();
             this.updateDisplays();
-            if (this.remainingTime <= 0) {
+            if (this.mode === "countdown" && this.remainingTime <= 0) {
                 this.clearInterval();
                 this.isRunning = false;
-                this.endsAt = null;
+                this.targetAt = null;
                 new Notice("Rest finished");
             }
         }, 250);
     }
 
+    updateFromClock() {
+        if (!this.isRunning || this.isPaused) return;
+        if (this.mode === "countdown" && this.targetAt) {
+            this.remainingTime = Math.max(0, Math.ceil((this.targetAt - Date.now()) / 1000));
+        } else if (this.mode === "stopwatch" && this.startedAt) {
+            this.elapsedTime = Math.max(0, Math.floor((Date.now() - this.startedAt) / 1000));
+        }
+    }
+
     pause() {
         if (!this.isRunning || this.isPaused) return;
-        this.remainingTime = Math.max(0, Math.ceil((this.endsAt - Date.now()) / 1000));
+        this.updateFromClock();
         this.clearInterval();
         this.isPaused = true;
-        this.updateDisplays();
     }
 
     resume() {
-        if (!this.isPaused || this.remainingTime <= 0) return;
+        if (!this.isPaused) return;
         this.isPaused = false;
         this.isRunning = true;
-        this.endsAt = Date.now() + this.remainingTime * 1000;
-        this.start(this.remainingTime);
+        if (this.mode === "countdown") {
+            if (this.remainingTime <= 0) return this.reset();
+            this.targetAt = Date.now() + this.remainingTime * 1000;
+        } else {
+            this.startedAt = Date.now() - this.elapsedTime * 1000;
+        }
+        this.tick();
     }
 
     stop() {
+        this.pause();
+    }
+
+    reset() {
         this.clearInterval();
         this.remainingTime = 0;
+        this.elapsedTime = 0;
         this.isRunning = false;
         this.isPaused = false;
-        this.endsAt = null;
+        this.targetAt = null;
+        this.startedAt = null;
         this.updateDisplays();
     }
 
@@ -84,8 +138,9 @@ class timer {
     }
 
     updateDisplays() {
-        const minutes = Math.floor(this.remainingTime / 60);
-        const seconds = this.remainingTime % 60;
+        const value = this.mode === "stopwatch" ? this.elapsedTime : this.remainingTime;
+        const minutes = Math.floor(value / 60);
+        const seconds = value % 60;
         const text = String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
         for (const display of [...this.displays]) {
             if (!display?.isConnected) this.displays.delete(display);

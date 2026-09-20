@@ -2,7 +2,6 @@ const { Plugin, PluginSettingTab, Notice, TFolder, TFile } = require("obsidian")
 
 const DEFAULT_PATHS = {
     exercisesRoot: "Templates/exercises",
-    templateNotesRoot: "Templates/exercises",
     workoutTemplatesRoot: "Templates/Workouts",
     workoutsRoot: "Workouts"
 };
@@ -61,7 +60,6 @@ class ObsidianGymSettingsPlugin extends Plugin {
         const exercisesRoot = normalizeVaultPath(paths.exercisesRoot) || DEFAULT_PATHS.exercisesRoot;
         return {
             exercisesRoot,
-            templateNotesRoot: normalizeVaultPath(paths.templateNotesRoot) || exercisesRoot,
             workoutTemplatesRoot: normalizeVaultPath(paths.workoutTemplatesRoot) || DEFAULT_PATHS.workoutTemplatesRoot,
             workoutsRoot: normalizeVaultPath(paths.workoutsRoot) || DEFAULT_PATHS.workoutsRoot
         };
@@ -73,9 +71,6 @@ class ObsidianGymSettingsPlugin extends Plugin {
             ...paths,
             exerciseCategoriesPath: joinVaultPath(paths.exercisesRoot, "_library/categories.json"),
             workoutCategoriesPath: joinVaultPath(paths.exercisesRoot, "_library/workout_categories.json"),
-            startTemplatePath: joinVaultPath(paths.templateNotesRoot, "Start.md"),
-            endTemplatePath: joinVaultPath(paths.templateNotesRoot, "End.md"),
-            customTemplatePath: joinVaultPath(paths.templateNotesRoot, "Custom.md")
         };
     }
 
@@ -110,7 +105,6 @@ class ObsidianGymSettingsPlugin extends Plugin {
         const paths = this.derived(pathsRaw);
         for (const path of [
             paths.exercisesRoot,
-            paths.templateNotesRoot,
             paths.workoutTemplatesRoot,
             paths.workoutsRoot,
             joinVaultPath(paths.exercisesRoot, "_library")
@@ -178,7 +172,6 @@ class ObsidianGymSettingsPlugin extends Plugin {
     getMigrationMappings(oldPaths, nextPaths) {
         return [
             { from: oldPaths.exercisesRoot, to: nextPaths.exercisesRoot },
-            { from: oldPaths.templateNotesRoot, to: nextPaths.templateNotesRoot },
             { from: oldPaths.workoutTemplatesRoot, to: nextPaths.workoutTemplatesRoot },
             { from: oldPaths.workoutsRoot, to: nextPaths.workoutsRoot }
         ].filter((entry, index, list) =>
@@ -286,7 +279,6 @@ class ObsidianGymSettingsTab extends PluginSettingTab {
     getSettingDefinitions() {
         return [
             this.pathDefinition("Exercises root", "Exercise definitions and category library.", "exercisesRoot", DEFAULT_PATHS.exercisesRoot),
-            this.pathDefinition("Template notes root", "Legacy Start/End/Custom notes; kept for compatibility.", "templateNotesRoot", DEFAULT_PATHS.templateNotesRoot),
             this.pathDefinition("Workout templates root", "Saved workout routines.", "workoutTemplatesRoot", DEFAULT_PATHS.workoutTemplatesRoot),
             this.pathDefinition("Workouts root", "Generated workout sessions and logs.", "workoutsRoot", DEFAULT_PATHS.workoutsRoot),
             {

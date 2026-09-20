@@ -6,8 +6,9 @@ class exercise {
     renderDescription(context) {
         if (!context?.dv) return;
         const current = context.dv.current();
-        const file = current?.file;
-        const metadata = (globalThis.customJS?.app || globalThis.app)?.metadataCache.getFileCache(file);
+        const app = globalThis.customJS?.app || globalThis.app;
+        const file = app?.vault.getAbstractFileByPath(current?.file?.path || String(current?.file || ""));
+        const metadata = file ? app.metadataCache.getFileCache(file) : null;
         const fm = metadata?.frontmatter || {};
 
         if (fm.workout_id) {
@@ -71,7 +72,9 @@ class exercise {
     renderEffortWeightChart(context) {
         if (!context?.dv || !this.core) return;
         const current = context.dv.current();
-        const metadata = (globalThis.customJS?.app || globalThis.app)?.metadataCache.getFileCache(current.file);
+        const app = globalThis.customJS?.app || globalThis.app;
+        const file = app?.vault.getAbstractFileByPath(current?.file?.path || String(current?.file || ""));
+        const metadata = file ? app.metadataCache.getFileCache(file) : null;
         const fm = metadata?.frontmatter || {};
         const history = this.core.getPreviousSets(fm.id, fm.exercise);
         if (!history.length) return;

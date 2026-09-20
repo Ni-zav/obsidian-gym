@@ -36,12 +36,8 @@ class stats {
         const definitions = this.core.getExerciseDefinitions();
         const groups = [...new Set(definitions.map(item => item.fm.muscle_group).filter(Boolean))].sort();
         const latest = new Map();
-        const root = this.core.paths.workoutsRoot + "/";
 
-        for (const file of this.core.app.vault.getMarkdownFiles()) {
-            if (!file.path.startsWith(root) || !file.path.includes("/Log/")) continue;
-            const log = this.core.logFrontmatter(file);
-            if (!log.exercise || log.exercise === "Workout start" || log.exercise === "Workout end") continue;
+        for (const { fm: log } of this.core.getAllLogEntries()) {
             const exercise = log.exercise_id ? this.core.getExerciseById(log.exercise_id) : this.core.getExerciseByName(log.exercise);
             const group = exercise?.fm?.muscle_group;
             if (!group) continue;

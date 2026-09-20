@@ -1,14 +1,14 @@
 ---
-schema_version: 2
-workout_title: "abc.md"
-exercises: []
-workout_order: []
+schema_version: 3
+workout_title: "abc"
+exercise_plan: []
 workout_type: ""
 workout_place: ""
 tags:
   - workout
 ---
 
-# abc.md
+# abc
 
-This is a routine definition. Start it from [[Home]] to create a workout session.
+```obsidian-gym-routine
+```

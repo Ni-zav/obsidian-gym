@@ -1,11 +1,8 @@
 formulas:
   Date: file.properties.date
-  Sets: if(file.properties.Logs, max(0, file.properties.Logs.length - 2), 0)
 properties:
   formula.Date:
     displayName: Date
-  file.properties.ExercisesSummary:
-    displayName: Exercises
 views:
   - type: table
     name: History
@@ -20,16 +17,15 @@ views:
       - status
       - workout_type
       - workout_place
-      - formula.Sets
-      - Total Volume
-      - duration
-      - ExercisesSummary
+      - working_set_count
+      - total_volume
+      - timed_seconds
+      - distance_km
+      - pr_count
+      - duration_minutes
     sort:
       - property: formula.Date
         direction: DESC
       - property: file.ctime
         direction: DESC
-    columnSize:
-      note.duration: 122
-    cardSize: 300
     rowHeight: medium

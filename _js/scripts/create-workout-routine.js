@@ -76,6 +76,7 @@ module.exports = async function createWorkoutRoutine(params) {
         ].join("\n");
 
         const file = await core.app.vault.create(path, content);
+        core.invalidateForFile(file);
         params.variables = { workoutPath: file.path };
         new Notice("Routine created: " + name);
     } catch (error) {

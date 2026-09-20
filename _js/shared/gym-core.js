@@ -1,4 +1,9 @@
 class gymCore {
+    constructor() {
+        this._cache = new Map();
+        this._cacheTtlMs = 1500;
+    }
+
     get app() {
         return globalThis.customJS?.app || globalThis.app;
     }
@@ -79,6 +84,23 @@ class gymCore {
         return Array.isArray(tags) ? tags : [tags];
     }
 
+    _cached(key, builder, ttl = this._cacheTtlMs) {
+        const now = Date.now();
+        const hit = this._cache.get(key);
+        if (hit && now - hit.at < ttl) return hit.value;
+        const value = builder();
+        this._cache.set(key, { at: now, value });
+        return value;
+    }
+
+    invalidateCaches(...keys) {
+        if (!keys.length) {
+            this._cache.clear();
+            return;
+        }
+        for (const key of keys) this._cache.delete(key);
+    }
+
     async updateFrontmatter(file, patch) {
         if (!file) throw new Error("File is required");
         await this.app.fileManager.processFrontMatter(file, fm => {
@@ -87,6 +109,7 @@ class gymCore {
                 else fm[key] = value;
             }
         });
+        this.invalidateCaches();
     }
 
     async ensureFolder(folderPath) {
@@ -105,51 +128,82 @@ class gymCore {
         return this.app.vault.getAbstractFileByPath(normalized);
     }
 
+    getExerciseIndex() {
+        return this._cached("exerciseIndex", () => {
+            const root = this.paths.exercisesRoot + "/";
+            const items = this.app.vault.getMarkdownFiles()
+                .filter(file => file.path.startsWith(root))
+                .map(file => ({ file, fm: this.frontmatter(file) }))
+                .filter(item => {
+                    const tags = Array.isArray(item.fm.tags) ? item.fm.tags : [item.fm.tags].filter(Boolean);
+                    return tags.includes("exercise") &&
+                        !item.fm.workout_id &&
+                        item.fm.exercise !== "Workout start" &&
+                        item.fm.exercise !== "Workout end" &&
+                        item.file.basename !== "Custom";
+                });
+
+            const byId = new Map();
+            const byName = new Map();
+            for (const item of items) {
+                if (item.fm.id !== null && item.fm.id !== undefined && item.fm.id !== "") {
+                    byId.set(String(item.fm.id), item);
+                }
+                const names = [item.fm.exercise, item.file.basename, ...(Array.isArray(item.fm.aliases) ? item.fm.aliases : [])]
+                    .filter(Boolean);
+                for (const name of names) byName.set(String(name), item);
+            }
+            return { items, byId, byName };
+        });
+    }
+
     getExerciseDefinitions() {
-        const root = this.paths.exercisesRoot + "/";
-        return this.app.vault.getMarkdownFiles()
-            .filter(file => file.path.startsWith(root))
-            .map(file => ({ file, fm: this.frontmatter(file) }))
-            .filter(item => {
-                const tags = Array.isArray(item.fm.tags) ? item.fm.tags : [item.fm.tags].filter(Boolean);
-                return tags.includes("exercise") &&
-                    !item.fm.workout_id &&
-                    item.fm.exercise !== "Workout start" &&
-                    item.fm.exercise !== "Workout end" &&
-                    item.file.basename !== "Custom";
-            });
+        return this.getExerciseIndex().items;
     }
 
     getExerciseById(id) {
-        return this.getExerciseDefinitions().find(item => String(item.fm.id) === String(id)) || null;
+        if (id === null || id === undefined) return null;
+        return this.getExerciseIndex().byId.get(String(id)) || null;
     }
 
     getExerciseByName(name) {
-        return this.getExerciseDefinitions().find(item => {
-            if (item.fm.exercise === name || item.file.basename === name) return true;
-            const aliases = Array.isArray(item.fm.aliases) ? item.fm.aliases : [];
-            return aliases.includes(name);
-        }) || null;
+        if (!name) return null;
+        return this.getExerciseIndex().byName.get(String(name)) || null;
     }
 
     getWorkoutTemplates() {
-        const root = this.paths.workoutTemplatesRoot + "/";
-        return this.app.vault.getMarkdownFiles()
-            .filter(file => file.path.startsWith(root))
-            .filter(file => this.tags(file).includes("workout"));
+        return this._cached("workoutTemplates", () => {
+            const root = this.paths.workoutTemplatesRoot + "/";
+            return this.app.vault.getMarkdownFiles()
+                .filter(file => file.path.startsWith(root))
+                .filter(file => this.tags(file).includes("workout"));
+        });
+    }
+
+    getSessionIndex() {
+        return this._cached("sessionIndex", () => {
+            const root = this.paths.workoutsRoot + "/";
+            const items = this.app.vault.getMarkdownFiles()
+                .filter(file => file.path.startsWith(root) && !file.path.includes("/Log/"))
+                .map(file => ({ file, fm: this.frontmatter(file) }))
+                .filter(item => this.tags(item.fm).includes("workout"))
+                .sort((a, b) => new Date(b.fm.started_at || b.fm.date || 0) - new Date(a.fm.started_at || a.fm.date || 0));
+
+            const byId = new Map();
+            const active = [];
+            for (const item of items) {
+                if (item.fm.id) byId.set(String(item.fm.id), item.file);
+                if (item.fm.status === "active" || (!item.fm.ended_at && item.fm.started_at)) active.push(item.file);
+            }
+            return { items, byId, active };
+        });
     }
 
     getWorkoutFileFromAny(file) {
         if (!file) return null;
         const fm = this.frontmatter(file);
         if (fm.id && this.tags(fm).includes("workout")) return file;
-        if (fm.workout_id) {
-            const root = this.paths.workoutsRoot + "/";
-            return this.app.vault.getMarkdownFiles().find(candidate => {
-                if (!candidate.path.startsWith(root) || candidate.path.includes("/Log/")) return false;
-                return String(this.frontmatter(candidate).id || "") === String(fm.workout_id);
-            }) || null;
-        }
+        if (fm.workout_id) return this.getSessionIndex().byId.get(String(fm.workout_id)) || null;
         return null;
     }
 
@@ -237,6 +291,7 @@ class gymCore {
         ].filter(line => line !== null).join("\n");
 
         const file = await this.app.vault.create(path, lines);
+        this.invalidateCaches();
         await this.recalculateWorkoutMetrics(workoutFile);
         return file;
     }
@@ -267,6 +322,7 @@ class gymCore {
         const last = regular.at(-1);
         if (!last) return null;
         await this.app.vault.delete(last);
+        this.invalidateCaches();
         await this.recalculateWorkoutMetrics(workoutFile);
         return last.path;
     }
@@ -318,18 +374,53 @@ class gymCore {
         }
     }
 
+    getLogHistoryIndex() {
+        return this._cached("logHistoryIndex", () => {
+            const root = this.paths.workoutsRoot + "/";
+            const all = this.app.vault.getMarkdownFiles()
+                .filter(file => file.path.startsWith(root) && file.path.includes("/Log/"))
+                .map(file => ({ file, fm: this.logFrontmatter(file) }))
+                .filter(item => item.fm.exercise !== "Workout start" && item.fm.exercise !== "Workout end")
+                .sort((a, b) => new Date(a.fm.performed_at || a.fm.date || 0) - new Date(b.fm.performed_at || b.fm.date || 0));
+
+            const byId = new Map();
+            const byName = new Map();
+            for (const item of all) {
+                if (item.fm.exercise_id !== null && item.fm.exercise_id !== undefined && item.fm.exercise_id !== "") {
+                    const key = String(item.fm.exercise_id);
+                    if (!byId.has(key)) byId.set(key, []);
+                    byId.get(key).push(item);
+                }
+                if (item.fm.exercise) {
+                    const key = String(item.fm.exercise);
+                    if (!byName.has(key)) byName.set(key, []);
+                    byName.get(key).push(item);
+                }
+            }
+            return { all, byId, byName };
+        });
+    }
+
+    getAllLogEntries() {
+        return this.getLogHistoryIndex().all;
+    }
+
     getPreviousSets(exerciseId, exerciseName, excludeFilePath) {
-        const root = this.paths.workoutsRoot + "/";
-        return this.app.vault.getMarkdownFiles()
-            .filter(file => file.path.startsWith(root) && file.path.includes("/Log/"))
-            .filter(file => file.path !== excludeFilePath)
-            .map(file => ({ file, fm: this.logFrontmatter(file) }))
-            .filter(item => {
-                if (item.fm.exercise === "Workout start" || item.fm.exercise === "Workout end") return false;
-                if (exerciseId && item.fm.exercise_id) return String(item.fm.exercise_id) === String(exerciseId);
-                return item.fm.exercise === exerciseName;
-            })
-            .sort((a, b) => new Date(a.fm.performed_at || a.fm.date || 0) - new Date(b.fm.performed_at || b.fm.date || 0));
+        const index = this.getLogHistoryIndex();
+        const results = new Map();
+
+        if (exerciseId !== null && exerciseId !== undefined) {
+            for (const item of index.byId.get(String(exerciseId)) || []) results.set(item.file.path, item);
+        }
+
+        const definition = exerciseId !== null && exerciseId !== undefined ? this.getExerciseById(exerciseId) : this.getExerciseByName(exerciseName);
+        const names = new Set([exerciseName, ...(Array.isArray(definition?.fm?.aliases) ? definition.fm.aliases : [])].filter(Boolean));
+        for (const name of names) {
+            for (const item of index.byName.get(String(name)) || []) results.set(item.file.path, item);
+        }
+
+        const items = [...results.values()];
+        return excludeFilePath ? items.filter(item => item.file.path !== excludeFilePath) : items;
     }
 
     getLatestSet(exerciseId, exerciseName) {
@@ -368,24 +459,21 @@ class gymCore {
             if (consumed[id] > (counts[id] || 0)) remaining.push(id);
         }
         const order = Array.isArray(fm.workout_order) ? fm.workout_order.map(String) : planned;
-        remaining.sort((a, b) => {
-            const ai = order.indexOf(a);
-            const bi = order.indexOf(b);
-            return (ai === -1 ? 9999 : ai) - (bi === -1 ? 9999 : bi);
+        const rank = new Map();
+        order.forEach((id, index) => {
+            if (!rank.has(id)) rank.set(id, index);
         });
+        remaining.sort((a, b) => (rank.get(a) ?? 9999) - (rank.get(b) ?? 9999));
         return remaining;
     }
 
     async recalculateWorkoutMetrics(workoutFile) {
-        const logs = this.getWorkoutLogs(workoutFile);
-        const regular = logs.map(file => ({ file, fm: this.logFrontmatter(file) }))
-            .filter(item => item.fm.exercise !== "Workout start" && item.fm.exercise !== "Workout end");
+        const entries = this.getWorkoutLogs(workoutFile).map(file => ({ file, fm: this.logFrontmatter(file) }));
+        const regular = entries.filter(item => item.fm.exercise !== "Workout start" && item.fm.exercise !== "Workout end");
 
         const counts = {};
         let totalVolume = 0;
         let timedLoad = 0;
-        const logPaths = [];
-        for (const file of logs) logPaths.push(file.path);
         for (const item of regular) {
             const name = item.fm.exercise || "Unknown";
             counts[name] = (counts[name] || 0) + 1;
@@ -396,10 +484,11 @@ class gymCore {
             }
         }
 
-        const start = logs.map(file => this.frontmatter(file)).find(fm => fm.exercise === "Workout start");
-        const end = [...logs].reverse().map(file => this.frontmatter(file)).find(fm => fm.exercise === "Workout end");
-        const startAt = this.frontmatter(workoutFile).started_at || start?.performed_at || start?.date || null;
-        const endAt = this.frontmatter(workoutFile).ended_at || end?.performed_at || end?.date || null;
+        const start = entries.find(item => item.fm.exercise === "Workout start")?.fm;
+        const end = [...entries].reverse().find(item => item.fm.exercise === "Workout end")?.fm;
+        const workoutFm = this.frontmatter(workoutFile);
+        const startAt = workoutFm.started_at || start?.performed_at || start?.date || null;
+        const endAt = workoutFm.ended_at || end?.performed_at || end?.date || null;
         let durationMinutes = null;
         if (startAt) {
             const endDate = endAt ? new Date(endAt) : new Date();
@@ -410,7 +499,7 @@ class gymCore {
         const summary = Object.entries(counts).map(([name, count]) => name + " x" + count).join(", ");
         const duration = durationMinutes === null ? "" : (endAt ? this.formatDuration(durationMinutes) : "Ongoing");
         await this.updateFrontmatter(workoutFile, {
-            Logs: logPaths,
+            Logs: entries.map(item => item.file.path),
             ExerciseCounts: counts,
             ExercisesSummary: summary,
             "Total Volume": Math.round(totalVolume * 100) / 100,
@@ -418,7 +507,7 @@ class gymCore {
             duration_minutes: durationMinutes,
             duration,
             status: endAt ? "completed" : "active",
-            started_at: startAt || this.frontmatter(workoutFile).started_at || null,
+            started_at: startAt || workoutFm.started_at || null,
             ended_at: endAt || null
         });
     }
@@ -431,15 +520,7 @@ class gymCore {
     }
 
     getActiveWorkouts() {
-        const root = this.paths.workoutsRoot + "/";
-        return this.app.vault.getMarkdownFiles()
-            .filter(file => file.path.startsWith(root) && !file.path.includes("/Log/"))
-            .filter(file => this.tags(file).includes("workout"))
-            .filter(file => {
-                const fm = this.frontmatter(file);
-                return fm.status === "active" || (!fm.ended_at && fm.started_at);
-            })
-            .sort((a, b) => new Date(this.frontmatter(b).started_at || 0) - new Date(this.frontmatter(a).started_at || 0));
+        return this.getSessionIndex().active;
     }
 
     buildWorkoutBody() {
@@ -535,6 +616,7 @@ class gymCore {
         ].join("\n");
         const sessionPath = this.joinPath(folderPath, slug + ".md");
         const file = await this.app.vault.create(sessionPath, fm + this.buildWorkoutBody());
+        this.invalidateCaches();
         await this.createStartLog(file);
         return file;
     }

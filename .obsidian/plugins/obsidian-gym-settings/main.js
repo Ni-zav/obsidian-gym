@@ -63,6 +63,32 @@ class ObsidianGymSettingsPlugin extends Plugin {
             name: "Migrate gym data from previous paths",
             callback: async () => this.migratePaths(this.settings.previousPaths, this.settings.paths)
         });
+
+        this.addCommand({
+            id: "obsidian-gym-audit-data",
+            name: "Audit gym data",
+            callback: async () => this.auditGymData()
+        });
+
+        this.addCommand({
+            id: "obsidian-gym-recalculate-all",
+            name: "Recalculate all workout metrics",
+            callback: async () => {
+                const core = globalThis.customJS?.gymCore;
+                if (!core) {
+                    new Notice("Gym core is not loaded. Reload Obsidian first.");
+                    return;
+                }
+                const root = core.paths.workoutsRoot + "/";
+                const sessions = this.app.vault.getMarkdownFiles().filter(file => {
+                    const data = this.app.metadataCache.getFileCache(file)?.frontmatter || {};
+                    const tags = Array.isArray(data.tags) ? data.tags : [data.tags].filter(Boolean);
+                    return file.path.startsWith(root) && !file.path.includes("/Log/") && tags.includes("workout");
+                });
+                for (const file of sessions) await core.recalculateWorkoutMetrics(file);
+                new Notice("Recalculated " + sessions.length + " workout sessions");
+            }
+        });
     }
 
     normalizePaths(paths = {}) {
@@ -246,6 +272,108 @@ class ObsidianGymSettingsPlugin extends Plugin {
         await this.saveSettings();
         this.applyPathsGlobal(nextPaths);
         new Notice("Gym migration complete: moved " + summary.moved + ", conflicts " + summary.conflicts + ", errors " + summary.errors, 10000);
+    }
+
+
+    async auditGymData() {
+        const paths = this.derived(this.settings.paths);
+        const markdown = this.app.vault.getMarkdownFiles();
+        const fm = file => this.app.metadataCache.getFileCache(file)?.frontmatter || {};
+        const tags = file => {
+            const value = fm(file).tags || [];
+            return Array.isArray(value) ? value : [value];
+        };
+
+        const exercises = markdown.filter(file =>
+            file.path.startsWith(paths.exercisesRoot + "/") &&
+            tags(file).includes("exercise") &&
+            !fm(file).workout_id
+        );
+        const exerciseIds = new Map();
+        const missingExerciseIds = [];
+        for (const file of exercises) {
+            const id = fm(file).id;
+            if (id === null || id === undefined || id === "") missingExerciseIds.push(file.path);
+            else {
+                const key = String(id);
+                if (!exerciseIds.has(key)) exerciseIds.set(key, []);
+                exerciseIds.get(key).push(file.path);
+            }
+        }
+        const duplicateIds = [...exerciseIds.entries()].filter(([, files]) => files.length > 1);
+
+        const routines = markdown.filter(file =>
+            file.path.startsWith(paths.workoutTemplatesRoot + "/") && tags(file).includes("workout")
+        );
+        const brokenRoutineRefs = [];
+        for (const file of routines) {
+            const ids = Array.isArray(fm(file).exercises) ? fm(file).exercises : [];
+            for (const id of [...new Set(ids.map(String))]) {
+                if (!exerciseIds.has(id)) brokenRoutineRefs.push({ routine: file.path, id });
+            }
+        }
+
+        const sessions = markdown.filter(file =>
+            file.path.startsWith(paths.workoutsRoot + "/") &&
+            !file.path.includes("/Log/") &&
+            tags(file).includes("workout")
+        );
+        const sessionIds = new Set();
+        const missingSessionIds = [];
+        for (const file of sessions) {
+            const id = fm(file).id;
+            if (!id) missingSessionIds.push(file.path);
+            else sessionIds.add(String(id));
+        }
+
+        const logs = markdown.filter(file =>
+            file.path.startsWith(paths.workoutsRoot + "/") && file.path.includes("/Log/")
+        );
+        const orphanLogs = logs.filter(file => {
+            const workoutId = fm(file).workout_id;
+            return workoutId && !sessionIds.has(String(workoutId));
+        });
+
+        const lines = [
+            "# Obsidian Gym Audit",
+            "",
+            "Generated: " + new Date().toLocaleString(),
+            "",
+            "## Summary",
+            "",
+            "- Exercise definitions: " + exercises.length,
+            "- Routines: " + routines.length,
+            "- Workout sessions: " + sessions.length,
+            "- Log files: " + logs.length,
+            "- Missing exercise IDs: " + missingExerciseIds.length,
+            "- Duplicate exercise IDs: " + duplicateIds.length,
+            "- Broken routine references: " + brokenRoutineRefs.length,
+            "- Missing workout IDs: " + missingSessionIds.length,
+            "- Orphan logs: " + orphanLogs.length,
+            "",
+            "## Missing exercise IDs",
+            ...(missingExerciseIds.length ? missingExerciseIds.map(value => "- [[" + value + "]]") : ["- None"]),
+            "",
+            "## Duplicate exercise IDs",
+            ...(duplicateIds.length ? duplicateIds.flatMap(([id, files]) => ["- " + id, ...files.map(value => "  - [[" + value + "]]")]) : ["- None"]),
+            "",
+            "## Broken routine references",
+            ...(brokenRoutineRefs.length ? brokenRoutineRefs.map(item => "- [[" + item.routine + "]] -> missing exercise id " + item.id) : ["- None"]),
+            "",
+            "## Missing workout IDs",
+            ...(missingSessionIds.length ? missingSessionIds.map(value => "- [[" + value + "]]") : ["- None"]),
+            "",
+            "## Orphan logs",
+            ...(orphanLogs.length ? orphanLogs.map(file => "- [[" + file.path + "]]") : ["- None"])
+        ];
+
+        const reportPath = "Obsidian Gym Audit.md";
+        const existing = this.app.vault.getAbstractFileByPath(reportPath);
+        if (existing instanceof TFile) await this.app.vault.modify(existing, lines.join("\n"));
+        else await this.app.vault.create(reportPath, lines.join("\n"));
+
+        const issues = missingExerciseIds.length + duplicateIds.length + brokenRoutineRefs.length + missingSessionIds.length + orphanLogs.length;
+        new Notice("Gym audit complete: " + issues + " issue(s). See Obsidian Gym Audit.", 10000);
     }
 
     async updateBaseViews(oldRaw, nextRaw) {

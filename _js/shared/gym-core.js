@@ -101,6 +101,35 @@ class gymCore {
         for (const key of keys) this._cache.delete(key);
     }
 
+    invalidateCachePrefix(prefix) {
+        for (const key of [...this._cache.keys()]) {
+            if (key.startsWith(prefix)) this._cache.delete(key);
+        }
+    }
+
+    invalidateForFile(file, workoutFile = null) {
+        const path = file?.path || "";
+        const paths = this.paths;
+
+        if (path === paths.exercisesRoot || path.startsWith(paths.exercisesRoot + "/")) {
+            this.invalidateCaches("exerciseIndex");
+        }
+
+        if (path === paths.workoutTemplatesRoot || path.startsWith(paths.workoutTemplatesRoot + "/")) {
+            this.invalidateCaches("workoutTemplates");
+        }
+
+        if (path === paths.workoutsRoot || path.startsWith(paths.workoutsRoot + "/")) {
+            if (path.includes("/Log/")) {
+                this.invalidateCaches("logHistoryIndex");
+                if (workoutFile?.path) this.invalidateCaches("workoutLogs:" + workoutFile.path);
+                else this.invalidateCachePrefix("workoutLogs:");
+            } else {
+                this.invalidateCaches("sessionIndex");
+            }
+        }
+    }
+
     async updateFrontmatter(file, patch) {
         if (!file) throw new Error("File is required");
         await this.app.fileManager.processFrontMatter(file, fm => {
@@ -109,7 +138,7 @@ class gymCore {
                 else fm[key] = value;
             }
         });
-        this.invalidateCaches();
+        this.invalidateForFile(file);
     }
 
     async ensureFolder(folderPath) {
@@ -300,7 +329,7 @@ class gymCore {
         ].filter(line => line !== null).join("\n");
 
         const file = await this.app.vault.create(path, lines);
-        this.invalidateCaches();
+        this.invalidateForFile(file, workoutFile);
         if (options.recalculate !== false) await this.recalculateWorkoutMetrics(workoutFile);
         return file;
     }
@@ -335,7 +364,7 @@ class gymCore {
         const last = regular.at(-1);
         if (!last) return null;
         await this.app.vault.delete(last);
-        this.invalidateCaches();
+        this.invalidateForFile(last, workoutFile);
         await this.recalculateWorkoutMetrics(workoutFile);
         return last.path;
     }
@@ -628,7 +657,7 @@ class gymCore {
         ].join("\n");
         const sessionPath = this.joinPath(folderPath, slug + ".md");
         const file = await this.app.vault.create(sessionPath, fm + this.buildWorkoutBody());
-        this.invalidateCaches();
+        this.invalidateForFile(file);
         await this.createStartLog(file);
         return file;
     }

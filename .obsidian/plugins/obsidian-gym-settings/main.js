@@ -186,7 +186,7 @@ class ObsidianGymSettingsPlugin extends Plugin {
             { from: oldPaths.workoutsRoot, to: nextPaths.workoutsRoot }
         ].filter((entry, index, list) =>
             entry.from && entry.to && list.findIndex(other => other.from === entry.from && other.to === entry.to) === index
-        );
+        ).sort((a, b) => b.from.length - a.from.length);
     }
 
     async migratePaths(oldRaw, nextRaw) {

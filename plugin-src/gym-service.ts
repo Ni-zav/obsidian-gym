@@ -120,4 +120,119 @@ export class GymService {
     return file;
   }
 
-  async createEvent(workoutFile: TFile, eventType:
+  async createEvent(workoutFile: TFile, eventType: "workout_start" | "workout_end", performedAt = nowTimestamp()): Promise<TFile> {
+    return this.enqueue(workoutFile, async () => {
+      const path = await this.nextLogPath(workoutFile);
+      return this.createMarkdown(path, {
+        schema_version: 3,
+        id: uuid(),
+        workout_id: String(this.index.frontmatter(workoutFile).id),
+        event_type: eventType,
+        performed_at: performedAt,
+        tags: ["log", "event", eventType === "workout_start" ? "start" : "end"],
+      }, "# " + (eventType === "workout_start" ? "Workout start" : "Workout end"));
+    });
+  }
+
+  async logSet(workoutFile: TFile, payload: SetPayload): Promise<{ file: TFile; prs: PRResult[] }> {
+    return this.enqueue(workoutFile, async () => {
+      const sessionFm = this.index.frontmatter(workoutFile);
+      if (sessionFm.status === "completed") throw new Error("This workout is already completed.");
+      const history = this.index.getHistory(payload.exercise_id, payload.exercise).map((record) => record.fm);
+      const prs = payload.set_type === "warmup" ? [] : this.detectPR(payload, history);
+      const existing = this.index.getLogsForWorkout(sessionFm.id, false);
+      const setIndex = existing.length + 1;
+      const path = await this.nextLogPath(workoutFile);
+      const fm: Record<string, any> = {
+        schema_version: 3,
+        id: uuid(),
+        workout_id: String(sessionFm.id),
+        set_index: setIndex,
+        exercise_id: String(payload.exercise_id),
+        exercise: payload.exercise,
+        performed_at: nowTimestamp(),
+        tracking_mode: payload.tracking_mode,
+        set_type: payload.set_type,
+        effort: payload.effort ?? null,
+        note: payload.note || "",
+        prs: prs.map((item) => item.key),
+        tags: ["exercise", "log", "set"],
+      };
+      if (payload.weight_kg != null) fm.weight_kg = Number(payload.weight_kg);
+      if (payload.reps != null) fm.reps = Number(payload.reps);
+      if (payload.duration_seconds != null) fm.duration_seconds = Number(payload.duration_seconds);
+      if (payload.distance_km != null) fm.distance_km = Number(payload.distance_km);
+      const file = await this.createMarkdown(path, fm, "```obsidian-gym-log\n```");
+      await this.applySetDelta(workoutFile, fm, prs);
+      return { file, prs };
+    });
+  }
+
+  async repeatSet(workoutFile: TFile, logFile: TFile): Promise<{ file: TFile; prs: PRResult[] }> {
+    const fm = this.index.frontmatter(logFile);
+    const definition = this.index.getExerciseById(fm.exercise_id) || this.index.getExerciseByName(fm.exercise);
+    if (!definition) throw new Error("Exercise definition not found.");
+    return this.logSet(workoutFile, {
+      exercise_id: definition.id,
+      exercise: definition.name,
+      tracking_mode: trackingModeOf(fm),
+      set_type: (fm.set_type || "working") as SetType,
+      weight_kg: numberOrNull(fm.weight_kg),
+      reps: numberOrNull(fm.reps),
+      duration_seconds: numberOrNull(fm.duration_seconds),
+      distance_km: numberOrNull(fm.distance_km),
+      effort: numberOrNull(fm.effort),
+      note: String(fm.note || ""),
+    });
+  }
+
+  async editSet(workoutFile: TFile, logFile: TFile, patch: Record<string, any>): Promise<void> {
+    await this.enqueue(workoutFile, async () => {
+      await this.updateFrontmatter(logFile, patch, ["weight", "duration", "date"]);
+      await this.recalculateMetrics(workoutFile);
+    });
+  }
+
+  async deleteSet(workoutFile: TFile, logFile: TFile): Promise<void> {
+    await this.enqueue(workoutFile, async () => {
+      const oldPath = logFile.path;
+      await this.app.vault.trash(logFile, false);
+      this.index.removePath(oldPath);
+      await this.recalculateMetrics(workoutFile);
+    });
+  }
+
+  async undoLastSet(workoutFile: TFile): Promise<TFile | null> {
+    const fm = this.index.frontmatter(workoutFile);
+    const sets = this.index.getLogsForWorkout(fm.id, false);
+    const last = sets.at(-1);
+    if (!last) return null;
+    await this.deleteSet(workoutFile, last.file);
+    return last.file;
+  }
+
+  async finishWorkout(workoutFile: TFile): Promise<void> {
+    await this.enqueue(workoutFile, async () => {
+      const fm = this.index.frontmatter(workoutFile);
+      if (fm.status === "completed") return;
+      const endedAt = nowTimestamp();
+      const path = await this.nextLogPath(workoutFile);
+      await this.createMarkdown(path, {
+        schema_version: 3,
+        id: uuid(),
+        workout_id: String(fm.id),
+        event_type: "workout_end",
+        performed_at: endedAt,
+        tags: ["log", "event", "end"],
+      }, "# Workout end");
+      const start = new Date(String(fm.started_at || endedAt)).getTime();
+      const end = new Date(endedAt).getTime();
+      const durationMinutes = Number.isFinite(start) && Number.isFinite(end) ? Math.max(0, Math.round((end - start) / 60000)) : 0;
+      await this.updateFrontmatter(workoutFile, { status: "completed", ended_at: endedAt, duration_minutes: durationMinutes });
+    });
+  }
+
+  async skipExercise(workoutFile: TFile, exerciseId: string): Promise<void> {
+    const fm = this.index.frontmatter(workoutFile);
+    const skipped = new Set((Array.isArray(fm.skipped_exercises) ? fm.skipped_exercises : []).map(String));
+    skipped.add(String(exerci

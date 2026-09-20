@@ -234,11 +234,12 @@ function table(root,headers,rows){const t=root.createEl("table",{cls:"gym-table"
 class SettingsTab extends PluginSettingTab {
   constructor(plugin){super(plugin.app,plugin);this.p=plugin;}
   display(){const c=this.containerEl;c.empty();c.createEl("h2",{text:"Obsidian Gym"});
-    const text=(name,desc,key)=>new Setting(c).setName(name).setDesc(desc).addText(t=>t.setValue(String(this.p.settings[key])).onChange(async v=>{this.p.settings[key]=norm(v)||DEFAULTS[key];await this.p.saveSettings();this.p.index.rebuild();}));
+    const text=(name,desc,key)=>new Setting(c).setName(name).setDesc(desc).addText(t=>t.setValue(String(this.p.settings[key])).onChange(async v=>{if(["exercisesRoot","workoutTemplatesRoot","workoutsRoot"].includes(key)&&!this.p.settings.previousPaths)this.p.settings.previousPaths={exercisesRoot:this.p.settings.exercisesRoot,workoutTemplatesRoot:this.p.settings.workoutTemplatesRoot,workoutsRoot:this.p.settings.workoutsRoot};this.p.settings[key]=norm(v)||DEFAULTS[key];await this.p.saveSettings();this.p.index.rebuild();}));
     text("Exercises root","Exercise definitions and category JSON.","exercisesRoot");text("Workout templates root","Saved routines.","workoutTemplatesRoot");text("Workouts root","Generated sessions and logs.","workoutsRoot");text("Home note","Note opened by Gym: Open home.","homeNote");
     new Setting(c).setName("Open home on startup").addToggle(t=>t.setValue(!!this.p.settings.openHomeOnStartup).onChange(async v=>{this.p.settings.openHomeOnStartup=v;await this.p.saveSettings();}));
     new Setting(c).setName("Default rest seconds").addText(t=>t.setValue(String(this.p.settings.defaultRestSeconds)).onChange(async v=>{this.p.settings.defaultRestSeconds=Math.max(0,Number(v)||0);await this.p.saveSettings();}));
     new Setting(c).setName("Weight adjustment step").addText(t=>t.setValue(String(this.p.settings.weightStepKg)).onChange(async v=>{this.p.settings.weightStepKg=Math.max(.1,Number(v)||2.5);await this.p.saveSettings();}));
+    new Setting(c).setName("Path migration").setDesc("Move existing files from the previously saved roots into the current roots.").addButton(b=>b.setButtonText("Preview").onClick(()=>this.p.previewPathMigration())).addButton(b=>b.setButtonText("Migrate").setWarning().onClick(()=>this.p.migratePaths()));
     new Setting(c).setName("Data migration").setDesc("Creates a vault backup before rewriting legacy gym metadata to schema v3.").addButton(b=>b.setButtonText("Migrate to v3").setWarning().onClick(()=>this.p.migrateV3()));
   }
 }

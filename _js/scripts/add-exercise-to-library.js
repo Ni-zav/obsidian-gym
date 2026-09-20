@@ -74,6 +74,7 @@ module.exports = async function addExerciseToLibrary(params) {
         ].filter(line => line !== null).join("\n").replaceAll("~~~", "```");
 
         const file = await core.app.vault.create(path, lines);
+        core.invalidateForFile(file);
         params.variables = { exercisePath: file.path };
         new Notice("Exercise added: " + fullName);
     } catch (error) {

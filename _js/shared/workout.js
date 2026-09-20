@@ -75,12 +75,7 @@ class workout {
     }
 
     renderHomeSummary(context) {
-        const root = this.core.paths.workoutsRoot + "/";
-        const sessions = this.app.vault.getMarkdownFiles()
-            .filter(file => file.path.startsWith(root) && !file.path.includes("/Log/"))
-            .map(file => ({ file, fm: this.core.frontmatter(file) }))
-            .filter(item => this.core.tags(item.fm).includes("workout"))
-            .sort((a, b) => new Date(b.fm.started_at || b.fm.date || 0) - new Date(a.fm.started_at || a.fm.date || 0));
+        const sessions = this.core.getSessionIndex().items;
 
         const weekAgo = Date.now() - 7 * 86400000;
         const week = sessions.filter(item => new Date(item.fm.started_at || item.fm.date || 0).getTime() >= weekAgo);
@@ -150,8 +145,7 @@ class workout {
         if (!context?.dv || !this.core) return;
         const current = context.dv.current();
         const workoutFile = this.app.vault.getAbstractFileByPath(current.file.path || current.file);
-        const logs = this.core.getWorkoutLogs(workoutFile)
-            .map(file => ({ file, fm: this.core.logFrontmatter(file) }))
+        const logs = this.core.getWorkoutLogEntries(workoutFile)
             .filter(item => item.fm.exercise !== "Workout start" && item.fm.exercise !== "Workout end");
 
         if (!logs.length) {
@@ -215,6 +209,7 @@ class workout {
             remove.addEventListener("click", async event => {
                 event.preventDefault();
                 await this.app.vault.delete(item.file);
+                this.core.invalidateForFile(item.file, workoutFile);
                 await this.core.recalculateWorkoutMetrics(workoutFile);
                 new Notice("Set deleted");
             });
@@ -283,8 +278,8 @@ class workout {
         if (!context?.dv || !this.core || typeof context.window?.renderChart !== "function") return;
         const current = context.dv.current();
         const workoutFile = this.app.vault.getAbstractFileByPath(current.file.path || current.file);
-        const logs = this.core.getWorkoutLogs(workoutFile)
-            .map(file => this.core.logFrontmatter(file))
+        const logs = this.core.getWorkoutLogEntries(workoutFile)
+            .map(item => item.fm)
             .filter(fm => fm.exercise !== "Workout start" && fm.exercise !== "Workout end" && fm.effort != null);
         if (logs.length < 2) return;
 

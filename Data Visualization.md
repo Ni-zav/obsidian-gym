@@ -5,20 +5,17 @@ const core = customJS.gymCore;
 if (!core) {
     dv.paragraph("Gym core is not loaded.");
 } else {
-    const root = core.paths.workoutsRoot + "/";
-    const pages = dv.pages()
-        .where(page => page.file.path.startsWith(root) && !page.file.path.includes("/Log/"))
-        .where(page => page.file.tags?.includes("#workout"))
-        .array()
-        .sort((a, b) => new Date(a.date || a.started_at || 0) - new Date(b.date || b.started_at || 0));
+    const sessions = core.getSessionIndex().items;
+    const pages = [...sessions]
+        .sort((a, b) => new Date(a.fm.date || a.fm.started_at || 0) - new Date(b.fm.date || b.fm.started_at || 0));
 
     const byDate = new Map();
-    for (const page of pages) {
-        const date = String(page.date || page.started_at || "").slice(0, 10);
+    for (const { fm } of pages) {
+        const date = String(fm.date || fm.started_at || "").slice(0, 10);
         if (!date) continue;
         const item = byDate.get(date) || { volume: 0, duration: 0, sessions: 0 };
-        item.volume += Number(page["Total Volume"] || 0);
-        item.duration += Number(page.duration_minutes || 0);
+        item.volume += Number(fm["Total Volume"] || 0);
+        item.duration += Number(fm.duration_minutes || 0);
         item.sessions += 1;
         byDate.set(date, item);
     }
@@ -88,12 +85,12 @@ if (!core) {
     dv.header(2, "Recent sessions");
     dv.table(
         ["Workout", "Date", "Sets", "Volume", "Duration"],
-        pages.slice(-12).reverse().map(page => [
-            page.file.link,
-            page.date || "",
-            page.Logs ? Math.max(0, page.Logs.length - 2) : 0,
-            Math.round(Number(page["Total Volume"] || 0)),
-            page.duration || ""
+        pages.slice(-12).reverse().map(({ file, fm }) => [
+            dv.fileLink(file.path),
+            fm.date || "",
+            fm.Logs ? Math.max(0, fm.Logs.length - 2) : 0,
+            Math.round(Number(fm["Total Volume"] || 0)),
+            fm.duration || ""
         ])
     );
 }

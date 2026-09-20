@@ -320,4 +320,49 @@ export class GymService {
 
   detectPR(current: SetPayload, previous: Record<string, any>[]): PRResult[] {
     if (current.set_type === "warmup") return [];
-    const
+    const history = previous.filter((fm) => String(fm.set_type || "working") !== "warmup");
+    if (!history.length) return [];
+    const result: PRResult[] = [];
+    const mode = current.tracking_mode;
+    const weight = numberOrNull(current.weight_kg) || 0;
+    const reps = numberOrNull(current.reps) || 0;
+    if (mode === "strength" || mode === "bodyweight") {
+      const weights = history.map((fm) => numberOrNull(fm.weight_kg) || 0);
+      if (weight > Math.max(0, ...weights)) result.push({ key: "weight", label: "Weight PR", value: weight });
+      const sameWeight = history.filter((fm) => Math.abs((numberOrNull(fm.weight_kg) || 0) - weight) < 0.001);
+      if (reps > Math.max(0, ...sameWeight.map((fm) => numberOrNull(fm.reps) || 0))) result.push({ key: "reps_at_weight", label: weight ? "Reps-at-weight PR" : "Reps PR", value: reps });
+      const volume = setVolume(weight, reps);
+      if (volume > Math.max(0, ...history.map((fm) => setVolume(fm.weight_kg, fm.reps)))) result.push({ key: "set_volume", label: "Set-volume PR", value: volume });
+      const estimated = oneRepMax(weight, reps);
+      if (estimated > Math.max(0, ...history.map((fm) => oneRepMax(fm.weight_kg, fm.reps)))) result.push({ key: "estimated_1rm", label: "Estimated 1RM PR", value: estimated });
+    } else if (mode === "duration") {
+      const duration = numberOrNull(current.duration_seconds) || 0;
+      if (duration > Math.max(0, ...history.map((fm) => numberOrNull(fm.duration_seconds ?? fm.duration) || 0))) result.push({ key: "duration", label: "Duration PR", value: duration });
+    } else if (mode === "distance_time") {
+      const distance = numberOrNull(current.distance_km) || 0;
+      const duration = numberOrNull(current.duration_seconds) || 0;
+      if (distance > Math.max(0, ...history.map((fm) => numberOrNull(fm.distance_km) || 0))) result.push({ key: "distance", label: "Distance PR", value: distance });
+      if (distance > 0 && duration > 0) {
+        const pace = duration / distance;
+        const previousPaces = history.map((fm) => {
+          const d = numberOrNull(fm.distance_km) || 0, t = numberOrNull(fm.duration_seconds) || 0;
+          return d > 0 && t > 0 ? t / d : Infinity;
+        }).filter(Number.isFinite);
+        if (previousPaces.length && pace < Math.min(...previousPaces)) result.push({ key: "pace", label: "Pace PR", value: pace });
+      }
+    }
+    return result;
+  }
+
+  async recalculateMetrics(workoutFile: TFile): Promise<void> {
+    const fm = this.index.frontmatter(workoutFile);
+    const logs = this.index.getLogsForWorkout(fm.id, true);
+    const sets = logs.filter((log) => !log.eventType);
+    const counts: Record<string, number> = {};
+    let working = 0, volume = 0, timedSeconds = 0, distanceKm = 0, prCount = 0;
+    for (const log of sets) {
+      const lfm = log.fm;
+      if (String(lfm.set_type || "working") !== "warmup") {
+        working += 1;
+        const name = String(lfm.exercise || "Unknown");
+        counts[name] = (counts[name] || 0) + 1;

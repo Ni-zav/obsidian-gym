@@ -1,8 +1,6 @@
-formulas:
-  Untitled: ""
 views:
   - type: table
-    name: Table
+    name: Exercises
     filters:
       and:
         - file.inFolder("Templates/exercises")
@@ -18,14 +16,16 @@ views:
       - file.name
       - muscle_group
       - equipment
+      - timed
+      - default_reps
+      - default_duration_seconds
+      - default_rest_seconds
       - instructions
     sort:
-      - property: formula.Untitled
+      - property: muscle_group
         direction: ASC
       - property: file.name
-        direction: DESC
-      - property: equipment
-        direction: DESC
+        direction: ASC
     columnSize:
       note.equipment: 152
       note.instructions: 367

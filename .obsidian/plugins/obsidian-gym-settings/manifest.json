@@ -1,9 +1,9 @@
 {
   "id": "obsidian-gym-settings",
   "name": "Obsidian Gym Settings",
-  "version": "1.0.0",
-  "minAppVersion": "1.4.0",
-  "description": "Configure Obsidian Gym folder paths and migrate existing gym files.",
+  "version": "2.0.0",
+  "minAppVersion": "1.13.0",
+  "description": "Configure Obsidian Gym paths and safely migrate gym data.",
   "author": "Local",
   "isDesktopOnly": false
 }

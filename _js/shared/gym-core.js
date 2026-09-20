@@ -19,13 +19,22 @@ class gymCore {
 
     normalizePath(value) {
         if (!value || typeof value !== "string") return "";
-        return value.replace(/\\/g, "/").trim().replace(/^\\/+/, "").replace(/\\/+$/, "");
+        let normalized = value.split(String.fromCharCode(92)).join("/").trim();
+        while (normalized.startsWith("/")) normalized = normalized.slice(1);
+        while (normalized.endsWith("/")) normalized = normalized.slice(0, -1);
+        return normalized;
     }
 
     joinPath(...parts) {
         return parts.filter(Boolean).map((part, index) => {
-            const value = String(part);
-            return index === 0 ? value.replace(/\\/+$/, "") : value.replace(/^\\/+/, "").replace(/\\/+$/, "");
+            let value = String(part);
+            if (index === 0) {
+                while (value.endsWith("/")) value = value.slice(0, -1);
+            } else {
+                while (value.startsWith("/")) value = value.slice(1);
+                while (value.endsWith("/")) value = value.slice(0, -1);
+            }
+            return value;
         }).join("/");
     }
 

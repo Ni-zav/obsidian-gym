@@ -26,12 +26,11 @@ Enabled runtime plugins:
 1. [QuickAdd](https://github.com/chhoumann/quickadd) — command entry points
 2. [Dataview](https://github.com/blacksmithgu/obsidian-dataview) — Markdown-driven renderers and queries
 3. [CustomJS](https://github.com/saml-dev/obsidian-custom-js) — shared gym services and UI
-4. [Meta Bind](https://github.com/mProjectsCode/obsidian-meta-bind-plugin) — in-note command buttons
-5. [Charts](https://github.com/phibr0/obsidian-charts) — offline chart rendering
-6. Homepage — optional startup convenience
-7. **Obsidian Gym Settings** — local plugin in this repository
+4. [Charts](https://github.com/phibr0/obsidian-charts) — offline chart rendering
+5. Homepage — optional startup convenience
+6. **Obsidian Gym Settings** — local plugin in this repository
 
-Templater, Buttons, Media Extended, Tag Wrangler, and Heatmap Calendar are no longer runtime dependencies for the gym flow.
+Templater, Meta Bind, Buttons, Media Extended, Tag Wrangler, and Heatmap Calendar are no longer runtime dependencies for the gym flow.
 
 The repository keeps the plugin bundles already committed to the vault. After opening the vault, use Obsidian's normal Community Plugins updater for upstream plugin updates. Do not update only a plugin manifest without its matching compiled plugin bundle.
 
@@ -106,7 +105,7 @@ gym-core (data + session service)
       ↑
 CustomJS renderers
       ↑
-QuickAdd commands / Meta Bind buttons
+QuickAdd commands / DataviewJS buttons
 ```
 
 Templater is no longer in the runtime path. Folder logic, IDs, metrics, workout state, and history lookup live in one shared service instead of being copied into each QuickAdd script.

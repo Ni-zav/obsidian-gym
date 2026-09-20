@@ -62,7 +62,18 @@ class exercise {
         if (weights.some(Boolean)) stats.push(["Best weight", Math.max(...weights).toFixed(1) + " kg"]);
         if (reps.some(Boolean)) stats.push(["Best reps", Math.max(...reps)]);
         if (e1rms.some(Boolean)) stats.push(["Est. 1RM", Math.max(...e1rms).toFixed(1) + " kg"]);
+        const weekAgo = Date.now() - 7 * 86400000;
+        const weeklySets = history.filter(item => new Date(item.fm.performed_at || item.fm.date || 0).getTime() >= weekAgo).length;
         stats.push(["Logged sets", history.length]);
+        stats.push(["Sets this week", weeklySets]);
+        if (nonTimed.length >= 2) {
+            const previous = nonTimed[nonTimed.length - 2];
+            const latest = nonTimed[nonTimed.length - 1];
+            const previousVolume = Number(previous.weight_kg || 0) * Number(previous.reps || 0);
+            const latestVolume = Number(latest.weight_kg || 0) * Number(latest.reps || 0);
+            const direction = latestVolume > previousVolume ? "↑" : latestVolume < previousVolume ? "↓" : "→";
+            stats.push(["Last-set volume", direction + " " + latestVolume.toFixed(1)]);
+        }
         if (stats.length) {
             context.dv.header(2, "Progress");
             context.dv.table(["Metric", "Best"], stats);

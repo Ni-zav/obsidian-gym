@@ -7,7 +7,6 @@
 | QuickAdd | command entry points and prompts |
 | Dataview | Markdown-driven render blocks |
 | CustomJS | shared gym classes |
-| Meta Bind | command buttons embedded in notes |
 | Charts | Chart.js integration without CDN injection |
 | Obsidian Gym Settings | local path configuration/migration |
 
@@ -16,6 +15,7 @@ Homepage is optional convenience only.
 ## Removed runtime dependencies
 
 - Templater — session/log creation is now direct and deterministic
+- Meta Bind — command buttons are now small DataviewJS controls
 - Buttons — Meta Bind is the single button system
 - Media Extended — not required by the gym runtime
 - Tag Wrangler — not required by the gym runtime

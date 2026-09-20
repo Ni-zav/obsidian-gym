@@ -1,0 +1,15 @@
+{
+  "name": "obsidian-gym",
+  "private": true,
+  "version": "3.0.0",
+  "description": "Local-first workout tracking plugin for Obsidian.",
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "build:watch": "node esbuild.config.mjs --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "obsidian": "^1.8.7",
+    "typescript": "^5.9.0"
+  }
+}

@@ -4,9 +4,6 @@ views:
     filters:
       and:
         - file.inFolder("Templates/exercises")
-        - file.name != "Start"
-        - file.name != "End"
-        - file.name != "Custom"
         - not:
             - file.inFolder("Templates/exercises/_library")
     groupBy:
@@ -14,11 +11,13 @@ views:
       direction: ASC
     order:
       - file.name
+      - tracking_mode
       - muscle_group
       - equipment
-      - timed
       - default_reps
+      - default_weight_kg
       - default_duration_seconds
+      - default_distance_km
       - default_rest_seconds
       - instructions
     sort:
@@ -26,8 +25,3 @@ views:
         direction: ASC
       - property: file.name
         direction: ASC
-    columnSize:
-      note.equipment: 152
-      note.instructions: 367
-    markers: none
-    indentProperties: false

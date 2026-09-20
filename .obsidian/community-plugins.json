@@ -1,11 +1,6 @@
 [
   "quickadd",
-  "media-extended",
-  "templater-obsidian",
-  "buttons",
   "obsidian-charts",
-  "heatmap-calendar",
-  "tag-wrangler",
   "dataview",
   "customjs",
   "obsidian-meta-bind-plugin",

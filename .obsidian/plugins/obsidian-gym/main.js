@@ -306,6 +306,57 @@ class ObsidianGym extends Plugin {
     const lines=["# Obsidian Gym Audit","","Generated: "+new Date().toLocaleString(),"","- Exercises: "+this.index.exercisesList().length,"- Routines: "+this.index.routinesList().length,"- Sessions: "+this.index.sessionsList().length,"- Missing exercise IDs: "+missing.length,"- Duplicate exercise IDs: "+[...dup.values()].filter(x=>x.length>1).length,"- Broken routine references: "+broken.length,"","## Broken references",...(broken.length?broken.map(x=>"- "+x):["- None"])];
     const p="Obsidian Gym Audit.md",old=this.app.vault.getAbstractFileByPath(p);if(old instanceof TFile)await this.app.vault.modify(old,lines.join("\n"));else await this.app.vault.create(p,lines.join("\n"));new Notice("Gym audit written to "+p);
   }
+  async replaceLegacyBody(file,lang){
+    const raw=await this.app.vault.read(file);
+    if(!raw.includes(FENCE+"dataviewjs"))return;
+    const pattern=new RegExp(FENCE+"dataviewjs[\\s\\S]*?"+FENCE,"g");
+    const cleaned=raw.replace(pattern,"").trimEnd();
+    await this.app.vault.modify(file,cleaned+"\n\n"+FENCE+lang+"\n"+FENCE+"\n");
+  }
+  async previewPathMigration(){
+    const old=this.settings.previousPaths;
+    if(!old){new Notice("No previous paths are pending migration.");return;}
+    const maps=[[old.exercisesRoot,this.settings.exercisesRoot],[old.workoutTemplatesRoot,this.settings.workoutTemplatesRoot],[old.workoutsRoot,this.settings.workoutsRoot]].filter(x=>x[0]&&x[1]&&norm(x[0])!==norm(x[1]));
+    let move=0,conflict=0;
+    for(const [from,to] of maps){
+      for(const file of this.app.vault.getFiles().filter(f=>inside(f.path,from))){
+        let rel=file.path.slice(norm(from).length);if(rel.startsWith("/"))rel=rel.slice(1);
+        const target=join(to,rel);
+        this.app.vault.getAbstractFileByPath(target)?conflict++:move++;
+      }
+    }
+    new Notice("Path migration: "+move+" movable, "+conflict+" conflicts.",10000);
+  }
+  async migratePaths(){
+    const old=this.settings.previousPaths;
+    if(!old){new Notice("No previous paths are pending migration.");return;}
+    const maps=[[old.exercisesRoot,this.settings.exercisesRoot],[old.workoutTemplatesRoot,this.settings.workoutTemplatesRoot],[old.workoutsRoot,this.settings.workoutsRoot]]
+      .filter(x=>x[0]&&x[1]&&norm(x[0])!==norm(x[1]))
+      .sort((a,b)=>String(b[0]).length-String(a[0]).length);
+    let moved=0,conflicts=0;
+    for(const [from,to] of maps){
+      const files=this.app.vault.getFiles().filter(f=>inside(f.path,from)).sort((a,b)=>a.path.length-b.path.length);
+      for(const file of files){
+        let rel=file.path.slice(norm(from).length);if(rel.startsWith("/"))rel=rel.slice(1);
+        const target=join(to,rel);
+        if(this.app.vault.getAbstractFileByPath(target)){conflicts++;continue;}
+        await this.gym.ensureFolder(parent(target));
+        await this.app.fileManager.renameFile(file,target);
+        moved++;
+      }
+    }
+    for(const bp of ["Exercises List.base","Workouts List.base","Workouts History.base"]){
+      const file=this.app.vault.getAbstractFileByPath(bp);
+      if(!(file instanceof TFile))continue;
+      let raw=await this.app.vault.read(file);
+      maps.forEach(([from,to])=>{raw=raw.split(String(from)).join(String(to));});
+      await this.app.vault.modify(file,raw);
+    }
+    this.settings.previousPaths=null;
+    await this.saveSettings();
+    this.index.rebuild();
+    new Notice("Path migration complete: "+moved+" moved, "+conflicts+" conflicts.",10000);
+  }
   async migrateV3(){
     const stamp=moment().format("YYYYMMDD-HHmmss"),backup=join("Gym Migration Backups",stamp);await this.gym.ensureFolder(backup);const files=this.app.vault.getMarkdownFiles().filter(f=>inside(f.path,this.settings.exercisesRoot)||inside(f.path,this.settings.workoutTemplatesRoot)||inside(f.path,this.settings.workoutsRoot));
     let changed=0;for(const file of files){const f=this.index.fm(file);if(Number(f.schema_version||0)>=3)continue;const rel=file.path.replace(/^\/+/,"");const bp=join(backup,rel);await this.gym.ensureFolder(parent(bp));try{await this.app.vault.copy(file,bp);}catch{}

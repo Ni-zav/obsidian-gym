@@ -11,10 +11,10 @@ views:
       - file.name
       - workout_type
       - workout_place
+      - exercise_plan
       - file.mtime
     sort:
       - property: workout_type
         direction: ASC
       - property: file.name
         direction: ASC
-    columnSize: {}

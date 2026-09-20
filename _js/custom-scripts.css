@@ -129,3 +129,31 @@
     border: 0;
     border-radius: var(--radius-m);
 }
+
+.gym-recovery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: 0.65rem;
+    margin-block: 1rem;
+}
+
+.gym-recovery-card {
+    padding: 0.75rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    background: var(--background-secondary);
+}
+
+.gym-recovery-track {
+    height: 0.35rem;
+    margin-block: 0.55rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--background-modifier-border);
+}
+
+.gym-recovery-bar {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--interactive-accent);
+}

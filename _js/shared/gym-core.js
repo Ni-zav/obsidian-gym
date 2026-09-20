@@ -529,6 +529,8 @@ class gymCore {
             "timed_load: 0",
             "duration_minutes: 0",
             'duration: "Ongoing"',
+            "cssclasses:",
+            "  - gym-workout",
             "tags:",
             "  - workout",
             "---",

@@ -415,4 +415,9 @@ export class GymService {
   private async enqueue<T>(workoutFile: TFile, operation: () => Promise<T>): Promise<T> {
     const key = String(this.index.frontmatter(workoutFile).id || workoutFile.path);
     const previous = this.queues.get(key) || Promise.resolve();
-    const next =
+    const next = previous.catch(() => undefined).then(operation);
+    this.queues.set(key, next.then(() => undefined, () => undefined));
+    try { return await next; }
+    finally { if (this.queues.get(key) === next) this.queues.delete(key); }
+  }
+}

@@ -3,54 +3,93 @@ class timer {
         this.remainingTime = 0;
         this.timerId = null;
         this.isRunning = false;
-        this.display = null;
+        this.isPaused = false;
+        this.displays = new Set();
+        this.endsAt = null;
     }
 
     async renderTimerControls(context) {
         if (!context?.container) return;
+        const root = context.container.createEl("div", { cls: "gym-timer" });
+        const display = root.createEl("div", { cls: "timer-display" });
+        this.displays.add(display);
+        this.updateDisplays();
 
-        const container = context.container;
-        this.display = container.createEl("div", { cls: "timer-display" });
-        this.display.textContent = "00:00";
+        const presets = root.createEl("div", { cls: "timer-presets" });
+        for (const seconds of [30, 60, 90, 120]) {
+            const button = presets.createEl("button", { text: seconds + "s" });
+            button.addEventListener("click", () => this.start(seconds));
+        }
 
-        const controlsDiv = container.createEl("div", { cls: "timer-controls" });
-        const startBtn = controlsDiv.createEl("button", { text: "Start (60s)" });
-        const stopBtn = controlsDiv.createEl("button", { text: "Stop" });
-
-        startBtn.addEventListener("click", () => this.start(60));
-        stopBtn.addEventListener("click", () => this.stop());
+        const controls = root.createEl("div", { cls: "timer-controls" });
+        const pause = controls.createEl("button", { text: this.isPaused ? "Resume" : "Pause" });
+        pause.addEventListener("click", () => {
+            if (this.isPaused) this.resume();
+            else this.pause();
+            pause.textContent = this.isPaused ? "Resume" : "Pause";
+        });
+        const reset = controls.createEl("button", { text: "Reset" });
+        reset.addEventListener("click", () => this.stop());
     }
 
     start(seconds) {
-        if (this.isRunning) return;
-        this.remainingTime = seconds;
+        const duration = Math.max(0, Math.floor(Number(seconds) || 0));
+        if (!duration) return;
+        this.clearInterval();
+        this.remainingTime = duration;
         this.isRunning = true;
-        this.updateDisplay();
-
+        this.isPaused = false;
+        this.endsAt = Date.now() + duration * 1000;
+        this.updateDisplays();
         this.timerId = setInterval(() => {
-            this.remainingTime--;
-            this.updateDisplay();
+            this.remainingTime = Math.max(0, Math.ceil((this.endsAt - Date.now()) / 1000));
+            this.updateDisplays();
             if (this.remainingTime <= 0) {
-                this.stop();
-                new Notice("Timer finished!");
+                this.clearInterval();
+                this.isRunning = false;
+                this.endsAt = null;
+                new Notice("Rest finished");
             }
-        }, 1000);
+        }, 250);
+    }
+
+    pause() {
+        if (!this.isRunning || this.isPaused) return;
+        this.remainingTime = Math.max(0, Math.ceil((this.endsAt - Date.now()) / 1000));
+        this.clearInterval();
+        this.isPaused = true;
+        this.updateDisplays();
+    }
+
+    resume() {
+        if (!this.isPaused || this.remainingTime <= 0) return;
+        this.isPaused = false;
+        this.isRunning = true;
+        this.endsAt = Date.now() + this.remainingTime * 1000;
+        this.start(this.remainingTime);
     }
 
     stop() {
-        if (this.timerId) {
-            clearInterval(this.timerId);
-            this.timerId = null;
-        }
-        this.isRunning = false;
+        this.clearInterval();
         this.remainingTime = 0;
-        this.updateDisplay();
+        this.isRunning = false;
+        this.isPaused = false;
+        this.endsAt = null;
+        this.updateDisplays();
     }
 
-    updateDisplay() {
-        if (!this.display) return;
+    clearInterval() {
+        if (this.timerId) clearInterval(this.timerId);
+        this.timerId = null;
+    }
+
+    updateDisplays() {
         const minutes = Math.floor(this.remainingTime / 60);
         const seconds = this.remainingTime % 60;
-        this.display.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        const text = String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+        for (const display of [...this.displays]) {
+            if (!display?.isConnected) this.displays.delete(display);
+            else display.textContent = text;
+        }
     }
 }

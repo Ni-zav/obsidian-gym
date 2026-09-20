@@ -267,6 +267,8 @@ class ObsidianGym extends Plugin {
     this.addCommand({id:"recalculate-all",name:"Recalculate all workout metrics",callback:async()=>{for(const s of this.index.sessionsList())await this.gym.recalc(s.file);new Notice("Workout metrics rebuilt");}});
     this.addCommand({id:"audit-data",name:"Audit gym data",callback:()=>this.audit()});
     this.addCommand({id:"migrate-schema-v3",name:"Migrate gym data to schema v3",callback:()=>this.migrateV3()});
+    this.addCommand({id:"preview-path-migration",name:"Preview gym path migration",callback:()=>this.previewPathMigration()});
+    this.addCommand({id:"migrate-paths",name:"Migrate gym paths",callback:()=>this.migratePaths()});
   }
   chooseRoutine(){new Choice(this.app,this.index.routinesList(),"Start workout",async r=>this.app.workspace.getLeaf(false).openFile(await this.gym.createSession(r.file)),r=>String(r.fm.workout_title||r.file.basename)).open();}
   registerRenderers(){

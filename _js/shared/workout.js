@@ -209,7 +209,7 @@ class workout {
             remove.addEventListener("click", async event => {
                 event.preventDefault();
                 await this.app.vault.delete(item.file);
-                this.core.invalidateCaches();
+                this.core.invalidateForFile(item.file, workoutFile);
                 await this.core.recalculateWorkoutMetrics(workoutFile);
                 new Notice("Set deleted");
             });

@@ -5,11 +5,12 @@
   "description": "Local-first workout tracking plugin for Obsidian.",
   "scripts": {
     "build": "node esbuild.config.mjs",
-    "build:watch": "node esbuild.config.mjs --watch"
+    "build:watch": "node esbuild.config.mjs --watch",
+    "check": "tsc --noEmit"
   },
   "devDependencies": {
-    "esbuild": "^0.25.0",
-    "obsidian": "^1.8.7",
-    "typescript": "^5.9.0"
+    "esbuild": "0.28.2",
+    "obsidian": "1.13.1",
+    "typescript": "7.0.2"
   }
 }

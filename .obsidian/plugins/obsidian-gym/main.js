@@ -275,7 +275,7 @@ class ObsidianGym extends Plugin {
   registerRenderers(){
     const reg=(lang,fn)=>this.registerMarkdownCodeBlockProcessor(lang,(_src,el,ctx)=>fn.call(this,el,ctx.sourcePath));
     reg("obsidian-gym-home",this.renderHome);reg("obsidian-gym-create",this.renderCreate);reg("obsidian-gym-session",this.renderSession);reg("obsidian-gym-exercise",this.renderExercise);reg("obsidian-gym-analytics",this.renderAnalytics);reg("obsidian-gym-recovery",this.renderRecovery);reg("obsidian-gym-routine",this.renderRoutine);reg("obsidian-gym-log",this.renderLog);
-    this.registerMarkdownCodeBlockProcessor("dataviewjs",(_src,el,ctx)=>{const f=this.app.vault.getAbstractFileByPath(ctx.sourcePath);if(!(f instanceof TFile))return;const fm=this.index.fm(f);if(ctx.sourcePath==="Home.md")return this.renderHome(el,ctx.sourcePath);if(ctx.sourcePath==="Data Visualization.md")return this.renderAnalytics(el,ctx.sourcePath);if(ctx.sourcePath==="Recovery.md")return this.renderRecovery(el,ctx.sourcePath);if(tags(fm).includes("workout")&&inside(f.path,this.settings.workoutsRoot)&&!f.path.includes("/Log/"))return this.renderSession(el,ctx.sourcePath);if(tags(fm).includes("exercise")&&!fm.workout_id)return this.renderExercise(el,ctx.sourcePath);});
+    this.registerMarkdownCodeBlockProcessor("dataviewjs",(src,el,ctx)=>{const lower=String(src||"").toLowerCase(),legacyGym=lower.includes("customjs")&&(lower.includes("workout")||lower.includes("exercise")||lower.includes("stats")||lower.includes("timer"));if(!legacyGym){const pre=el.createEl("pre"),code=pre.createEl("code");code.setText(src);return;}const f=this.app.vault.getAbstractFileByPath(ctx.sourcePath);if(!(f instanceof TFile))return;const fm=this.index.fm(f);if(ctx.sourcePath==="Home.md")return this.renderHome(el,ctx.sourcePath);if(ctx.sourcePath==="Data Visualization.md")return this.renderAnalytics(el,ctx.sourcePath);if(ctx.sourcePath==="Recovery.md")return this.renderRecovery(el,ctx.sourcePath);if(tags(fm).includes("workout")&&inside(f.path,this.settings.workoutsRoot)&&!f.path.includes("/Log/"))return this.renderSession(el,ctx.sourcePath);if(tags(fm).includes("exercise")&&!fm.workout_id)return this.renderExercise(el,ctx.sourcePath);const pre=el.createEl("pre"),code=pre.createEl("code");code.setText(src);});
   }
   fileAt(path){const f=this.app.vault.getAbstractFileByPath(path);return f instanceof TFile?f:null;}
   renderCreate(el){el.empty();const a=el.createDiv({cls:"gym-actions"});button(a,"＋ Add exercise",()=>new ExerciseModal(this).open(),true);button(a,"＋ Create routine",()=>new RoutineModal(this).open(),true);}
@@ -309,9 +309,10 @@ class ObsidianGym extends Plugin {
   }
   async replaceLegacyBody(file,lang){
     const raw=await this.app.vault.read(file);
-    if(!raw.includes(FENCE+"dataviewjs"))return;
-    const pattern=new RegExp(FENCE+"dataviewjs[\\s\\S]*?"+FENCE,"g");
-    const cleaned=raw.replace(pattern,"").trimEnd();
+    if(!raw.includes(FENCE+"dataviewjs")&&!raw.includes("~~~dataviewjs"))return;
+    const backtickPattern=new RegExp(FENCE+"dataviewjs[\\s\\S]*?"+FENCE,"g");
+    const tildePattern=/~~~dataviewjs[\s\S]*?~~~/g;
+    const cleaned=raw.replace(backtickPattern,"").replace(tildePattern,"").trimEnd();
     await this.app.vault.modify(file,cleaned+"\n\n"+FENCE+lang+"\n"+FENCE+"\n");
   }
   async previewPathMigration(){

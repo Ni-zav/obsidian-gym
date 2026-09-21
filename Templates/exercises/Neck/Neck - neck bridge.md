@@ -1,23 +1,16 @@
 ---
+schema_version: 3
 id: 649346
-date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
-time: <% tp.date.now("HH:mm:ss") %>
-weight: 
-reps: 
-effort: 
-exercise: Neck - neck bridge
-muscle_group: Neck
-equipment: Bodyweight
-note: 
-instructions: 'do isometric. avoid using your top part of your head.'
+exercise: "Neck - neck bridge"
+muscle_group: "Neck"
+equipment: "Bodyweight"
+tracking_mode: bodyweight
+default_rest_seconds: 60
+instructions: "do isometric. avoid using your top part of your head."
+aliases: []
 tags:
- - exercise
+  - exercise
 ---
 
-```dataviewjs
-const {exercise} = customJS;
-const note = {dv: dv, container: this.container, window: window};
-
-exercise.renderDescription(note);
-exercise.renderEffortWeightChart(note);
+```obsidian-gym-exercise
 ```

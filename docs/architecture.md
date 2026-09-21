@@ -20,7 +20,16 @@ Markdown + Bases
  └─ settings / audit
 ```
 
-Canonical source is `plugin-src/main.ts`. The committed bundle is `.obsidian/plugins/obsidian-gym/main.js`.
+Canonical source is modular:
+
+- `plugin-src/main.ts` — lifecycle, commands, Markdown processors, settings/migrations
+- `plugin-src/gym-service.ts` — domain mutations and derived metrics
+- `plugin-src/index-service.ts` — event-driven indexes
+- `plugin-src/ui.ts` — modals and reusable native UI helpers
+- `plugin-src/timer-service.ts` — timer state
+- `plugin-src/utils.ts` — shared path/schema/math helpers
+
+The committed bundle is `.obsidian/plugins/obsidian-gym/main.js`.
 
 ## Indexing
 

@@ -108,9 +108,14 @@ The Recovery page is intentionally only a **time-since-last-trained** history cu
 
 ## Development
 
-Canonical source:
+Canonical source is split by responsibility:
 
-- `plugin-src/main.ts`
+- `plugin-src/main.ts` — plugin bootstrap, commands, renderers, migrations/settings
+- `plugin-src/gym-service.ts` — workout/session mutations and metrics
+- `plugin-src/index-service.ts` — lifecycle-managed data indexes
+- `plugin-src/ui.ts` — native modals and UI helpers
+- `plugin-src/timer-service.ts` — timer/stopwatch
+- `plugin-src/utils.ts` — shared pure/path/schema helpers
 
 Bundled runtime:
 

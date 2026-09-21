@@ -1,33 +1,91 @@
 # Migration and compatibility
 
-## Folder moves
+## Schema-v3 migration
 
-The local Obsidian Gym Settings plugin manages:
+Run:
 
-- exercises root
-- workout templates root
-- workout sessions root
+**Obsidian Gym: Migrate gym data to schema v3**
 
-Before a large move, run **Preview gym path migration** from the command palette. It reports movable files, conflicts, and missing source paths.
+Before modifying a legacy gym note, the plugin copies it into:
 
-The migration code moves files through Obsidian's FileManager and rewrites known Base roots with placeholder substitution so overlapping paths do not rewrite their own newly inserted output.
+`Gym Migration Backups/YYYYMMDD-HHmmss/`
 
-## Legacy exercise IDs
+The original relative path is retained inside the backup folder.
 
-Existing numeric IDs are intentionally not bulk-converted to UUIDs. Routine templates already refer to them, so rewriting only part of the relationship graph would be worse than keeping stable legacy IDs.
+The migration converts supported legacy metadata and replaces recognized legacy gym DataviewJS render blocks with native `obsidian-gym-*` blocks.
 
-All newly created IDs are UUIDs.
+## What is migrated
 
-## Legacy exercise templates
+### Exercise definitions
 
-Older exercise definitions may still contain Templater expressions in fields such as `weight`, `reps`, or `date`.
+- preserve the existing exercise ID
+- set `schema_version: 3`
+- infer `tracking_mode`
+- promote useful legacy weight/reps/duration prompt defaults into `default_*` fields when possible
+- add `default_rest_seconds` if absent
+- remove performed-set/template-only fields such as date/time/effort
 
-The new logger does not execute those templates. It reads useful static metadata and uses explicit `default_*` fields when present.
+### Routines
 
-You can gradually recreate or manually clean legacy definitions; no big-bang migration is required.
+- preserve referenced exercise IDs
+- convert repeated legacy `exercises` entries into ordered `exercise_plan` items with set counts
+- remove obsolete `workout_order`
 
-## Plugin updates
+### Set logs
 
-Use Obsidian's Community Plugins updater. A plugin release consists of matching compiled assets; changing a vendored `manifest.json` alone is not an update.
+- set `schema_version: 3`
+- normalize `performed_at`
+- convert `weight` to `weight_kg`
+- convert `duration` to `duration_seconds`
+- add `tracking_mode` and `set_type`
+- convert legacy workout-start/end markers into explicit event records
 
-Templater, Buttons, Media Extended, Tag Wrangler, and Heatmap Calendar are no longer enabled by this vault's gym runtime.
+### Sessions
+
+- convert the plan to `exercise_plan`
+- remove obsolete plan fields
+- rebuild derived metrics from logs
+
+## IDs
+
+Legacy numeric exercise IDs are intentionally preserved.
+
+Changing IDs would require rewriting every routine/log relationship atomically and provides little value. UUIDs are used for newly created records while old stable IDs remain valid.
+
+## Folder migration
+
+Changing a root setting records the previous roots.
+
+Run:
+
+1. **Obsidian Gym: Preview gym path migration**
+2. inspect movable/conflict counts
+3. **Obsidian Gym: Migrate gym paths**
+
+The mover:
+
+- uses Obsidian FileManager rename operations
+- creates target directories
+- skips collisions instead of overwriting
+- updates known Base root strings
+- processes longer/nested roots before parent roots
+
+A conflict is intentionally left untouched for manual resolution.
+
+## Audit
+
+Run **Obsidian Gym: Audit gym data**.
+
+It writes `Obsidian Gym Audit.md` with counts and broken routine references.
+
+## Metric repair
+
+Run **Obsidian Gym: Recalculate all workout metrics** after manual frontmatter edits or if a session summary looks wrong.
+
+Session summary fields are derived and can be rebuilt from logs.
+
+## Rollback
+
+For schema migration, restore the needed files from the timestamped backup directory.
+
+For a path migration, files are moved rather than copied; use Obsidian/Git history or move them back through the same settings workflow if necessary.

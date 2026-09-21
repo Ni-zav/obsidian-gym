@@ -1,23 +1,16 @@
 ---
+schema_version: 3
 id: 914515
-date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
-time: <% tp.date.now("HH:mm:ss") %>
-weight: 
-reps: 
-effort: 
-exercise: Lats - seated dumbbell row
-muscle_group: Lats
-equipment: Dumbbell
-note: 
-instructions: s-tier exercise.
+exercise: "Lats - seated dumbbell row"
+muscle_group: "Lats"
+equipment: "Dumbbell"
+tracking_mode: strength
+default_rest_seconds: 60
+instructions: "s-tier exercise."
+aliases: []
 tags:
   - exercise
 ---
 
-```dataviewjs
-const {exercise} = customJS;
-const note = {dv: dv, container: this.container, window: window};
-
-exercise.renderDescription(note);
-exercise.renderEffortWeightChart(note);
+```obsidian-gym-exercise
 ```

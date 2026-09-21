@@ -1,23 +1,16 @@
 ---
+schema_version: 3
 id: 535529
-date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
-time: <% tp.date.now("HH:mm:ss") %>
-weight: 
-reps: 
-effort: 
-exercise: Forearms - farmer's walk
-muscle_group: Forearms
-equipment: Pair of Dumbbells
-note: 
-instructions: 'walk like farmer'
+exercise: "Forearms - farmer's walk"
+muscle_group: "Forearms"
+equipment: "Pair of Dumbbells"
+tracking_mode: strength
+default_rest_seconds: 60
+instructions: "walk like farmer"
+aliases: []
 tags:
- - exercise
+  - exercise
 ---
 
-```dataviewjs
-const {exercise} = customJS;
-const note = {dv: dv, container: this.container, window: window};
-
-exercise.renderDescription(note);
-exercise.renderEffortWeightChart(note);
+```obsidian-gym-exercise
 ```

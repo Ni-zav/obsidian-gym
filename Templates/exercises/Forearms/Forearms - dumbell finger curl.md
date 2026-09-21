@@ -1,23 +1,16 @@
 ---
+schema_version: 3
 id: 945619
-date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
-time: <% tp.date.now("HH:mm:ss") %>
-weight: 
-reps: 
-effort: 
-exercise: Forearms - dumbell finger curl
-muscle_group: Forearms
-equipment: Dumbbell
-note: 
-instructions: 'yes'
+exercise: "Forearms - dumbell finger curl"
+muscle_group: "Forearms"
+equipment: "Dumbbell"
+tracking_mode: strength
+default_rest_seconds: 60
+instructions: "yes"
+aliases: []
 tags:
- - exercise
+  - exercise
 ---
 
-```dataviewjs
-const {exercise} = customJS;
-const note = {dv: dv, container: this.container, window: window};
-
-exercise.renderDescription(note);
-exercise.renderEffortWeightChart(note);
+```obsidian-gym-exercise
 ```

@@ -305,15 +305,16 @@ class ObsidianGym extends Plugin {
   async audit(){
     this.index.rebuild();const missing=[],dup=new Map(),broken=[];this.index.exercisesList().forEach(e=>{if(!e.id)missing.push(e.file.path);const a=dup.get(e.id)||[];a.push(e.file.path);dup.set(e.id,a);});this.index.routinesList().forEach(r=>planOf(r.fm).forEach(p=>{if(!this.index.exerciseById(p.exercise_id))broken.push(r.file.path+" → "+p.exercise_id);}));
     const lines=["# Obsidian Gym Audit","","Generated: "+new Date().toLocaleString(),"","- Exercises: "+this.index.exercisesList().length,"- Routines: "+this.index.routinesList().length,"- Sessions: "+this.index.sessionsList().length,"- Missing exercise IDs: "+missing.length,"- Duplicate exercise IDs: "+[...dup.values()].filter(x=>x.length>1).length,"- Broken routine references: "+broken.length,"","## Broken references",...(broken.length?broken.map(x=>"- "+x):["- None"])];
-    const p="Obsidian Gym Audit.md",old=this.app.vault.getAbstractFileByPath(p);if(old instanceof TFile)await this.app.vault.modify(old,lines.join("\n"));else await this.app.vault.create(p,lines.join("\n"));new Notice("Gym audit written to "+p);
+    const p="Obsidian Gym Audit.md",old=this.app.vault.getAbstractFileByPath(p);if(old instanceof TFile)await this.app.vault.process(old,()=>lines.join("\n"));else await this.app.vault.create(p,lines.join("\n"));new Notice("Gym audit written to "+p);
   }
   async replaceLegacyBody(file,lang){
-    const raw=await this.app.vault.read(file);
-    if(!raw.includes(FENCE+"dataviewjs")&&!raw.includes("~~~dataviewjs"))return;
-    const backtickPattern=new RegExp(FENCE+"dataviewjs[\\s\\S]*?"+FENCE,"g");
-    const tildePattern=/~~~dataviewjs[\s\S]*?~~~/g;
-    const cleaned=raw.replace(backtickPattern,"").replace(tildePattern,"").trimEnd();
-    await this.app.vault.modify(file,cleaned+"\n\n"+FENCE+lang+"\n"+FENCE+"\n");
+    await this.app.vault.process(file,raw=>{
+      if(!raw.includes(FENCE+"dataviewjs")&&!raw.includes("~~~dataviewjs"))return raw;
+      const backtickPattern=new RegExp(FENCE+"dataviewjs[\\s\\S]*?"+FENCE,"g");
+      const tildePattern=/~~~dataviewjs[\s\S]*?~~~/g;
+      const cleaned=raw.replace(backtickPattern,"").replace(tildePattern,"").trimEnd();
+      return cleaned+"\n\n"+FENCE+lang+"\n"+FENCE+"\n";
+    });
   }
   async previewPathMigration(){
     const old=this.settings.previousPaths;
@@ -350,9 +351,7 @@ class ObsidianGym extends Plugin {
     for(const bp of ["Exercises List.base","Workouts List.base","Workouts History.base"]){
       const file=this.app.vault.getAbstractFileByPath(bp);
       if(!(file instanceof TFile))continue;
-      let raw=await this.app.vault.read(file);
-      maps.forEach(([from,to])=>{raw=raw.split(String(from)).join(String(to));});
-      await this.app.vault.modify(file,raw);
+      await this.app.vault.process(file,raw=>{maps.forEach(([from,to])=>{raw=raw.split(String(from)).join(String(to));});return raw;});
     }
     this.settings.previousPaths=null;
     await this.saveSettings();

@@ -3,7 +3,13 @@
 ## Layout
 
 ```text
-plugin-src/main.ts
+plugin-src/
+├─ main.ts
+├─ gym-service.ts
+├─ index-service.ts
+├─ ui.ts
+├─ timer-service.ts
+└─ utils.ts
         │
         │ npm run build
         ▼
@@ -13,7 +19,7 @@ plugin-src/main.ts
 └─ styles.css
 ```
 
-`plugin-src/main.ts` is canonical source.
+The files under `plugin-src/` are canonical source.
 
 Do not hand-edit behavior only in the generated `main.js`; rebuild it after source changes.
 

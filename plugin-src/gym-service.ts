@@ -1,4 +1,4 @@
-import { FENCE, join, parent, day, now, planOf, tags, uuid, num, modeOf, volume, e1rm } from "./utils";
+import { FENCE, norm, join, parent, day, now, planOf, tags, uuid, num, modeOf, volume, e1rm } from "./utils";
 
 export class GymService {
   [key: string]: any;

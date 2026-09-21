@@ -1,16 +1,16 @@
 # Data model
 
+Schema v3 separates exercise definitions, routine plans, workout sessions, events, and performed sets.
+
 ## Exercise definition
 
-New definitions use schema v2:
-
 ```yaml
-schema_version: 2
-id: "uuid"
-exercise: "Lower Body - squat"
+schema_version: 3
+id: "exercise-uuid"
+exercise: "Lower Body - Squat"
 muscle_group: "Lower Body"
 equipment: "Barbell"
-timed: false
+tracking_mode: strength
 default_reps: 8
 default_weight_kg: 60
 default_rest_seconds: 90
@@ -20,76 +20,159 @@ tags:
   - exercise
 ```
 
-Definitions describe the exercise. They no longer store performed-set date, effort, note, weight, or reps as if those were permanent properties.
+Supported `tracking_mode` values:
 
-## Routine template
+- `strength`
+- `bodyweight`
+- `duration`
+- `distance_time`
+
+Mode-specific optional defaults are:
+
+- `default_weight_kg`
+- `default_reps`
+- `default_duration_seconds`
+- `default_distance_km`
+
+Definitions never store performed-set effort/note/date values.
+
+## Routine
 
 ```yaml
-schema_version: 2
+schema_version: 3
 workout_title: "Upper A"
-exercises: ["exercise-id", "exercise-id", "another-id"]
-workout_order: ["exercise-id", "exercise-id", "another-id"]
+exercise_plan:
+  - exercise_id: "exercise-a"
+    sets: 3
+  - exercise_id: "exercise-b"
+    sets: 4
 workout_type: "Weight Training"
-workout_place: "Home"
+workout_place: "Gym"
 tags:
   - workout
 ```
 
-Repeated IDs represent planned sets. `workout_order` is now meaningful: it determines remaining-exercise ordering and can be changed for a session without changing the routine.
+`exercise_plan` is ordered and stores planned working-set counts.
 
 ## Workout session
 
 ```yaml
-schema_version: 2
+schema_version: 3
 id: "session-uuid"
 workout_title: "Upper A"
-date: "2026-09-20"
-started_at: "2026-09-20T18:30:00"
+date: "2026-09-21"
+started_at: "2026-09-21T18:30:00"
 ended_at: null
 status: active
-exercises: [...]
-workout_order: [...]
+exercise_plan:
+  - exercise_id: "exercise-a"
+    sets: 3
 skipped_exercises: []
-Logs: [...]
-ExerciseCounts: {}
-ExercisesSummary: ""
-Total Volume: 0
-timed_load: 0
+workout_type: "Weight Training"
+workout_place: "Gym"
+set_count: 0
+working_set_count: 0
+exercise_counts: {}
+total_volume: 0
+timed_seconds: 0
+distance_km: 0
+pr_count: 0
 duration_minutes: 0
-duration: Ongoing
 tags:
   - workout
 ```
 
-`Total Volume` is conventional weighted rep volume: weight × reps.
-
-Timed activities are intentionally excluded from that metric. Their optional weight × seconds aggregate is stored separately as `timed_load` so unlike units are not mixed.
+Session summary fields are derived/cache fields. Logs remain the reconstructible record.
 
 ## Set log
 
 ```yaml
-schema_version: 2
+schema_version: 3
 id: "log-uuid"
 workout_id: "session-uuid"
+set_index: 1
 exercise_id: "exercise-uuid"
-exercise: "Lower Body - squat"
-performed_at: "2026-09-20T18:34:00"
-timed: false
+exercise: "Lower Body - Squat"
+performed_at: "2026-09-21T18:34:00"
+tracking_mode: strength
+set_type: working
 weight_kg: 80
 reps: 8
 effort: 4
 note: ""
+prs:
+  - estimated_1rm
 tags:
   - exercise
   - log
+  - set
 ```
 
-Timed logs use `duration_seconds` instead of reps.
+Supported `set_type` values:
 
-## Start/end events
+- `working`
+- `warmup`
+- `drop`
+- `failure`
 
-Workout start and end are log events with `exercise: "Workout start"` and `exercise: "Workout end"`. They make duration rebuilding deterministic.
+Warmup sets are retained in history but excluded from working-set summary metrics.
 
-## Renaming exercises
+Duration logs use `duration_seconds`.
 
-Keep the same `id`. Optionally add the previous name to `aliases`. New logs remain linked through `exercise_id`.
+Distance/time logs use `distance_km` + `duration_seconds`.
+
+## Events
+
+Workout lifecycle events live in the same `Log/` directory:
+
+```yaml
+schema_version: 3
+id: "event-uuid"
+workout_id: "session-uuid"
+event_type: workout_start
+performed_at: "2026-09-21T18:30:00"
+tags:
+  - log
+  - event
+  - start
+```
+
+End events use `event_type: workout_end`.
+
+These events make duration repair deterministic.
+
+## PR semantics
+
+PR comparison ignores warmup sets.
+
+Possible PR keys:
+
+- `weight`
+- `reps_at_weight`
+- `set_volume`
+- `estimated_1rm`
+- `duration`
+- `distance`
+- `pace`
+
+A tie is not a PR.
+
+## Legacy compatibility
+
+Existing exercise IDs, including numeric IDs, remain valid.
+
+During schema-v3 migration:
+
+- legacy `weight` becomes `weight_kg`
+- legacy `duration` becomes `duration_seconds`
+- old repeated `exercises` arrays become `exercise_plan`
+- old start/end exercise names become explicit lifecycle events
+- old Templater definition fields are converted to useful static defaults where possible
+
+History lookup prefers `exercise_id`, then falls back to names/aliases for older logs.
+
+## Renames
+
+Keep the exercise `id` unchanged.
+
+If useful, add the previous exercise name to `aliases`; this lets old name-only logs continue to participate in history.

@@ -1,23 +1,16 @@
 ---
+schema_version: 3
 id: 379969
-date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
-time: <% tp.date.now("HH:mm:ss") %>
-weight: 
-reps: 
-effort: 
-exercise: Chest - chest fly
-muscle_group: Chest
-equipment: Pair of Dumbbells
-note: 
-instructions: hurt yogurt
+exercise: "Chest - chest fly"
+muscle_group: "Chest"
+equipment: "Pair of Dumbbells"
+tracking_mode: strength
+default_rest_seconds: 60
+instructions: "hurt yogurt"
+aliases: []
 tags:
   - exercise
 ---
 
-```dataviewjs
-const {exercise} = customJS;
-const note = {dv: dv, container: this.container, window: window};
-
-exercise.renderDescription(note);
-exercise.renderEffortWeightChart(note);
+```obsidian-gym-exercise
 ```

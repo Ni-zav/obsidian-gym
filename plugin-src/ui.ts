@@ -1,5 +1,5 @@
 import { Modal, FuzzySuggestModal, Notice, TFile } from "obsidian";
-import { num, modeOf } from "./utils";
+import { join, num, modeOf } from "./utils";
 
 export class Choice extends FuzzySuggestModal {
   [key: string]: any;

@@ -1,23 +1,16 @@
 ---
+schema_version: 3
 id: 315832
-date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
-time: <% tp.date.now("HH:mm:ss") %>
-weight: 
-reps: 
-effort: 
-exercise: Lower Back - superman
-muscle_group: Lower Back
-equipment: Bodyweight
-note: 
-instructions: superman.
+exercise: "Lower Back - superman"
+muscle_group: "Lower Back"
+equipment: "Bodyweight"
+tracking_mode: bodyweight
+default_rest_seconds: 60
+instructions: "superman."
+aliases: []
 tags:
   - exercise
 ---
 
-```dataviewjs
-const {exercise} = customJS;
-const note = {dv: dv, container: this.container, window: window};
-
-exercise.renderDescription(note);
-exercise.renderEffortWeightChart(note);
+```obsidian-gym-exercise
 ```

@@ -1,23 +1,16 @@
 ---
+schema_version: 3
 id: 527062
-date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
-time: <% tp.date.now("HH:mm:ss") %>
-weight: 
-reps: 
-effort: 
-exercise: Glutes - glute bridge
-muscle_group: Glutes
-equipment: Dumbbell
-note: 
-instructions: 'use dumbell or not, whatever'
+exercise: "Glutes - glute bridge"
+muscle_group: "Glutes"
+equipment: "Dumbbell"
+tracking_mode: strength
+default_rest_seconds: 60
+instructions: "use dumbell or not, whatever"
+aliases: []
 tags:
- - exercise
+  - exercise
 ---
 
-```dataviewjs
-const {exercise} = customJS;
-const note = {dv: dv, container: this.container, window: window};
-
-exercise.renderDescription(note);
-exercise.renderEffortWeightChart(note);
+```obsidian-gym-exercise
 ```

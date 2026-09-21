@@ -1,238 +1,12 @@
-const {
-  Plugin, PluginSettingTab, Setting, Modal, FuzzySuggestModal, Notice, TFile, moment, normalizePath: obsidianNormalizePath
-} = require("obsidian");
-
-const FENCE = String.fromCharCode(96).repeat(3);
-const DEFAULTS = {
-  exercisesRoot: "Templates/exercises",
-  workoutTemplatesRoot: "Templates/Workouts",
-  workoutsRoot: "Workouts",
-  homeNote: "Home.md",
-  openHomeOnStartup: true,
-  defaultRestSeconds: 60,
-  weightStepKg: 2.5,
-  schemaVersion: 3
-};
-
-function norm(v){ if(typeof v!=="string") return ""; return obsidianNormalizePath(v.trim()).replace(/^\/+|\/+$/g,""); }
-function join(){ return [...arguments].filter(Boolean).map((x,i)=>i?String(x).replace(/^\/+|\/+$/g,""):String(x).replace(/\/+$/g,"")).join("/"); }
-function parent(p){ p=norm(p); const i=p.lastIndexOf("/"); return i<0?"":p.slice(0,i); }
-function inside(p,r){ p=norm(p); r=norm(r); return !!(p&&r&&(p===r||p.startsWith(r+"/"))); }
-function tags(f){ const v=f&&f.tags!=null?f.tags:[]; return (Array.isArray(v)?v:[v]).filter(Boolean).map(x=>String(x).replace(/^#/,"")); }
-function num(v){ if(v===""||v==null) return null; const n=Number(v); return Number.isFinite(n)?n:null; }
-function uuid(){ if(globalThis.crypto&&crypto.randomUUID) return crypto.randomUUID(); return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==="x"?r:(r&3|8);return v.toString(16);}); }
-function now(){ return moment().format("YYYY-MM-DDTHH:mm:ss"); }
-function day(){ return moment().format("YYYY-MM-DD"); }
-function modeOf(f){
-  const m=f&&f.tracking_mode;
-  if(["strength","bodyweight","duration","distance_time"].includes(m)) return m;
-  if(f&&(f.distance_km!=null||f.default_distance_km!=null)) return "distance_time";
-  if(f&&(f.timed===true||f.timed==="true"||f.duration!=null||f.default_duration_seconds!=null)) return "duration";
-  return String(f&&f.equipment||"").toLowerCase().includes("bodyweight")?"bodyweight":"strength";
-}
-function planOf(f){
-  if(Array.isArray(f&&f.exercise_plan)) return f.exercise_plan.map(x=>({exercise_id:String(x.exercise_id||x.id||""),sets:Math.max(1,Math.floor(Number(x.sets)||1))})).filter(x=>x.exercise_id);
-  const ids=Array.isArray(f&&f.exercises)?f.exercises.map(String):[], counts=new Map(), order=[];
-  ids.forEach(id=>{if(!counts.has(id))order.push(id);counts.set(id,(counts.get(id)||0)+1);});
-  return order.map(id=>({exercise_id:id,sets:counts.get(id)||1}));
-}
-function volume(w,r){ return Math.max(0,num(w)||0)*Math.max(0,num(r)||0); }
-function e1rm(w,r){ w=num(w)||0;r=num(r)||0;return w>0&&r>0&&r<37?w*(36/(37-r)):0; }
-function parseLegacy(v){ const n=num(v); if(n!=null)return n; if(typeof v!=="string")return null; const m=[...v.matchAll(/["'](-?\d+(?:\.\d+)?)["']/g)]; return m.length?num(m[m.length-1][1]):null; }
-function formatSeconds(s){ s=Math.max(0,Math.floor(Number(s)||0)); const m=Math.floor(s/60),r=s%60; return String(m).padStart(2,"0")+":"+String(r).padStart(2,"0"); }
-function esc(s){ return String(s==null?"":s); }
-
-class Index {
-  constructor(plugin){ this.plugin=plugin; this.app=plugin.app; this.clear(); }
-  clear(){ this.exercises=new Map();this.byExerciseId=new Map();this.byExerciseName=new Map();this.routines=new Map();this.sessions=new Map();this.bySessionId=new Map();this.logs=new Map();this.byWorkout=new Map();this.byLogExerciseId=new Map();this.byLogExerciseName=new Map();this.kind=new Map(); }
-  fm(file){ return this.app.metadataCache.getFileCache(file)?.frontmatter||{}; }
-  rebuild(){ this.clear(); this.app.vault.getMarkdownFiles().forEach(f=>this.reindex(f)); }
-  register(){
-    this.plugin.registerEvent(this.app.metadataCache.on("changed",(f,_d,c)=>this.reindex(f,c&&c.frontmatter||{})));
-    this.plugin.registerEvent(this.app.vault.on("delete",f=>this.remove(f.path)));
-    this.plugin.registerEvent(this.app.vault.on("rename",(f,old)=>{this.remove(old); if(f.extension==="md")this.reindex(f);}));
-  }
-  addNested(map,key,path,rec){ if(!map.has(key))map.set(key,new Map()); map.get(key).set(path,rec); }
-  delNested(map,key,path){ const g=map.get(key); if(!g)return;g.delete(path);if(!g.size)map.delete(key); }
-  remove(path){
-    const k=this.kind.get(path); if(!k)return;
-    if(k==="exercise"){const r=this.exercises.get(path);this.exercises.delete(path);if(r){if(this.byExerciseId.get(r.id)?.file.path===path)this.byExerciseId.delete(r.id);[r.name,r.file.basename,...r.aliases].forEach(n=>{if(this.byExerciseName.get(String(n))?.file.path===path)this.byExerciseName.delete(String(n));});}}
-    else if(k==="routine")this.routines.delete(path);
-    else if(k==="session"){const r=this.sessions.get(path);this.sessions.delete(path);if(r&&this.bySessionId.get(r.id)?.file.path===path)this.bySessionId.delete(r.id);}
-    else if(k==="log"){const r=this.logs.get(path);this.logs.delete(path);if(r){this.delNested(this.byWorkout,r.workoutId,path);if(r.exerciseId)this.delNested(this.byLogExerciseId,r.exerciseId,path);if(r.exerciseName)this.delNested(this.byLogExerciseName,r.exerciseName,path);}}
-    this.kind.delete(path);
-  }
-  reindex(file,known){
-    if(!file||file.extension!=="md")return; this.remove(file.path);
-    const f=known||this.fm(file), s=this.plugin.settings, ts=tags(f);
-    if(inside(file.path,s.exercisesRoot)&&ts.includes("exercise")&&!f.workout_id&&!f.event_type){
-      const id=String(f.id||"");if(!id)return;const r={file,fm:f,id,name:String(f.exercise||file.basename),aliases:Array.isArray(f.aliases)?f.aliases.map(String):[],trackingMode:modeOf(f)};
-      this.exercises.set(file.path,r);this.byExerciseId.set(id,r);[r.name,file.basename,...r.aliases].forEach(n=>this.byExerciseName.set(String(n),r));this.kind.set(file.path,"exercise");return;
-    }
-    if(inside(file.path,s.workoutTemplatesRoot)&&ts.includes("workout")){this.routines.set(file.path,{file,fm:f});this.kind.set(file.path,"routine");return;}
-    if(inside(file.path,s.workoutsRoot)&&!file.path.includes("/Log/")&&ts.includes("workout")){
-      const id=String(f.id||"");if(!id)return;const r={file,fm:f,id};this.sessions.set(file.path,r);this.bySessionId.set(id,r);this.kind.set(file.path,"session");return;
-    }
-    if(inside(file.path,s.workoutsRoot)&&(file.path.includes("/Log/")||f.workout_id||ts.includes("log"))){
-      const wid=String(f.workout_id||"");if(!wid)return;const event=f.event_type||(f.exercise==="Workout start"?"workout_start":f.exercise==="Workout end"?"workout_end":null);
-      const r={file,fm:f,id:String(f.id||file.path),workoutId:wid,exerciseId:event?null:(f.exercise_id!=null?String(f.exercise_id):null),exerciseName:event?null:(f.exercise?String(f.exercise):null),eventType:event,performedAt:String(f.performed_at||f.date||"")};
-      this.logs.set(file.path,r);this.addNested(this.byWorkout,wid,file.path,r);if(r.exerciseId)this.addNested(this.byLogExerciseId,r.exerciseId,file.path,r);if(r.exerciseName)this.addNested(this.byLogExerciseName,r.exerciseName,file.path,r);this.kind.set(file.path,"log");
-    }
-  }
-  exercisesList(){ return [...this.exercises.values()].sort((a,b)=>a.name.localeCompare(b.name)); }
-  exerciseById(id){ return id==null?null:this.byExerciseId.get(String(id))||null; }
-  exerciseByName(n){ return n==null?null:this.byExerciseName.get(String(n))||null; }
-  routinesList(){ return [...this.routines.values()].sort((a,b)=>String(a.fm.workout_title||a.file.basename).localeCompare(String(b.fm.workout_title||b.file.basename))); }
-  sessionsList(){ return [...this.sessions.values()].sort((a,b)=>new Date(b.fm.started_at||b.fm.date||0).getTime()-new Date(a.fm.started_at||a.fm.date||0).getTime()); }
-  activeSessions(){ return this.sessionsList().filter(r=>r.fm.status==="active"||(!r.fm.ended_at&&r.fm.started_at)); }
-  sessionById(id){ return id==null?null:this.bySessionId.get(String(id))||null; }
-  workoutLogs(id,events=true){ return [...(this.byWorkout.get(String(id))?.values()||[])].filter(r=>events||!r.eventType).sort((a,b)=>new Date(a.performedAt||0).getTime()-new Date(b.performedAt||0).getTime()); }
-  history(id,name){
-    const m=new Map(); if(id!=null)for(const r of this.byLogExerciseId.get(String(id))?.values()||[])m.set(r.file.path,r);
-    const def=id!=null?this.exerciseById(id):this.exerciseByName(name), names=[name,...(def?.aliases||[])].filter(Boolean).map(String);
-    names.forEach(n=>{for(const r of this.byLogExerciseName.get(n)?.values()||[])m.set(r.file.path,r);});
-    return [...m.values()].sort((a,b)=>new Date(a.performedAt||0).getTime()-new Date(b.performedAt||0).getTime());
-  }
-  latest(id,name){ const h=this.history(id,name);return h.at(-1)||null; }
-  allLogs(){ return [...this.logs.values()].filter(r=>!r.eventType).sort((a,b)=>new Date(a.performedAt||0).getTime()-new Date(b.performedAt||0).getTime()); }
-}
-
-class Timer {
-  constructor(done){this.done=done;this.listeners=new Set();this.reset();}
-  reset(){if(this.handle)clearInterval(this.handle);this.handle=null;this.mode="countdown";this.seconds=0;this.running=false;this.paused=false;this.target=0;this.started=0;this.emit();}
-  start(sec){this.reset();sec=Math.max(0,Math.floor(Number(sec)||0));if(!sec)return;this.mode="countdown";this.seconds=sec;this.running=true;this.target=Date.now()+sec*1000;this.tick();}
-  stopwatch(){this.reset();this.mode="stopwatch";this.running=true;this.started=Date.now();this.tick();}
-  pause(){if(!this.running||this.paused)return;this.sync();clearInterval(this.handle);this.handle=null;this.paused=true;this.emit();}
-  resume(){if(!this.paused)return;this.paused=false;if(this.mode==="countdown")this.target=Date.now()+this.seconds*1000;else this.started=Date.now()-this.seconds*1000;this.tick();}
-  subscribe(fn){this.listeners.add(fn);fn(this.snapshot());return()=>this.listeners.delete(fn);}
-  snapshot(){this.sync();return{mode:this.mode,seconds:this.seconds,running:this.running,paused:this.paused};}
-  sync(){if(!this.running||this.paused)return;if(this.mode==="countdown")this.seconds=Math.max(0,Math.ceil((this.target-Date.now())/1000));else this.seconds=Math.max(0,Math.floor((Date.now()-this.started)/1000));}
-  tick(){this.sync();this.emit();this.handle=setInterval(()=>{this.sync();this.emit();if(this.mode==="countdown"&&this.running&&!this.paused&&this.seconds<=0){clearInterval(this.handle);this.handle=null;this.running=false;this.done();this.emit();}},250);}
-  emit(){const s={mode:this.mode,seconds:this.seconds,running:this.running,paused:this.paused};[...this.listeners].forEach(fn=>fn(s));}
-  destroy(){if(this.handle)clearInterval(this.handle);this.listeners.clear();}
-}
-
-class Gym {
-  constructor(plugin,index){this.plugin=plugin;this.app=plugin.app;this.index=index;this.queues=new Map();}
-  async ensureFolder(p){let cur="";for(const part of norm(p).split("/").filter(Boolean)){cur=cur?cur+"/"+part:part;if(!this.app.vault.getAbstractFileByPath(cur))await this.app.vault.createFolder(cur);}}
-  async update(file,patch,del=[]){const next={...this.index.fm(file),...patch};del.forEach(k=>delete next[k]);await this.app.fileManager.processFrontMatter(file,f=>{del.forEach(k=>delete f[k]);Object.entries(patch).forEach(([k,v])=>v===undefined?delete f[k]:f[k]=v);});this.index.reindex(file,next);}
-  async create(path,fm,body){await this.ensureFolder(parent(path));const file=await this.app.vault.create(path,"---\n---\n\n"+(body||"").trim()+"\n");await this.app.fileManager.processFrontMatter(file,f=>Object.assign(f,fm));this.index.reindex(file,fm);return file;}
-  sessionFrom(file){if(!file)return null;const f=this.index.fm(file);if(tags(f).includes("workout")&&!file.path.includes("/Log/"))return file;return f.workout_id?this.index.sessionById(f.workout_id)?.file||null:null;}
-  remaining(file){
-    const f=this.index.fm(file), skipped=new Set((Array.isArray(f.skipped_exercises)?f.skipped_exercises:[]).map(String)), counts=new Map();
-    this.index.workoutLogs(f.id,false).forEach(l=>{if(l.exerciseId&&String(l.fm.set_type||"working")!=="warmup")counts.set(l.exerciseId,(counts.get(l.exerciseId)||0)+1);});
-    return planOf(f).map(p=>({exercise:this.index.exerciseById(p.exercise_id),...p,completed:counts.get(p.exercise_id)||0,remaining:skipped.has(p.exercise_id)?0:Math.max(0,p.sets-(counts.get(p.exercise_id)||0))})).filter(x=>x.remaining>0);
-  }
-  async createSession(template){
-    const tf=template?this.index.fm(template):{},title=template?String(tf.workout_title||template.basename):"Free Workout",slug=String(template?.basename||title).replace(/[\\/:*?"<>|]/g,"-");
-    let folder=join(this.plugin.settings.workoutsRoot,day()+" - "+slug),n=2;while(this.app.vault.getAbstractFileByPath(folder))folder=join(this.plugin.settings.workoutsRoot,day()+" - "+slug+" ("+(n++)+")");
-    await this.ensureFolder(join(folder,"Log"));const id=uuid(),started=now();
-    const file=await this.create(join(folder,slug+".md"),{schema_version:3,id,workout_title:title,date:day(),started_at:started,ended_at:null,status:"active",exercise_plan:template?planOf(tf):[],skipped_exercises:[],workout_type:template?String(tf.workout_type||""):"Custom",workout_place:template?String(tf.workout_place||""):"",set_count:0,working_set_count:0,exercise_counts:{},total_volume:0,timed_seconds:0,distance_km:0,pr_count:0,duration_minutes:0,cssclasses:["gym-workout"],tags:["workout"]},FENCE+"obsidian-gym-session\n"+FENCE);
-    await this.event(file,"workout_start",started);return file;
-  }
-  async event(file,type,at){return this.queue(file,async()=>this.create(await this.nextLog(file),{schema_version:3,id:uuid(),workout_id:String(this.index.fm(file).id),event_type:type,performed_at:at||now(),tags:["log","event",type==="workout_start"?"start":"end"]},"# "+(type==="workout_start"?"Workout start":"Workout end")));}
-  prs(cur,h){
-    if(cur.set_type==="warmup"||!h.length)return[];h=h.filter(f=>String(f.set_type||"working")!=="warmup");if(!h.length)return[];const out=[],m=cur.tracking_mode,w=num(cur.weight_kg)||0,r=num(cur.reps)||0;
-    if(m==="strength"||m==="bodyweight"){if(w>Math.max(0,...h.map(f=>num(f.weight_kg)||0)))out.push("weight");const same=h.filter(f=>Math.abs((num(f.weight_kg)||0)-w)<.001);if(r>Math.max(0,...same.map(f=>num(f.reps)||0)))out.push("reps_at_weight");if(volume(w,r)>Math.max(0,...h.map(f=>volume(f.weight_kg,f.reps))))out.push("set_volume");if(e1rm(w,r)>Math.max(0,...h.map(f=>e1rm(f.weight_kg,f.reps))))out.push("estimated_1rm");}
-    else if(m==="duration"&&(num(cur.duration_seconds)||0)>Math.max(0,...h.map(f=>num(f.duration_seconds??f.duration)||0)))out.push("duration");
-    else if(m==="distance_time"){const d=num(cur.distance_km)||0,t=num(cur.duration_seconds)||0;if(d>Math.max(0,...h.map(f=>num(f.distance_km)||0)))out.push("distance");const p=t&&d?t/d:Infinity,ps=h.map(f=>{const hd=num(f.distance_km)||0,ht=num(f.duration_seconds)||0;return hd&&ht?ht/hd:Infinity;}).filter(Number.isFinite);if(ps.length&&p<Math.min(...ps))out.push("pace");}
-    return out;
-  }
-  async log(file,p){
-    return this.queue(file,async()=>{const sf=this.index.fm(file);if(sf.status==="completed")throw new Error("Workout is completed.");const h=this.index.history(p.exercise_id,p.exercise).map(x=>x.fm),pr=p.set_type==="warmup"?[]:this.prs(p,h),existing=this.index.workoutLogs(sf.id,false);
-      const setIndex=Math.max(0,...existing.map(x=>Number(x.fm.set_index)||0))+1;
-      const fm={schema_version:3,id:uuid(),workout_id:String(sf.id),set_index:setIndex,exercise_id:String(p.exercise_id),exercise:p.exercise,performed_at:now(),tracking_mode:p.tracking_mode,set_type:p.set_type,effort:p.effort??null,note:p.note||"",prs:pr,tags:["exercise","log","set"]};
-      ["weight_kg","reps","duration_seconds","distance_km"].forEach(k=>{if(p[k]!=null)fm[k]=Number(p[k]);});const log=await this.create(await this.nextLog(file),fm,FENCE+"obsidian-gym-log\n"+FENCE);await this.delta(file,fm,pr);return{file:log,prs:pr};
-    });
-  }
-  async delta(file,l,prs){const f=this.index.fm(file),working=String(l.set_type||"working")!=="warmup",counts={...(f.exercise_counts||{})};if(working)counts[l.exercise]=Number(counts[l.exercise]||0)+1;await this.update(file,{set_count:Number(f.set_count||0)+1,working_set_count:Number(f.working_set_count||0)+(working?1:0),exercise_counts:counts,total_volume:Math.round((Number(f.total_volume||0)+(working?volume(l.weight_kg,l.reps):0))*100)/100,timed_seconds:Number(f.timed_seconds||0)+(working?(num(l.duration_seconds)||0):0),distance_km:Math.round((Number(f.distance_km||0)+(working?(num(l.distance_km)||0):0))*1000)/1000,pr_count:Number(f.pr_count||0)+prs.length});}
-  async recalc(file){const f=this.index.fm(file),logs=this.index.workoutLogs(f.id,true),sets=logs.filter(l=>!l.eventType),counts={};let work=0,v=0,t=0,d=0,pr=0;sets.forEach(l=>{const x=l.fm;if(String(x.set_type||"working")!=="warmup"){work++;counts[x.exercise]=Number(counts[x.exercise]||0)+1;v+=volume(x.weight_kg,x.reps);t+=num(x.duration_seconds??x.duration)||0;d+=num(x.distance_km)||0;}pr+=Array.isArray(x.prs)?x.prs.length:0;});const start=logs.find(l=>l.eventType==="workout_start")?.performedAt||f.started_at,end=[...logs].reverse().find(l=>l.eventType==="workout_end")?.performedAt||f.ended_at,dur=start?Math.max(0,Math.round(((end?new Date(end):new Date()).getTime()-new Date(start).getTime())/60000)):0;await this.update(file,{set_count:sets.length,working_set_count:work,exercise_counts:counts,total_volume:Math.round(v*100)/100,timed_seconds:Math.round(t),distance_km:Math.round(d*1000)/1000,pr_count:pr,duration_minutes:dur,status:end?"completed":"active",started_at:start||null,ended_at:end||null},["Logs","ExerciseCounts","ExercisesSummary","Total Volume","timed_load","duration"]); }
-  async finish(file){return this.queue(file,async()=>{const f=this.index.fm(file);if(f.status==="completed")return;const end=now();await this.create(await this.nextLog(file),{schema_version:3,id:uuid(),workout_id:String(f.id),event_type:"workout_end",performed_at:end,tags:["log","event","end"]},"# Workout end");await this.update(file,{status:"completed",ended_at:end,duration_minutes:Math.max(0,Math.round((new Date(end).getTime()-new Date(f.started_at||end).getTime())/60000))});});}
-  async delSet(file,log){return this.queue(file,async()=>{const p=log.path;await this.app.fileManager.trashFile(log);this.index.remove(p);await this.recalc(file);});}
-  async undo(file){return this.queue(file,async()=>{const a=this.index.workoutLogs(this.index.fm(file).id,false),l=a.at(-1);if(!l)return false;const p=l.file.path;await this.app.fileManager.trashFile(l.file);this.index.remove(p);await this.recalc(file);return true;});}
-  async repeat(file,log){const f=this.index.fm(log),e=this.index.exerciseById(f.exercise_id)||this.index.exerciseByName(f.exercise);if(!e)throw new Error("Exercise not found.");return this.log(file,{exercise_id:e.id,exercise:e.name,tracking_mode:modeOf(f),set_type:f.set_type||"working",weight_kg:num(f.weight_kg),reps:num(f.reps),duration_seconds:num(f.duration_seconds),distance_km:num(f.distance_km),effort:num(f.effort),note:String(f.note||"")});}
-  async skip(file,id){return this.queue(file,async()=>{const f=this.index.fm(file),s=new Set((Array.isArray(f.skipped_exercises)?f.skipped_exercises:[]).map(String));s.add(String(id));await this.update(file,{skipped_exercises:[...s]});});}
-  async next(file,id){return this.queue(file,async()=>{const f=this.index.fm(file),p=planOf(f),i=p.findIndex(x=>x.exercise_id===String(id));if(i<=0)return;const x=p.splice(i,1)[0];p.unshift(x);await this.update(file,{exercise_plan:p});});}
-  async replace(file,from,to){return this.queue(file,async()=>{const f=this.index.fm(file),p=planOf(f),counts=new Map();this.index.workoutLogs(f.id,false).forEach(l=>{if(l.exerciseId&&String(l.fm.set_type||"working")!=="warmup")counts.set(l.exerciseId,(counts.get(l.exerciseId)||0)+1);});const out=[];let n=0;p.forEach(x=>{if(x.exercise_id!==String(from)){out.push(x);return;}const c=Math.min(x.sets,counts.get(x.exercise_id)||0);if(c)out.push({exercise_id:x.exercise_id,sets:c});n+=Math.max(0,x.sets-c);});if(n){const e=out.find(x=>x.exercise_id===String(to));if(e)e.sets+=n;else out.push({exercise_id:String(to),sets:n});}await this.update(file,{exercise_plan:out});});}
-  async createExercise(x){const name=x.name.includes(" - ")?x.name:x.muscle+" - "+x.name,path=join(this.plugin.settings.exercisesRoot,x.muscle,name.replace(/[\\/:*?"<>|]/g,"-")+".md");if(this.app.vault.getAbstractFileByPath(path))throw new Error("Exercise already exists.");const f={schema_version:3,id:uuid(),exercise:name,muscle_group:x.muscle,equipment:x.equipment,tracking_mode:x.mode,default_rest_seconds:Math.max(0,Number(x.rest??this.plugin.settings.defaultRestSeconds)),instructions:x.instructions||"",aliases:[],tags:["exercise"]};if(x.reps!=null)f.default_reps=Number(x.reps);if(x.weight!=null)f.default_weight_kg=Number(x.weight);if(x.duration!=null)f.default_duration_seconds=Number(x.duration);if(x.distance!=null)f.default_distance_km=Number(x.distance);return this.create(path,f,FENCE+"obsidian-gym-exercise\n"+FENCE);}
-  async createRoutine(x){const slug=x.name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||("workout-"+uuid().slice(0,8)),path=join(this.plugin.settings.workoutTemplatesRoot,"gym",slug+".md");if(this.app.vault.getAbstractFileByPath(path))throw new Error("Routine already exists.");return this.create(path,{schema_version:3,workout_title:x.name,exercise_plan:x.plan,workout_type:x.type,workout_place:x.place,tags:["workout"]},"# "+x.name+"\n\n"+FENCE+"obsidian-gym-routine\n"+FENCE);}
-  async nextLog(file){const folder=join(parent(file.path),"Log");await this.ensureFolder(folder);let n=Math.max(0,...this.index.workoutLogs(this.index.fm(file).id,true).map(x=>Number(x.file.basename)).filter(Number.isFinite))+1;for(;;n++){const p=join(folder,String(n).padStart(3,"0")+".md");if(!this.app.vault.getAbstractFileByPath(p))return p;}}
-  async queue(file,fn){const key=String(this.index.fm(file).id||file.path),prev=this.queues.get(key)||Promise.resolve(),next=prev.catch(()=>{}).then(fn),stored=next.then(()=>{},()=>{});this.queues.set(key,stored);try{return await next;}finally{if(this.queues.get(key)===stored)this.queues.delete(key);}}
-}
-
-class Choice extends FuzzySuggestModal {
-  constructor(app,items,label,onChoose,text){super(app);this.items=items;this.label=label;this.cb=onChoose;this.text=text||((x)=>String(x));this.setPlaceholder(label);}
-  getItems(){return this.items;} getItemText(x){return this.text(x);} onChooseItem(x){this.cb(x);}
-}
-
-function field(root,label,value,type){
-  const wrap=root.createDiv({cls:"gym-field"});wrap.createEl("label",{text:label});const input=type==="textarea"?wrap.createEl("textarea"):wrap.createEl("input",{attr:{type:type||"text"}});input.value=value==null?"":String(value);return input;
-}
-function selectField(root,label,values,current){
-  const wrap=root.createDiv({cls:"gym-field"});wrap.createEl("label",{text:label});const s=wrap.createEl("select");values.forEach(v=>{const o=s.createEl("option",{text:String(v)});o.value=String(v);if(String(v)===String(current))o.selected=true;});return s;
-}
-
-class LogModal extends Modal {
-  constructor(plugin,file,pre){super(plugin.app);this.p=plugin;this.file=file;this.pre=pre;}
-  onOpen(){this.render();}
-  render(){
-    const c=this.contentEl;c.empty();c.createEl("h2",{text:"Log set"});const ex=this.p.index.exercisesList(),remaining=this.p.gym.remaining(this.file),first=this.pre||remaining[0]?.exercise||ex[0];if(!first){c.createEl("p",{text:"No exercises in library."});return;}
-    const exSel=selectField(c,"Exercise",ex.map(x=>x.name),first.name),typeSel=selectField(c,"Set type",["working","warmup","drop","failure"],"working");
-    const previous=c.createDiv({cls:"gym-previous"}),metrics=c.createDiv();const effort=selectField(c,"Effort",["","1","2","3","4","5"],""),note=field(c,"Note","","textarea");
-    let controls={};
-    const build=()=>{
-      metrics.empty();previous.empty();const e=ex.find(x=>x.name===exSel.value)||first,last=this.p.index.latest(e.id,e.name)?.fm||{},mode=e.trackingMode;previous.createEl("small",{text:last.exercise?"Previous: "+metricText(last):"No previous set"});
-      controls={exercise:e};
-      if(mode==="strength"||mode==="bodyweight"){
-        const w=field(metrics,"Weight (kg)",last.weight_kg??e.fm.default_weight_kg??"","number"),r=field(metrics,"Reps",last.reps??e.fm.default_reps??"","number");controls.weight=w;controls.reps=r;
-        const row=metrics.createDiv({cls:"gym-quick-row"});[-this.p.settings.weightStepKg,0,this.p.settings.weightStepKg].forEach(delta=>{const b=row.createEl("button",{text:delta===0?"Same":(delta>0?"+":"")+delta+" kg"});b.onclick=()=>{const base=num(last.weight_kg)??num(w.value)??0;w.value=String(Math.max(0,base+delta));};});
-        ["-1","+1"].forEach(x=>{const b=row.createEl("button",{text:x+" rep"});b.onclick=()=>{r.value=String(Math.max(1,(num(r.value)||num(last.reps)||0)+(x==="+1"?1:-1)));};});
-      } else if(mode==="duration"){controls.duration=field(metrics,"Duration (seconds)",last.duration_seconds??e.fm.default_duration_seconds??30,"number");if(e.fm.default_weight_kg!=null)controls.weight=field(metrics,"Weight (kg)",last.weight_kg??e.fm.default_weight_kg,"number");}
-      else {controls.distance=field(metrics,"Distance (km)",last.distance_km??e.fm.default_distance_km??"","number");controls.duration=field(metrics,"Duration (seconds)",last.duration_seconds??e.fm.default_duration_seconds??"","number");}
-    };
-    exSel.onchange=build;build();
-    const actions=c.createDiv({cls:"gym-actions"}),cancel=actions.createEl("button",{text:"Cancel"}),save=actions.createEl("button",{text:"Log set",cls:"mod-cta"});cancel.onclick=()=>this.close();
-    save.onclick=async()=>{try{const e=controls.exercise,p={exercise_id:e.id,exercise:e.name,tracking_mode:e.trackingMode,set_type:typeSel.value,weight_kg:controls.weight?num(controls.weight.value):null,reps:controls.reps?num(controls.reps.value):null,duration_seconds:controls.duration?num(controls.duration.value):null,distance_km:controls.distance?num(controls.distance.value):null,effort:num(effort.value),note:note.value.trim()};if((e.trackingMode==="strength"||e.trackingMode==="bodyweight")&&!(p.reps>0))throw new Error("Reps must be greater than 0.");if(e.trackingMode==="duration"&&!(p.duration_seconds>0))throw new Error("Duration must be greater than 0.");if(e.trackingMode==="distance_time"&&(!(p.distance_km>0)||!(p.duration_seconds>0)))throw new Error("Distance and duration must be greater than 0.");const result=await this.p.gym.log(this.file,p);const rest=Math.max(0,num(e.fm.default_rest_seconds)??this.p.settings.defaultRestSeconds);if(rest)this.p.timer.start(rest);new Notice("Logged "+e.name+(result.prs.length?" · PR: "+result.prs.join(", "):""));this.close();}catch(e){new Notice("Could not log set: "+e.message);}};
-  }
-}
-
-class EditModal extends Modal {
-  constructor(plugin,workout,log,onDone){super(plugin.app);this.p=plugin;this.workout=workout;this.log=log;this.onDone=onDone;}
-  onOpen(){const c=this.contentEl,f=this.p.index.fm(this.log),m=modeOf(f);c.empty();c.createEl("h2",{text:"Edit set"});const type=selectField(c,"Set type",["working","warmup","drop","failure"],f.set_type||"working"),effort=selectField(c,"Effort",["","1","2","3","4","5"],f.effort??""),note=field(c,"Note",f.note||"","textarea"),controls={};
-    if(m==="strength"||m==="bodyweight"){controls.weight=field(c,"Weight (kg)",f.weight_kg??"","number");controls.reps=field(c,"Reps",f.reps??"","number");}
-    else if(m==="duration"){controls.duration=field(c,"Duration (seconds)",f.duration_seconds??f.duration??"","number");if(f.weight_kg!=null)controls.weight=field(c,"Weight (kg)",f.weight_kg,"number");}
-    else{controls.distance=field(c,"Distance (km)",f.distance_km??"","number");controls.duration=field(c,"Duration (seconds)",f.duration_seconds??"","number");}
-    const a=c.createDiv({cls:"gym-actions"});a.createEl("button",{text:"Cancel"}).onclick=()=>this.close();a.createEl("button",{text:"Save",cls:"mod-cta"}).onclick=async()=>{await this.p.gym.update(this.log,{set_type:type.value,effort:num(effort.value),note:note.value.trim(),weight_kg:controls.weight?num(controls.weight.value):undefined,reps:controls.reps?num(controls.reps.value):undefined,duration_seconds:controls.duration?num(controls.duration.value):undefined,distance_km:controls.distance?num(controls.distance.value):undefined},["weight","duration","date"]);await this.p.gym.recalc(this.workout);this.close();if(this.onDone)this.onDone();};
-  }
-}
-
-class ExerciseModal extends Modal {
-  constructor(plugin){super(plugin.app);this.p=plugin;}
-  async onOpen(){const c=this.contentEl;c.empty();c.createEl("h2",{text:"Add exercise"});let cats={muscleGroups:["Others"],equipment:["Bodyweight"]};try{const cf=this.app.vault.getAbstractFileByPath(join(this.p.settings.exercisesRoot,"_library/categories.json"));if(cf instanceof TFile){const a=JSON.parse(await this.app.vault.cachedRead(cf));cats={muscleGroups:Object.values(a.muscleGroups||{}).map(x=>x.name),equipment:a.equipment||[]};}}catch{}
-    const name=field(c,"Name",""),muscle=selectField(c,"Muscle group",cats.muscleGroups,"Others"),equipment=selectField(c,"Equipment",cats.equipment,"Bodyweight"),mode=selectField(c,"Tracking",["strength","bodyweight","duration","distance_time"],"strength"),defaults=c.createDiv(),rest=field(c,"Rest seconds",this.p.settings.defaultRestSeconds,"number"),instructions=field(c,"Instructions","","textarea");let d={};
-    const rebuild=()=>{defaults.empty();d={};if(mode.value==="strength"||mode.value==="bodyweight"){d.weight=field(defaults,"Default weight kg","","number");d.reps=field(defaults,"Default reps",8,"number");}else if(mode.value==="duration")d.duration=field(defaults,"Default duration seconds",30,"number");else{d.distance=field(defaults,"Default distance km","","number");d.duration=field(defaults,"Default duration seconds","","number");}};mode.onchange=rebuild;rebuild();
-    const a=c.createDiv({cls:"gym-actions"}),save=a.createEl("button",{text:"Create",cls:"mod-cta"});a.createEl("button",{text:"Cancel"}).onclick=()=>this.close();save.onclick=async()=>{try{if(!name.value.trim())throw new Error("Exercise name is required.");if(!muscle.value)throw new Error("Muscle group is required.");const f=await this.p.gym.createExercise({name:name.value.trim(),muscle:muscle.value,equipment:equipment.value,mode:mode.value,weight:d.weight?num(d.weight.value):null,reps:d.reps?num(d.reps.value):null,duration:d.duration?num(d.duration.value):null,distance:d.distance?num(d.distance.value):null,rest:num(rest.value),instructions:instructions.value.trim()});this.close();await this.app.workspace.getLeaf(false).openFile(f);}catch(e){new Notice(e.message);}};
-  }
-}
-
-class RoutineModal extends Modal {
-  constructor(plugin){super(plugin.app);this.p=plugin;this.rows=[];}
-  onOpen(){const c=this.contentEl;c.empty();c.createEl("h2",{text:"Create routine"});const name=field(c,"Name",""),type=field(c,"Workout type","Weight Training"),place=field(c,"Place","Gym"),list=c.createDiv({cls:"gym-routine-editor"});
-    const draw=()=>{list.empty();this.rows.forEach((r,i)=>{const row=list.createDiv({cls:"gym-routine-row"});row.createSpan({text:r.exercise.name});const sets=row.createEl("input",{attr:{type:"number",min:"1"}});sets.value=String(r.sets);sets.onchange=()=>r.sets=Math.max(1,Number(sets.value)||1);row.createEl("button",{text:"↑"}).onclick=()=>{if(i){[this.rows[i-1],this.rows[i]]=[this.rows[i],this.rows[i-1]];draw();}};row.createEl("button",{text:"↓"}).onclick=()=>{if(i<this.rows.length-1){[this.rows[i+1],this.rows[i]]=[this.rows[i],this.rows[i+1]];draw();}};row.createEl("button",{text:"×"}).onclick=()=>{this.rows.splice(i,1);draw();};});};
-    c.createEl("button",{text:"＋ Add exercise"}).onclick=()=>new Choice(this.app,this.p.index.exercisesList(),"Choose exercise",e=>{const found=this.rows.find(r=>r.exercise.id===e.id);if(found)found.sets++;else this.rows.push({exercise:e,sets:3});draw();},e=>e.name).open();draw();
-    const a=c.createDiv({cls:"gym-actions"});a.createEl("button",{text:"Cancel"}).onclick=()=>this.close();a.createEl("button",{text:"Save routine",cls:"mod-cta"}).onclick=async()=>{try{if(!name.value.trim()||!this.rows.length)throw new Error("Name and at least one exercise are required.");const f=await this.p.gym.createRoutine({name:name.value.trim(),type:type.value.trim(),place:place.value.trim(),plan:this.rows.map(r=>({exercise_id:r.exercise.id,sets:r.sets}))});this.close();await this.app.workspace.getLeaf(false).openFile(f);}catch(e){new Notice(e.message);}};
-  }
-}
-
-function metricText(f){
-  const m=modeOf(f);if(m==="strength"||m==="bodyweight")return (f.weight_kg!=null?f.weight_kg+" kg × ":"")+String(f.reps??"—");
-  if(m==="duration")return String(f.duration_seconds??f.duration??"—")+" sec";
-  return String(f.distance_km??"—")+" km · "+String(f.duration_seconds??"—")+" sec";
-}
-function button(root,text,fn,cta){const b=root.createEl("button",{text,cls:cta?"mod-cta":""});b.onclick=async()=>{b.disabled=true;try{await fn();}finally{b.disabled=false;}};return b;}
-function table(root,headers,rows){const t=root.createEl("table",{cls:"gym-table"}),h=t.createEl("thead").createEl("tr");headers.forEach(x=>h.createEl("th",{text:x}));const body=t.createEl("tbody");rows.forEach(r=>{const tr=body.createEl("tr");r.forEach(x=>{const td=tr.createEl("td");if(x instanceof Node)td.appendChild(x);else td.setText(String(x??""));});});return t;}
+import { Plugin, PluginSettingTab, Setting, Notice, TFile, moment } from "obsidian";
+import { DEFAULTS, FENCE, norm, join, parent, inside, tags, num, uuid, now, day, modeOf, planOf, volume, e1rm, parseLegacy, formatSeconds, esc } from "./utils";
+import { IndexService } from "./index-service";
+import { TimerService } from "./timer-service";
+import { GymService } from "./gym-service";
+import { Choice, LogModal, EditModal, ExerciseModal, RoutineModal, metricText, button, table } from "./ui";
 
 class SettingsTab extends PluginSettingTab {
+  [key: string]: any;
   constructor(plugin){super(plugin.app,plugin);this.p=plugin;}
   display(){const c=this.containerEl;c.empty();c.createEl("h2",{text:"Obsidian Gym"});
     const text=(name,desc,key)=>new Setting(c).setName(name).setDesc(desc).addText(t=>t.setValue(String(this.p.settings[key])).onChange(async v=>{if(["exercisesRoot","workoutTemplatesRoot","workoutsRoot"].includes(key)&&!this.p.settings.previousPaths)this.p.settings.previousPaths={exercisesRoot:this.p.settings.exercisesRoot,workoutTemplatesRoot:this.p.settings.workoutTemplatesRoot,workoutsRoot:this.p.settings.workoutsRoot};this.p.settings[key]=norm(v)||DEFAULTS[key];await this.p.saveSettings();this.p.index.rebuild();}));
@@ -245,9 +19,10 @@ class SettingsTab extends PluginSettingTab {
   }
 }
 
-class ObsidianGym extends Plugin {
+export default class ObsidianGym extends Plugin {
+  [key: string]: any;
   async onload(){
-    await this.loadSettings();this.index=new Index(this);this.gym=new Gym(this,this.index);this.timer=new Timer(()=>new Notice("Rest finished"));this.addSettingTab(new SettingsTab(this));
+    await this.loadSettings();this.index=new IndexService(this);this.gym=new GymService(this,this.index);this.timer=new TimerService(()=>new Notice("Rest finished"));this.addSettingTab(new SettingsTab(this));
     this.registerCommands();this.registerRenderers();
     this.app.workspace.onLayoutReady(()=>{this.index.rebuild();this.index.register();if(this.settings.openHomeOnStartup)this.openHome();});
   }
@@ -369,5 +144,3 @@ class ObsidianGym extends Plugin {
     this.settings.schemaVersion=3;await this.saveSettings();this.index.rebuild();new Notice("Migrated "+changed+" gym files. Backup: "+backup,10000);
   }
 }
-
-module.exports = ObsidianGym;

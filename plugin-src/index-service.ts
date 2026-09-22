@@ -21,7 +21,7 @@ export class IndexService {
     else if(k==="log"){const r=this.logs.get(path);this.logs.delete(path);if(r){this.delNested(this.byWorkout,r.workoutId,path);if(r.exerciseId)this.delNested(this.byLogExerciseId,r.exerciseId,path);if(r.exerciseName)this.delNested(this.byLogExerciseName,r.exerciseName,path);}}
     this.kind.delete(path);
   }
-  reindex(file,known){
+  reindex(file,known=null){
     if(!file||file.extension!=="md")return; this.remove(file.path);
     const f=known||this.fm(file), s=this.plugin.settings, ts=tags(f);
     if(inside(file.path,s.exercisesRoot)&&ts.includes("exercise")&&!f.workout_id&&!f.event_type){

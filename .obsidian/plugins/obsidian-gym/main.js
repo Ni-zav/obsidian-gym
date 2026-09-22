@@ -437,6 +437,21 @@ var GymService = class {
     }
     return out;
   }
+  async refreshExercisePrs(id, name, extraWorkoutIds = []) {
+    const records = this.index.history(id, name), prior = [], workouts = new Set(extraWorkoutIds.filter(Boolean).map(String));
+    for (const rec of records) {
+      const x = rec.fm, next = String(x.set_type || "working") === "warmup" ? [] : this.prs(x, prior), old = Array.isArray(x.prs) ? x.prs : [];
+      if (old.length !== next.length || old.some((v, i) => v !== next[i])) {
+        await this.update(rec.file, { prs: next });
+        if (rec.workoutId) workouts.add(String(rec.workoutId));
+      }
+      prior.push(x);
+    }
+    for (const wid of workouts) {
+      const s = this.index.sessionById(wid);
+      if (s) await this.recalc(s.file);
+    }
+  }
   validateSet(p) {
     const mode = modeOf(p);
     if ((mode === "strength" || mode === "bodyweight") && !(num(p.reps) > 0)) throw new Error("Reps must be greater than 0.");
@@ -492,10 +507,11 @@ var GymService = class {
   }
   async delSet(file, log) {
     return this.queue(file, async () => {
+      const x = this.index.fm(log), wid = String(this.index.fm(file).id || "");
       const p = log.path;
       await this.app.fileManager.trashFile(log);
       this.index.remove(p);
-      await this.recalc(file);
+      await this.refreshExercisePrs(x.exercise_id, x.exercise, [wid]);
     });
   }
   async editSet(file, log, patch, del = []) {
@@ -506,17 +522,17 @@ var GymService = class {
       const history = this.index.history(next.exercise_id, next.exercise).filter((x) => x.file.path !== log.path).map((x) => x.fm);
       const prs = String(next.set_type || "working") === "warmup" ? [] : this.prs(next, history);
       await this.update(log, { ...patch, prs }, del);
-      await this.recalc(file);
+      await this.refreshExercisePrs(next.exercise_id, next.exercise, [String(this.index.fm(file).id || "")]);
     });
   }
   async undo(file) {
     return this.queue(file, async () => {
       const a = this.index.workoutLogs(this.index.fm(file).id, false), l = a.at(-1);
       if (!l) return false;
-      const p = l.file.path;
+      const x = l.fm, wid = String(this.index.fm(file).id || ""), p = l.file.path;
       await this.app.fileManager.trashFile(l.file);
       this.index.remove(p);
-      await this.recalc(file);
+      await this.refreshExercisePrs(x.exercise_id, x.exercise, [wid]);
       return true;
     });
   }

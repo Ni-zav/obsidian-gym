@@ -27,6 +27,18 @@ export class GymService {
     else if(m==="distance_time"){const d=num(cur.distance_km)||0,t=num(cur.duration_seconds)||0;if(d>Math.max(0,...h.map(f=>num(f.distance_km)||0)))out.push("distance");const p=t&&d?t/d:Infinity,ps=h.map(f=>{const hd=num(f.distance_km)||0,ht=num(f.duration_seconds)||0;return hd&&ht?ht/hd:Infinity;}).filter(Number.isFinite);if(ps.length&&p<Math.min(...ps))out.push("pace");}
     return out;
   }
+  async refreshExercisePrs(id,name,extraWorkoutIds=[]){
+    const records=this.index.history(id,name),prior=[],workouts=new Set(extraWorkoutIds.filter(Boolean).map(String));
+    for(const rec of records){
+      const x=rec.fm,next=String(x.set_type||"working")==="warmup"?[]:this.prs(x,prior),old=Array.isArray(x.prs)?x.prs:[];
+      if(old.length!==next.length||old.some((v,i)=>v!==next[i])){
+        await this.update(rec.file,{prs:next});
+        if(rec.workoutId)workouts.add(String(rec.workoutId));
+      }
+      prior.push(x);
+    }
+    for(const wid of workouts){const s=this.index.sessionById(wid);if(s)await this.recalc(s.file);}
+  }
   validateSet(p){
     const mode=modeOf(p);
     if((mode==="strength"||mode==="bodyweight")&&!(num(p.reps)>0))throw new Error("Reps must be greater than 0.");
@@ -43,16 +55,16 @@ export class GymService {
   async delta(file,l,prs){const f=this.index.fm(file),working=String(l.set_type||"working")!=="warmup",counts={...(f.exercise_counts||{})};if(working)counts[l.exercise]=Number(counts[l.exercise]||0)+1;await this.update(file,{set_count:Number(f.set_count||0)+1,working_set_count:Number(f.working_set_count||0)+(working?1:0),exercise_counts:counts,total_volume:Math.round((Number(f.total_volume||0)+(working?volume(l.weight_kg,l.reps):0))*100)/100,timed_seconds:Number(f.timed_seconds||0)+(working?(num(l.duration_seconds)||0):0),distance_km:Math.round((Number(f.distance_km||0)+(working?(num(l.distance_km)||0):0))*1000)/1000,pr_count:Number(f.pr_count||0)+prs.length});}
   async recalc(file){const f=this.index.fm(file),logs=this.index.workoutLogs(f.id,true),sets=logs.filter(l=>!l.eventType),counts={};let work=0,v=0,t=0,d=0,pr=0;sets.forEach(l=>{const x=l.fm;if(String(x.set_type||"working")!=="warmup"){work++;counts[x.exercise]=Number(counts[x.exercise]||0)+1;v+=volume(x.weight_kg,x.reps);t+=num(x.duration_seconds??x.duration)||0;d+=num(x.distance_km)||0;}pr+=Array.isArray(x.prs)?x.prs.length:0;});const start=logs.find(l=>l.eventType==="workout_start")?.performedAt||f.started_at,end=[...logs].reverse().find(l=>l.eventType==="workout_end")?.performedAt||f.ended_at,dur=start?Math.max(0,Math.round(((end?new Date(end):new Date()).getTime()-new Date(start).getTime())/60000)):0;await this.update(file,{set_count:sets.length,working_set_count:work,exercise_counts:counts,total_volume:Math.round(v*100)/100,timed_seconds:Math.round(t),distance_km:Math.round(d*1000)/1000,pr_count:pr,duration_minutes:dur,status:end?"completed":"active",started_at:start||null,ended_at:end||null},["Logs","ExerciseCounts","ExercisesSummary","Total Volume","timed_load","duration"]); }
   async finish(file){return this.queue(file,async()=>{const f=this.index.fm(file);if(f.status==="completed")return;const end=now();await this.create(await this.nextLog(file),{schema_version:3,id:uuid(),workout_id:String(f.id),event_type:"workout_end",performed_at:end,tags:["log","event","end"]},"# Workout end");await this.update(file,{status:"completed",ended_at:end,duration_minutes:Math.max(0,Math.round((new Date(end).getTime()-new Date(f.started_at||end).getTime())/60000))});});}
-  async delSet(file,log){return this.queue(file,async()=>{const p=log.path;await this.app.fileManager.trashFile(log);this.index.remove(p);await this.recalc(file);});}
+  async delSet(file,log){return this.queue(file,async()=>{const x=this.index.fm(log),wid=String(this.index.fm(file).id||"");const p=log.path;await this.app.fileManager.trashFile(log);this.index.remove(p);await this.refreshExercisePrs(x.exercise_id,x.exercise,[wid]);});}
   async editSet(file,log,patch,del=[]){
     return this.queue(file,async()=>{
       const current=this.index.fm(log),next={...current,...patch};del.forEach(k=>delete next[k]);this.validateSet(next);
       const history=this.index.history(next.exercise_id,next.exercise).filter(x=>x.file.path!==log.path).map(x=>x.fm);
       const prs=String(next.set_type||"working")==="warmup"?[]:this.prs(next,history);
-      await this.update(log,{...patch,prs},del);await this.recalc(file);
+      await this.update(log,{...patch,prs},del);await this.refreshExercisePrs(next.exercise_id,next.exercise,[String(this.index.fm(file).id||"")]);
     });
   }
-  async undo(file){return this.queue(file,async()=>{const a=this.index.workoutLogs(this.index.fm(file).id,false),l=a.at(-1);if(!l)return false;const p=l.file.path;await this.app.fileManager.trashFile(l.file);this.index.remove(p);await this.recalc(file);return true;});}
+  async undo(file){return this.queue(file,async()=>{const a=this.index.workoutLogs(this.index.fm(file).id,false),l=a.at(-1);if(!l)return false;const x=l.fm,wid=String(this.index.fm(file).id||""),p=l.file.path;await this.app.fileManager.trashFile(l.file);this.index.remove(p);await this.refreshExercisePrs(x.exercise_id,x.exercise,[wid]);return true;});}
   async repeat(file,log){const f=this.index.fm(log),e=this.index.exerciseById(f.exercise_id)||this.index.exerciseByName(f.exercise);if(!e)throw new Error("Exercise not found.");return this.log(file,{exercise_id:e.id,exercise:e.name,tracking_mode:modeOf(f),set_type:f.set_type||"working",weight_kg:num(f.weight_kg),reps:num(f.reps),duration_seconds:num(f.duration_seconds),distance_km:num(f.distance_km),effort:num(f.effort),note:String(f.note||"")});}
   async skip(file,id){return this.queue(file,async()=>{const f=this.index.fm(file),s=new Set((Array.isArray(f.skipped_exercises)?f.skipped_exercises:[]).map(String));s.add(String(id));await this.update(file,{skipped_exercises:[...s]});});}
   async next(file,id){return this.queue(file,async()=>{const f=this.index.fm(file),p=planOf(f),i=p.findIndex(x=>x.exercise_id===String(id));if(i<=0)return;const x=p.splice(i,1)[0];p.unshift(x);await this.update(file,{exercise_plan:p});});}

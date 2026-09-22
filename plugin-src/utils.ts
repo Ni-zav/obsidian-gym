@@ -13,14 +13,14 @@ export const DEFAULTS = {
 };
 
 export function norm(v){ if(typeof v!=="string") return ""; return obsidianNormalizePath(v.trim()).replace(/^\/+|\/+$/g,""); }
-export function join(){ return [...arguments].filter(Boolean).map((x,i)=>i?String(x).replace(/^\/+|\/+$/g,""):String(x).replace(/\/+$/g,"")).join("/"); }
+export function join(...parts:any[]){ return parts.filter(Boolean).map((x,i)=>i?String(x).replace(/^\/+|\/+$/g,""):String(x).replace(/\/+$/g,"")).join("/"); }
 export function parent(p){ p=norm(p); const i=p.lastIndexOf("/"); return i<0?"":p.slice(0,i); }
 export function inside(p,r){ p=norm(p); r=norm(r); return !!(p&&r&&(p===r||p.startsWith(r+"/"))); }
 export function tags(f){ const v=f&&f.tags!=null?f.tags:[]; return (Array.isArray(v)?v:[v]).filter(Boolean).map(x=>String(x).replace(/^#/,"")); }
 export function num(v){ if(v===""||v==null) return null; const n=Number(v); return Number.isFinite(n)?n:null; }
 export function uuid(){ if(globalThis.crypto&&crypto.randomUUID) return crypto.randomUUID(); return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==="x"?r:(r&3|8);return v.toString(16);}); }
-export function now(){ return moment().format("YYYY-MM-DDTHH:mm:ss"); }
-export function day(){ return moment().format("YYYY-MM-DD"); }
+export function now(){ return (moment as any)().format("YYYY-MM-DDTHH:mm:ss"); }
+export function day(){ return (moment as any)().format("YYYY-MM-DD"); }
 export function modeOf(f){
   const m=f&&f.tracking_mode;
   if(["strength","bodyweight","duration","distance_time"].includes(m)) return m;

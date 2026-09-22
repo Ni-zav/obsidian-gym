@@ -21,7 +21,7 @@ class SettingsTab extends PluginSettingTab {
 
 export default class ObsidianGym extends Plugin {
   [key: string]: any;
-  settings:any;
+  declare settings:any;
   async onload(){
     await this.loadSettings();this.index=new IndexService(this);this.gym=new GymService(this,this.index);this.timer=new TimerService(()=>new Notice("Rest finished"));this.addSettingTab(new SettingsTab(this));
     this.registerCommands();this.registerRenderers();

@@ -1,13 +1,13 @@
 import { Modal, FuzzySuggestModal, Notice, TFile } from "obsidian";
 import { join, num, modeOf } from "./utils";
 
-export class Choice extends FuzzySuggestModal {
+export class Choice extends FuzzySuggestModal<any> {
   [key: string]: any;
   constructor(app,items,label,onChoose,text){super(app);this.items=items;this.label=label;this.cb=onChoose;this.text=text||((x)=>String(x));this.setPlaceholder(label);}
   getItems(){return this.items;} getItemText(x){return this.text(x);} onChooseItem(x){this.cb(x);}
 }
 
-export function field(root,label,value,type){
+export function field(root,label,value,type?:any){
   const wrap=root.createDiv({cls:"gym-field"});wrap.createEl("label",{text:label});const input=type==="textarea"?wrap.createEl("textarea"):wrap.createEl("input",{attr:{type:type||"text"}});input.value=value==null?"":String(value);return input;
 }
 export function selectField(root,label,values,current){
@@ -16,13 +16,13 @@ export function selectField(root,label,values,current){
 
 export class LogModal extends Modal {
   [key: string]: any;
-  constructor(plugin,file,pre){super(plugin.app);this.p=plugin;this.file=file;this.pre=pre;}
+  constructor(plugin,file,pre=null){super(plugin.app);this.p=plugin;this.file=file;this.pre=pre;}
   onOpen(){this.render();}
   render(){
     const c=this.contentEl;c.empty();c.createEl("h2",{text:"Log set"});const ex=this.p.index.exercisesList(),remaining=this.p.gym.remaining(this.file),first=this.pre||remaining[0]?.exercise||ex[0];if(!first){c.createEl("p",{text:"No exercises in library."});return;}
     const exSel=selectField(c,"Exercise",ex.map(x=>x.name),first.name),typeSel=selectField(c,"Set type",["working","warmup","drop","failure"],"working");
     const previous=c.createDiv({cls:"gym-previous"}),metrics=c.createDiv();const effort=selectField(c,"Effort",["","1","2","3","4","5"],""),note=field(c,"Note","","textarea");
-    let controls={};
+    let controls:any={};
     const build=()=>{
       metrics.empty();previous.empty();const e=ex.find(x=>x.name===exSel.value)||first,last=this.p.index.latest(e.id,e.name)?.fm||{},mode=e.trackingMode;previous.createEl("small",{text:last.exercise?"Previous: "+metricText(last):"No previous set"});
       controls={exercise:e};
@@ -42,7 +42,7 @@ export class LogModal extends Modal {
 export class EditModal extends Modal {
   [key: string]: any;
   constructor(plugin,workout,log,onDone){super(plugin.app);this.p=plugin;this.workout=workout;this.log=log;this.onDone=onDone;}
-  onOpen(){const c=this.contentEl,f=this.p.index.fm(this.log),m=modeOf(f);c.empty();c.createEl("h2",{text:"Edit set"});const type=selectField(c,"Set type",["working","warmup","drop","failure"],f.set_type||"working"),effort=selectField(c,"Effort",["","1","2","3","4","5"],f.effort??""),note=field(c,"Note",f.note||"","textarea"),controls={};
+  onOpen(){const c=this.contentEl,f=this.p.index.fm(this.log),m=modeOf(f);c.empty();c.createEl("h2",{text:"Edit set"});const type=selectField(c,"Set type",["working","warmup","drop","failure"],f.set_type||"working"),effort=selectField(c,"Effort",["","1","2","3","4","5"],f.effort??""),note=field(c,"Note",f.note||"","textarea"),controls:any={};
     if(m==="strength"||m==="bodyweight"){controls.weight=field(c,"Weight (kg)",f.weight_kg??"","number");controls.reps=field(c,"Reps",f.reps??"","number");}
     else if(m==="duration"){controls.duration=field(c,"Duration (seconds)",f.duration_seconds??f.duration??"","number");if(f.weight_kg!=null)controls.weight=field(c,"Weight (kg)",f.weight_kg,"number");}
     else{controls.distance=field(c,"Distance (km)",f.distance_km??"","number");controls.duration=field(c,"Duration (seconds)",f.duration_seconds??"","number");}
@@ -53,8 +53,8 @@ export class EditModal extends Modal {
 export class ExerciseModal extends Modal {
   [key: string]: any;
   constructor(plugin){super(plugin.app);this.p=plugin;}
-  async onOpen(){const c=this.contentEl;c.empty();c.createEl("h2",{text:"Add exercise"});let cats={muscleGroups:["Others"],equipment:["Bodyweight"]};try{const cf=this.app.vault.getAbstractFileByPath(join(this.p.settings.exercisesRoot,"_library/categories.json"));if(cf instanceof TFile){const a=JSON.parse(await this.app.vault.cachedRead(cf));cats={muscleGroups:Object.values(a.muscleGroups||{}).map(x=>x.name),equipment:a.equipment||[]};}}catch{}
-    const name=field(c,"Name",""),muscle=selectField(c,"Muscle group",cats.muscleGroups,"Others"),equipment=selectField(c,"Equipment",cats.equipment,"Bodyweight"),mode=selectField(c,"Tracking",["strength","bodyweight","duration","distance_time"],"strength"),defaults=c.createDiv(),rest=field(c,"Rest seconds",this.p.settings.defaultRestSeconds,"number"),instructions=field(c,"Instructions","","textarea");let d={};
+  async onOpen(){const c=this.contentEl;c.empty();c.createEl("h2",{text:"Add exercise"});let cats={muscleGroups:["Others"],equipment:["Bodyweight"]};try{const cf=this.app.vault.getAbstractFileByPath(join(this.p.settings.exercisesRoot,"_library/categories.json"));if(cf instanceof TFile){const a=JSON.parse(await this.app.vault.cachedRead(cf));cats={muscleGroups:Object.values(a.muscleGroups||{}).map((x:any)=>x.name),equipment:a.equipment||[]};}}catch{}
+    const name=field(c,"Name",""),muscle=selectField(c,"Muscle group",cats.muscleGroups,"Others"),equipment=selectField(c,"Equipment",cats.equipment,"Bodyweight"),mode=selectField(c,"Tracking",["strength","bodyweight","duration","distance_time"],"strength"),defaults=c.createDiv(),rest=field(c,"Rest seconds",this.p.settings.defaultRestSeconds,"number"),instructions=field(c,"Instructions","","textarea");let d:any={};
     const rebuild=()=>{defaults.empty();d={};if(mode.value==="strength"||mode.value==="bodyweight"){d.weight=field(defaults,"Default weight kg","","number");d.reps=field(defaults,"Default reps",8,"number");}else if(mode.value==="duration")d.duration=field(defaults,"Default duration seconds",30,"number");else{d.distance=field(defaults,"Default distance km","","number");d.duration=field(defaults,"Default duration seconds","","number");}};mode.onchange=rebuild;rebuild();
     const a=c.createDiv({cls:"gym-actions"}),save=a.createEl("button",{text:"Create",cls:"mod-cta"});a.createEl("button",{text:"Cancel"}).onclick=()=>this.close();save.onclick=async()=>{try{if(!name.value.trim())throw new Error("Exercise name is required.");if(!muscle.value)throw new Error("Muscle group is required.");const f=await this.p.gym.createExercise({name:name.value.trim(),muscle:muscle.value,equipment:equipment.value,mode:mode.value,weight:d.weight?num(d.weight.value):null,reps:d.reps?num(d.reps.value):null,duration:d.duration?num(d.duration.value):null,distance:d.distance?num(d.distance.value):null,rest:num(rest.value),instructions:instructions.value.trim()});this.close();await this.app.workspace.getLeaf(false).openFile(f);}catch(e){new Notice(e.message);}};
   }
@@ -75,6 +75,6 @@ export function metricText(f){
   if(m==="duration")return String(f.duration_seconds??f.duration??"—")+" sec";
   return String(f.distance_km??"—")+" km · "+String(f.duration_seconds??"—")+" sec";
 }
-export function button(root,text,fn,cta){const b=root.createEl("button",{text,cls:cta?"mod-cta":""});b.onclick=async()=>{b.disabled=true;try{await fn();}finally{b.disabled=false;}};return b;}
+export function button(root,text,fn,cta=false){const b=root.createEl("button",{text,cls:cta?"mod-cta":""});b.onclick=async()=>{b.disabled=true;try{await fn();}finally{b.disabled=false;}};return b;}
 export function table(root,headers,rows){const t=root.createEl("table",{cls:"gym-table"}),h=t.createEl("thead").createEl("tr");headers.forEach(x=>h.createEl("th",{text:x}));const body=t.createEl("tbody");rows.forEach(r=>{const tr=body.createEl("tr");r.forEach(x=>{const td=tr.createEl("td");if(x instanceof Node)td.appendChild(x);else td.setText(String(x??""));});});return t;}
 

@@ -1,30 +1,59 @@
 # Dependencies
 
-## Required runtime
+## Runtime
 
-| Plugin | Purpose |
-|---|---|
-| QuickAdd | command entry points and prompts |
-| Dataview | Markdown-driven render blocks |
-| CustomJS | shared gym classes |
-| Charts | Chart.js integration without CDN injection |
-| Obsidian Gym Settings | local path configuration/migration |
+Obsidian Gym requires only:
 
-Homepage is optional convenience only.
+- Obsidian 1.13+
+- the bundled `obsidian-gym` plugin
 
-## Removed runtime dependencies
+The vault's `.obsidian/community-plugins.json` enables only `obsidian-gym`.
 
-- Templater — session/log creation is now direct and deterministic
-- Meta Bind — command buttons are now small DataviewJS controls
-- Buttons — Meta Bind is the single button system
-- Media Extended — not required by the gym runtime
-- Tag Wrangler — not required by the gym runtime
-- Heatmap Calendar — no active gym view requires it
+## No longer required
 
-## Upstream update policy
+The gym runtime does not depend on:
 
-The repository may contain older vendored community-plugin bundles. Update them from inside Obsidian.
+- QuickAdd
+- CustomJS
+- Dataview
+- Charts
+- Homepage
+- Templater
+- Meta Bind
+- Buttons
+- Heatmap Calendar
+- Media Extended
+- Tag Wrangler
+- the former Obsidian Gym Settings helper plugin
 
-Do not manually bump only the manifest version. The manifest, compiled JavaScript, and stylesheet must belong to the same release.
+Those integrations were replaced by native plugin commands, modals, Markdown processors, indexes, settings, analytics, and migrations.
 
-The modernization code avoids depending on new QuickAdd-specific features, so it remains compatible across the current QuickAdd 2.x line while allowing users to update normally.
+## Development dependencies
+
+Development dependencies are intentionally small and pinned:
+
+- `obsidian` — official public plugin API types
+- `typescript`
+- `esbuild`
+
+Use:
+
+```bash
+npm install
+npm run check
+npm run build
+```
+
+The source of truth is `plugin-src/main.ts`. The generated runtime is committed at `.obsidian/plugins/obsidian-gym/main.js` so the vault works immediately after cloning.
+
+## Version policy
+
+`manifest.json` controls the minimum supported Obsidian application version.
+
+Development-package versions are not the same thing as `minAppVersion`; they provide build/type information. When updating them, rebuild the plugin instead of editing only the generated bundle or only the manifest.
+
+## External network dependencies
+
+The runtime does not load JavaScript, CSS, fonts, charts, or exercise data from a CDN.
+
+All interaction and visualization code is local to the vault/plugin.

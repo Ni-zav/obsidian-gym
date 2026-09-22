@@ -2,83 +2,113 @@
 
 ## Runtime
 
-`_js/shared/gym-core.js` is the central service. It owns:
+Obsidian Gym is one native plugin:
 
-- path resolution
-- UUID generation
-- exercise discovery
-- workout-template discovery
-- workout session creation
-- set/event creation
-- workout metrics
-- previous-set history
-- PR comparison
-- remaining-set calculation
-- skip / replace / next-order mutations
-- active-session discovery
+```text
+Markdown + Bases
+       ↑
+ Obsidian Gym
+ ├─ incremental indexes
+ ├─ workout domain service
+ ├─ mutation queue
+ ├─ native commands
+ ├─ native modals
+ ├─ timer / stopwatch
+ ├─ Markdown renderers
+ ├─ analytics / recovery
+ ├─ migrations
+ └─ settings / audit
+```
 
-Other shared modules are deliberately smaller:
+Canonical source is modular:
 
-- `workout.js` — workout/session UI
-- `exercise.js` — exercise definition/history UI
-- `timer.js` — countdown + stopwatch
-- `stats.js` — generic progress and recovery-gap displays
-- `utils.js` — pure small helpers
-- `path-config.js` — runtime path fallback
-- `pr-tracker.js` — compatibility wrapper around core PR logic
+- `plugin-src/main.ts` — lifecycle, commands, Markdown processors, settings/migrations
+- `plugin-src/gym-service.ts` — domain mutations and derived metrics
+- `plugin-src/index-service.ts` — event-driven indexes
+- `plugin-src/ui.ts` — modals and reusable native UI helpers
+- `plugin-src/timer-service.ts` — timer state
+- `plugin-src/utils.ts` — shared path/schema/math helpers
 
-## Commands
+The committed bundle is `.obsidian/plugins/obsidian-gym/main.js`.
 
-QuickAdd still provides stable command IDs used by Meta Bind and the Home renderer.
+## Indexing
 
-Primary user scripts:
+At layout-ready the plugin scans the relevant Markdown files once and builds in-memory indexes for:
 
-- `start-today-workout.js`
-- `start-free-workout.js`
-- `log-exercise.js`
-- `create-workout-routine.js`
-- `add-exercise-to-library.js`
-- `recalculate-metrics.js`
+- exercises by path, ID, name, and aliases
+- routines
+- workout sessions by path and workout ID
+- logs by path and workout ID
+- logs by exercise ID and exercise name
 
-These scripts no longer directly access Templater internals and no longer carry copies of folder configuration.
+After startup, Obsidian `metadataCache` and `vault` events update those indexes incrementally on change, delete, and rename.
 
-## Persistence
+Interactive operations therefore do not repeatedly scan the entire vault.
 
-Exercise definitions and routine templates are immutable-ish library records.
+A full scan is intentionally retained for explicit administrative actions such as audit/rebuild/migration.
 
-Workout sessions are generated records. Each session owns a `Log/` folder containing event files. The session frontmatter stores derived summary fields for fast Bases and dashboard access.
+## Mutation model
 
-Derived fields can be rebuilt from logs with the Recalculate Metrics command/script.
+Every workout has a serialized mutation queue.
 
-## Compatibility
+Set creation, deletion, finishing, and other state-changing operations for the same workout execute in order. This prevents rapid double actions from racing for the same log filename or overwriting derived session fields.
 
-Schema-v2 code accepts legacy fields where possible:
+Different workouts do not block one another.
 
-- `weight` → `weight_kg`
-- `duration` → `duration_seconds`
-- numeric legacy exercise IDs remain valid
-- name matching is retained as a fallback for older logs
-- aliases can preserve history lookup after exercise renames
+## Metrics
 
-New history relationships should rely on `exercise_id`, not the exercise name.
+Normal set creation updates session summaries incrementally:
 
-## Design rule
+- set count
+- working-set count
+- exercise counts
+- weighted repetition volume
+- timed seconds
+- distance
+- PR count
 
-Do not add new path parsing or direct whole-vault workout logic to command scripts. Put shared behavior in `gym-core.js` and keep command scripts as interaction orchestration.
+Edits/deletes use a complete recalculation for that workout. A full rebuild command is available for repair.
 
+Warmup sets are stored but excluded from working-set volume/count summaries.
 
-## Performance model
+## Rendering
 
-The shared core uses short-lived, lazily built indexes instead of repeatedly scanning the vault from every renderer or picker:
+Notes contain inert native code blocks such as:
 
-- exercise definitions: indexed by ID, name, and aliases
-- workout routines: cached routine list
-- workout sessions: indexed by workout ID and active state
-- exercise history: indexed by exercise ID and name
-- current workout logs: parsed once per short render window
+- `obsidian-gym-home`
+- `obsidian-gym-create`
+- `obsidian-gym-session`
+- `obsidian-gym-exercise`
+- `obsidian-gym-routine`
+- `obsidian-gym-log`
+- `obsidian-gym-analytics`
+- `obsidian-gym-recovery`
 
-General indexes use a 1.5-second safety TTL and are explicitly invalidated when gym code writes related files. Current-workout log entries use a shorter 750 ms cache. This keeps normal interaction immediate while allowing manual file edits to become visible without persistent event listeners.
+The plugin registers Markdown code-block processors for these blocks.
 
-Persistent metadata/vault event listeners were intentionally avoided in CustomJS because script reloads can create duplicate listeners and lifecycle leaks. If Obsidian Gym later becomes a full standalone plugin, replacing TTL caches with plugin-lifecycle-managed event indexes would be a reasonable next optimization.
+Legacy `dataviewjs` gym pages can still render during migration, but schema-v3 migration rewrites recognized legacy gym blocks to native blocks.
 
-Full vault scans remain in Audit/Migration/Bulk Repair commands because those are rare administrative operations where completeness is more important than interactive latency.
+## User interaction
+
+The plugin owns stable command IDs and native Obsidian modals.
+
+No QuickAdd, CustomJS, Dataview, Charts, Homepage, Templater, Meta Bind, or Buttons runtime is required.
+
+The set logger is intentionally one screen. It derives defaults from the previous matching set and exercise definition, and exposes small adjustment controls rather than launching a chain of prompts.
+
+## Timer
+
+Rest timer and stopwatch state live in one plugin-scoped service.
+
+The timer derives time from timestamps rather than trusting interval counts, so background throttling does not accumulate large timing drift.
+
+## Safety and recoverability
+
+- training history is Markdown
+- schema migration creates timestamped backups
+- path migration previews conflicts before moving data
+- file moves use Obsidian's FileManager
+- audit reports broken routine references
+- derived workout metrics can be rebuilt from logs
+
+The data layer is intentionally independent from the UI implementation.

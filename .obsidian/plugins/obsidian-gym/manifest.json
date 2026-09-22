@@ -1,0 +1,9 @@
+{
+  "id": "obsidian-gym",
+  "name": "Obsidian Gym",
+  "version": "3.0.0",
+  "minAppVersion": "1.13.0",
+  "description": "Local-first workout tracking with native Obsidian commands, Markdown persistence, and Bases.",
+  "author": "Ni-zav",
+  "isDesktopOnly": false
+}

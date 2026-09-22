@@ -1,8 +1,6 @@
 # Gym
 
-```dataviewjs
-const {workout} = customJS;
-workout.renderHomeActions({dv, container: this.container, window});
+```obsidian-gym-home
 ```
 
 ## Library
@@ -13,7 +11,7 @@ workout.renderHomeActions({dv, container: this.container, window});
 | [[Exercises List.base|Exercises]] | Browse the exercise library |
 | [[Workouts List.base|Routines]] | Browse workout templates |
 | [[Workouts History.base|History]] | Review completed sessions |
-| [[Data Visualization|Analytics]] | Volume and duration trends |
+| [[Data Visualization|Analytics]] | Native volume and duration trends |
 | [[Recovery|Recovery gap]] | Time since each muscle group was trained |
 
 > Keep the system simple: log the set, finish the workout, review the trend.

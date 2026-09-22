@@ -1,8 +1,6 @@
 # Recovery gap
 
-```dataviewjs
-const {stats} = customJS;
-stats.renderRecovery({dv, container: this.container, window});
+```obsidian-gym-recovery
 ```
 
-This view intentionally uses only **time since the muscle group was last logged**. Use it as a training-history cue, not as a medical or physiological readiness score.
+This is intentionally a **time-since-last-trained** history cue, not a physiological soreness/readiness score.

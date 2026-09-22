@@ -1,25 +1,18 @@
 ---
+schema_version: 3
 id: 151534
-date: <% tp.date.now("YYYY-MM-DDTHH:mm:ss") %>
-time: <% tp.date.now("HH:mm:ss") %>
-timed: true
-duration: <% await tp.system.prompt("Duration (seconds)", "3600", true) %>
-weight: 
-effort: 
-exercise: Full Body - jogging
-muscle_group: Full Body
-equipment: Bodyweight
-note: 
+exercise: "Full Body - jogging"
+muscle_group: "Full Body"
+equipment: "Bodyweight"
+tracking_mode: distance_time
+default_duration_seconds: 3600
+default_rest_seconds: 60
+instructions: "jogging."
+aliases: []
 video_url: "later on."
-instructions: 'jogging.'
 tags:
- - exercise
+  - exercise
 ---
 
-```dataviewjs
-const {exercise} = customJS;
-const note = {dv: dv, container: this.container, window: window};
-
-exercise.renderDescription(note);
-exercise.renderEffortWeightChart(note);
+```obsidian-gym-exercise
 ```
